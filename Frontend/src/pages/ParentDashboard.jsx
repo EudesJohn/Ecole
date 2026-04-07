@@ -246,7 +246,7 @@ const ParentDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-primary-50/20 pb-24">
       {/* Header */}
-      <div className="bg-royal-gradient p-6 pb-16 relative overflow-hidden">
+      <div className="bg-royal-gradient p-6 pb-24 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 right-10 w-40 h-40 border border-white/30 rounded-full" />
           <div className="absolute bottom-0 left-10 w-60 h-60 border border-white/20 rounded-full" />
@@ -270,7 +270,7 @@ const ParentDashboard = () => {
       </div>
 
       {/* Trimester Selector (Archive) */}
-      <div className="px-4 -mt-8 mb-4 relative z-20">
+      <div className="px-4 -mt-12 mb-6 relative z-20">
         <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-1 shadow-xl flex gap-1 border border-white">
           {['1', '2', '3'].map((t) => (
             <button
@@ -292,7 +292,7 @@ const ParentDashboard = () => {
       </div>
 
       {/* Stats */}
-      <div className="px-4 mt-2 relative z-10 mb-6">
+      <div className="px-4 mt-6 relative z-10 mb-6">
         <div className="grid grid-cols-2 gap-3 mb-3">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl p-4 shadow-glass text-center">
