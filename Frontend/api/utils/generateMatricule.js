@@ -1,4 +1,4 @@
-const { supabase } = require('../server');
+const { supabase } = require('../supabase');
 
 const generateMatricule = async () => {
   try {
