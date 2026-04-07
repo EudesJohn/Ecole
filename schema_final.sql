@@ -7,6 +7,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Function to handle updated_at
+DROP FUNCTION IF EXISTS handle_updated_at CASCADE;
 CREATE OR REPLACE FUNCTION handle_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -126,6 +127,7 @@ CREATE TABLE IF NOT EXISTS school_config (
 
 -- 3. SEQUENCES
 CREATE SEQUENCE IF NOT EXISTS matricule_seq START 1;
+DROP FUNCTION IF EXISTS get_next_matricule CASCADE;
 CREATE OR REPLACE FUNCTION get_next_matricule() RETURNS TEXT AS $$
 DECLARE
     next_val INTEGER;
@@ -167,10 +169,12 @@ ALTER TABLE absences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cahier_texte ENABLE ROW LEVEL SECURITY;
 
 -- Security Helpers
+DROP FUNCTION IF EXISTS check_is_admin CASCADE;
 CREATE OR REPLACE FUNCTION check_is_admin() RETURNS boolean AS $$
   BEGIN RETURN EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'admin'); END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+DROP FUNCTION IF EXISTS check_is_teacher CASCADE;
 CREATE OR REPLACE FUNCTION check_is_teacher() RETURNS boolean AS $$
   BEGIN RETURN EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'); END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -197,6 +201,8 @@ CREATE POLICY "Grades readable by parents" ON grades FOR SELECT USING (
 -- 7. ANALYTICS & STATS (RPC)
 
 -- Unified subject average calculation helper (DYNAMIC DIVISOR)
+DROP FUNCTION IF EXISTS calc_subject_avg(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS calc_subject_avg(TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC) CASCADE;
 CREATE OR REPLACE FUNCTION calc_subject_avg(
     p_cycle TEXT,
     p_interro1 NUMERIC, p_interro2 NUMERIC, p_interro3 NUMERIC,
@@ -249,6 +255,8 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- get_class_stats_for_bulletin (Aggregated logic)
+DROP FUNCTION IF EXISTS get_class_stats_for_bulletin(UUID, INT, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS get_class_stats_for_bulletin(UUID, INT) CASCADE;
 CREATE OR REPLACE FUNCTION get_class_stats_for_bulletin(
     p_student_id UUID,
     p_trimestre INT,
@@ -328,6 +336,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- get_detailed_stats (Unified)
+DROP FUNCTION IF EXISTS get_detailed_stats(UUID, INT, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS get_detailed_stats(UUID, INT) CASCADE;
 CREATE OR REPLACE FUNCTION get_detailed_stats(
     p_student_id UUID,
     p_trimestre INT,
@@ -385,6 +395,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- verify_bulletin (Public search)
+DROP FUNCTION IF EXISTS verify_bulletin(TEXT, INTEGER, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS verify_bulletin(TEXT, INTEGER) CASCADE;
 CREATE OR REPLACE FUNCTION verify_bulletin(
     p_matricule TEXT, 
     p_trimestre INTEGER,
@@ -430,6 +442,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- get_annual_stats (Promotion logic)
+DROP FUNCTION IF EXISTS get_annual_stats(UUID, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS get_annual_stats(UUID) CASCADE;
 CREATE OR REPLACE FUNCTION get_annual_stats(
     p_student_id UUID, 
     p_school_year TEXT
@@ -466,6 +480,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- 8. AUTH TRIGGER
+DROP FUNCTION IF EXISTS public.handle_new_user CASCADE;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
