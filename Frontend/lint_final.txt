@@ -1,0 +1,11 @@
+
+> ecole-frontend@0.0.0 lint
+> eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0
+
+
+C:\Users\Eudes Johnson\Ecole\Frontend\src\pages\AdminDashboard.jsx
+    1:31  error  'useCallback' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  643:74  error  'handleForceSync' is not defined                                               no-undef
+
+Ô£û 2 problems (2 errors, 0 warnings)
+

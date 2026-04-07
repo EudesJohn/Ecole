@@ -1,0 +1,17 @@
+
+C:\Users\Eudes Johnson\Ecole\Frontend\src\pages\AdminDashboard.jsx
+  160:6    warning  React Hook useEffect has a missing dependency: 'fetchData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  174:9    error    'withTimeout' is assigned a value but never used. Allowed unused vars must match /^_/u                        no-unused-vars
+  263:13   error    'studentAbsences' is assigned a value but never used. Allowed unused vars must match /^_/u                    no-unused-vars
+  686:109  error    'db' is not defined                                                                                           no-undef
+
+C:\Users\Eudes Johnson\Ecole\Frontend\src\pages\ParentDashboard.jsx
+  105:18  error  'cs' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\Eudes Johnson\Ecole\Frontend\src\pages\TeacherDashboard.jsx
+    7:8   error    'GradeCalculator' is defined but never used. Allowed unused vars must match /^_/u                                                      no-unused-vars
+   12:45  error    'Loader2' is defined but never used. Allowed unused vars must match /^_/u                                                              no-unused-vars
+  101:6   warning  React Hook useEffect has missing dependencies: 'loadCahierEntries' and 'loadData'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+Ô£û 8 problems (6 errors, 2 warnings)
+

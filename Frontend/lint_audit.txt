@@ -1,0 +1,17 @@
+
+> ecole-frontend@0.0.0 lint
+> eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0
+
+
+C:\Users\Eudes Johnson\Ecole\Frontend\src\pages\AdminDashboard.jsx
+  101:3   error  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  415:38  error  'hasMoreStudents' is not defined                                                                no-undef
+  415:85  error  'hasMoreAbsences' is not defined                                                                no-undef
+  418:49  error  'loadMoreStudents' is not defined                                                               no-undef
+  418:68  error  'loadMoreAbsences' is not defined                                                               no-undef
+  540:12  error  'hasMoreAbsences' is not defined                                                                no-undef
+  542:75  error  'loadMoreAbsences' is not defined                                                               no-undef
+
+Ô£û 7 problems (7 errors, 0 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

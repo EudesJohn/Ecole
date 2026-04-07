@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Firestore REST</title>
+</head>
+<body>
+    <h1>Test de Connexion Firestore (REST)</h1>
+    <button onclick="testFirestore()">Lancer le test</button>
+    <pre id="log" style="background:#f4f4f4; pading:10px; border:1px solid #ddd;"></pre>
+
+    <script>
+        const log = (msg) => document.getElementById('log').textContent += msg + '\n';
+        
+        async function testFirestore() {
+            const projectId = "saint-lamber";
+            const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/classes`;
+            
+            log(`Tentative de lecture de la collection 'classes' sur ${projectId}...`);
+            
+            try {
+                const response = await fetch(url);
+                log(`Statut HTTP: ${response.status} ${response.statusText}`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log("Succès ! La base de données répond.");
+                    log("Contenu: " + JSON.stringify(data, null, 2));
+                } else {
+                    const error = await response.json();
+                    log("Erreur : " + JSON.stringify(error, null, 2));
+                    if (response.status === 404) {
+                        log("👉 ANALYSE : La base de données '(default)' n'existe pas ou le projet ID est faux.");
+                    } else if (response.status === 403) {
+                        log("👉 ANALYSE : Problème de permissions ou Mode Datastore activé.");
+                    }
+                }
+            } catch (err) {
+                log("Erreur réseau (Fetch a échoué) : " + err.message);
+                log("👉 ANALYSE : Votre réseau bloque TOTALEMENT Google API.");
+            }
+        }
+    </script>
+</body>
+</html>

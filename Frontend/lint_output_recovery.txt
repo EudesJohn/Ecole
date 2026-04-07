@@ -1,0 +1,10 @@
+
+> ecole-frontend@0.0.0 lint
+> eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0
+
+
+C:\Users\Eudes Johnson\Ecole\Frontend\src\pages\AdminDashboard.jsx
+  198:9  error  Parsing error: Identifier 'handleForceSync' has already been declared
+
+Ô£û 1 problem (1 error, 0 warnings)
+
