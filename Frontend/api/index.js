@@ -11,12 +11,13 @@ app.use(express.json());
 // Main handler for Vercel
 const router = express.Router();
 
-// Basic route
+// Basic route with versioning for debug
 router.get('/', (req, res) => {
   res.json({ 
     message: 'École SLB Unified Backend Ready on Vercel',
-    env: process.env.NODE_ENV,
-    status: 'online'
+    version: '1.0.2',
+    status: 'online',
+    timestamp: new Date().toISOString()
   });
 });
 
