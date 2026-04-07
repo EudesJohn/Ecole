@@ -101,14 +101,49 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 4. CONTRAINTES D'UNICITÉ POUR L'UPSERT (Nécessaire pour enregistrer les notes)
-DO $$ 
-BEGIN 
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_grade_per_trimestre') THEN
-        ALTER TABLE grades ADD CONSTRAINT unique_grade_per_trimestre UNIQUE (student_id, matiere_id, trimestre, school_year);
-    END IF;
+-- 4. NETTOYAGE DES DOUBLONS AVANT LES CONTRAINTES (Garantit que le script ne plante pas)
+DELETE FROM absences a USING (
+    SELECT MIN(id) as min_id, student_id, date, matiere_id 
+    FROM absences 
+    GROUP BY student_id, date, matiere_id 
+    HAVING COUNT(*) > 1
+) b
+WHERE a.student_id = b.student_id AND a.date = b.date AND a.matiere_id = b.matiere_id AND a.id > b.min_id;
 
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_absence_per_day') THEN
-        ALTER TABLE absences ADD CONSTRAINT unique_absence_per_day UNIQUE (student_id, date, matiere_id);
-    END IF;
-END $$;
+DELETE FROM grades a USING (
+    SELECT MIN(id) as min_id, student_id, matiere_id, trimestre, school_year 
+    FROM grades 
+    GROUP BY student_id, matiere_id, trimestre, school_year 
+    HAVING COUNT(*) > 1
+) b
+WHERE a.student_id = b.student_id AND a.matiere_id = b.matiere_id AND a.trimestre = b.trimestre AND a.school_year = b.school_year AND a.id > b.min_id;
+
+-- 5. CONTRAINTES D'UNICITÉ ROBUSTES
+ALTER TABLE grades DROP CONSTRAINT IF EXISTS unique_grade_per_trimestre;
+ALTER TABLE grades ADD CONSTRAINT unique_grade_per_trimestre UNIQUE (student_id, matiere_id, trimestre, school_year);
+
+ALTER TABLE absences DROP CONSTRAINT IF EXISTS unique_absence_per_day;
+ALTER TABLE absences DROP CONSTRAINT IF EXISTS unique_absence_v2;
+ALTER TABLE absences ADD CONSTRAINT unique_absence_v2 UNIQUE (student_id, date, matiere_id);
+
+-- 6. INITIALISATION MASSIVE DES CYCLES ET ORDRES DE PROMOTION
+UPDATE classes SET cycle = 'maternelle', promotion_order = 1 WHERE nom ILIKE '%Maternelle 1%';
+UPDATE classes SET cycle = 'maternelle', promotion_order = 2 WHERE nom ILIKE '%Maternelle 2%';
+UPDATE classes SET cycle = 'primaire', promotion_order = 3 WHERE nom ILIKE '%CP1%';
+UPDATE classes SET cycle = 'primaire', promotion_order = 4 WHERE nom ILIKE '%CP2%';
+UPDATE classes SET cycle = 'primaire', promotion_order = 5 WHERE nom ILIKE '%CE1%';
+UPDATE classes SET cycle = 'primaire', promotion_order = 6 WHERE nom ILIKE '%CE2%';
+UPDATE classes SET cycle = 'primaire', promotion_order = 7 WHERE nom ILIKE '%CM1%';
+UPDATE classes SET cycle = 'primaire', promotion_order = 8 WHERE nom ILIKE '%CM2%';
+UPDATE classes SET cycle = 'college', promotion_order = 9 WHERE nom ILIKE '6%';
+UPDATE classes SET cycle = 'college', promotion_order = 10 WHERE nom ILIKE '5%';
+UPDATE classes SET cycle = 'college', promotion_order = 11 WHERE nom ILIKE '4%';
+UPDATE classes SET cycle = 'college', promotion_order = 12 WHERE nom ILIKE '3%';
+UPDATE classes SET cycle = 'lycee', promotion_order = 13 WHERE nom ILIKE '2%';
+UPDATE classes SET cycle = 'lycee', promotion_order = 14 WHERE nom ILIKE '1%';
+UPDATE classes SET cycle = 'lycee', promotion_order = 15 WHERE nom ILIKE 'T%';
+
+-- Création des classes Maternelle si absentes pour test
+INSERT INTO classes (nom, niveau, cycle, promotion_order) 
+VALUES ('Maternelle 1', 'Maternelle', 'maternelle', 1), ('Maternelle 2', 'Maternelle', 'maternelle', 2)
+ON CONFLICT (nom) DO UPDATE SET cycle = 'maternelle', promotion_order = EXCLUDED.promotion_order;

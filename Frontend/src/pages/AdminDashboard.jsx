@@ -369,8 +369,7 @@ const AdminDashboard = () => {
       setFormData({});
 
       // Update current displayed data depending on what we added before refresh
-      // Commented out fetch data to use optimistic updates
-      // fetchData(); // Refresh
+      fetchData(); // Refresh
     } catch (err) {
       console.error('Save error:', err);
       showNotif(err.message, 'error');
