@@ -28,6 +28,7 @@ const AdminDashboard = () => {
   const [absences, setAbsences] = useState([]);
   const [cahiers, setCahiers] = useState([]);
   const [schoolConfig, setSchoolConfig] = useState({ current_trimestre: '1', current_year: '2025-2026' });
+  const [grades, setGrades] = useState([]);
 
   // Modal states
   const [modalOpen, setModalOpen] = useState(false);
@@ -608,15 +609,15 @@ const AdminDashboard = () => {
   const renderOverview = () => {
     // Calcul de la performance par classe
     const currentTrimestre = parseInt(schoolConfig.current_trimestre);
-    const classPerformance = classes.map(cls => {
-      const classStudents = students.filter(s => s.classe_id === cls.id);
+    const classPerformance = (classes || []).map(cls => {
+      const classStudents = (students || []).filter(s => s.classe_id === cls.id);
       if (classStudents.length === 0) return { ...cls, success: 0, fail: 0, rate: 0 };
 
       let success = 0;
       let fail = 0;
 
       classStudents.forEach(student => {
-        const studentGrades = grades.filter(g => g.student_id === student.id && g.trimestre === currentTrimestre);
+        const studentGrades = (grades || []).filter(g => g.student_id === student.id && g.trimestre === currentTrimestre);
         if (studentGrades.length === 0) return;
 
         // Calculer l'élève (moyenne des moyennes de matières)
@@ -624,8 +625,10 @@ const AdminDashboard = () => {
           // Moyenne simple (I1+I2+I3)/n + D + C / 3
           const interros = [g.interro1, g.interro2, g.interro3].filter(v => v !== null && v !== undefined);
           const avgInterro = interros.length > 0 ? interros.reduce((a, b) => a + b, 0) / interros.length : 0;
-          return (avgInterro + (g.devoir || 0) + (g.composition || 0)) / 3;
-        });
+          return (avgInterro + (g.devoir || 0) + (g.composition || 0)) / 3.0;
+        }).filter(m => !isNaN(m));
+
+        if (moyennesMatieres.length === 0) return;
 
         const avg = moyennesMatieres.reduce((a, b) => a + b, 0) / moyennesMatieres.length;
         if (avg >= 10) success++;
