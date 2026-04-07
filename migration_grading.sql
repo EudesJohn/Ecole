@@ -53,26 +53,38 @@ BEGIN
         v_t1 := NULL; v_t2 := NULL; v_t3 := NULL;
     ELSE
         SELECT AVG(m) INTO v_t1 FROM (
-            SELECT ( ( ((COALESCE(interro1,0)+COALESCE(interro2,0)+COALESCE(interro3,0)) / 
-                NULLIF((CASE WHEN interro1 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro2 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro3 IS NOT NULL THEN 1 ELSE 0 END), 0) )
-                + COALESCE(dw, 0)) / 2.0 )
-                + COALESCE(d1, 0) + COALESCE(d2, 0) ) / 3.0 as m 
+            SELECT (
+                (
+                    (
+                        (COALESCE(interro1,0)+COALESCE(interro2,0)+COALESCE(interro3,0)) / 
+                        NULLIF((CASE WHEN interro1 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro2 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro3 IS NOT NULL THEN 1 ELSE 0 END), 0)
+                    ) + COALESCE(dw, 0)
+                ) / 2.0 + COALESCE(d1, 0) + COALESCE(d2, 0)
+            ) / 3.0 as m 
             FROM grades WHERE student_id = p_student_id AND trimestre = 1 AND school_year = p_school_year
         ) s;
 
         SELECT AVG(m) INTO v_t2 FROM (
-            SELECT ( ( ((COALESCE(interro1,0)+COALESCE(interro2,0)+COALESCE(interro3,0)) / 
-                NULLIF((CASE WHEN interro1 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro2 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro3 IS NOT NULL THEN 1 ELSE 0 END), 0) )
-                + COALESCE(dw, 0)) / 2.0 )
-                + COALESCE(d1, 0) + COALESCE(d2, 0) ) / 3.0 as m 
+            SELECT (
+                (
+                    (
+                        (COALESCE(interro1,0)+COALESCE(interro2,0)+COALESCE(interro3,0)) / 
+                        NULLIF((CASE WHEN interro1 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro2 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro3 IS NOT NULL THEN 1 ELSE 0 END), 0)
+                    ) + COALESCE(dw, 0)
+                ) / 2.0 + COALESCE(d1, 0) + COALESCE(d2, 0)
+            ) / 3.0 as m 
             FROM grades WHERE student_id = p_student_id AND trimestre = 2 AND school_year = p_school_year
         ) s;
 
         SELECT AVG(m) INTO v_t3 FROM (
-            SELECT ( ( ((COALESCE(interro1,0)+COALESCE(interro2,0)+COALESCE(interro3,0)) / 
-                NULLIF((CASE WHEN interro1 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro2 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro3 IS NOT NULL THEN 1 ELSE 0 END), 0) )
-                + COALESCE(dw, 0)) / 2.0 )
-                + COALESCE(d1, 0) + COALESCE(d2, 0) ) / 3.0 as m 
+            SELECT (
+                (
+                    (
+                        (COALESCE(interro1,0)+COALESCE(interro2,0)+COALESCE(interro3,0)) / 
+                        NULLIF((CASE WHEN interro1 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro2 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro3 IS NOT NULL THEN 1 ELSE 0 END), 0)
+                    ) + COALESCE(dw, 0)
+                ) / 2.0 + COALESCE(d1, 0) + COALESCE(d2, 0)
+            ) / 3.0 as m 
             FROM grades WHERE student_id = p_student_id AND trimestre = 3 AND school_year = p_school_year
         ) s;
         
