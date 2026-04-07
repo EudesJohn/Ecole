@@ -29,7 +29,16 @@ const AdminDashboard = () => {
   const { handleGenerateBulletin, generatingPdf } = useBulletin();
 
   const showNotif = (msg, type = 'success') => {
-    setNotification({ message: msg, type });
+    // Map technical PG errors to user friendly messages
+    let friendlyMsg = msg;
+    if (msg.includes('duplicate key') || msg.includes('23505')) {
+      if (msg.includes('matricule')) friendlyMsg = "Ce matricule est déjà utilisé par un autre élève.";
+      else if (msg.includes('email')) friendlyMsg = "Cet email est déjà associé à un compte.";
+      else if (msg.includes('nom')) friendlyMsg = "Cet élément (nom/titre) existe déjà.";
+      else friendlyMsg = "Un enregistrement identique existe déjà dans la base.";
+    }
+    
+    setNotification({ message: friendlyMsg, type });
     setTimeout(() => setNotification(null), 3000);
   };
 
@@ -110,7 +119,14 @@ const AdminDashboard = () => {
         if (editItem) {
           res = await supabase.from(table).update(payload).eq('id', editItem.id);
         } else {
-          res = await supabase.from(table).insert([payload]);
+          // Use upsert for non-sensitive management tables to avoid "Duplicate Key" errors
+          if (['classes', 'matieres'].includes(table)) {
+            const conflictTarget = table === 'classes' ? 'nom' : 'nom,classe_id';
+            res = await supabase.from(table).upsert([payload], { onConflict: conflictTarget });
+          } else {
+            // For students and teachers, we use insert but the showNotif will catch and map the duplicate key error
+            res = await supabase.from(table).insert([payload]);
+          }
         }
         
         if (res.error) {

@@ -20,7 +20,7 @@ $$ LANGUAGE plpgsql;
 
 -- PROFILES (extends auth.users)
 CREATE TABLE IF NOT EXISTS profiles (
-  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  id UUID REFERENCES auth.users ON DELETE CASCADE,
   role TEXT CHECK (role IN ('admin', 'teacher', 'parent')) DEFAULT 'parent',
   prenom TEXT,
   nom TEXT,
@@ -29,19 +29,41 @@ CREATE TABLE IF NOT EXISTS profiles (
   matiere JSONB DEFAULT '[]',
   classe_assignee JSONB DEFAULT '[]',
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT profiles_pkey PRIMARY KEY (id)
 );
 
 -- CLASSES
 CREATE TABLE IF NOT EXISTS classes (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  nom TEXT NOT NULL UNIQUE,
+  nom TEXT NOT NULL UNIQUE, -- Added UNIQUE here
   niveau TEXT,
   effectif INTEGER DEFAULT 35,
   cycle TEXT DEFAULT 'secondaire',
   promotion_order INTEGER,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Standardize Classes constraint name (Forces existence of unique constraint on 'nom')
+-- Standardize Classes constraint name (Forces existence of unique constraint on 'nom')
+DO $$ 
+DECLARE r RECORD;
+BEGIN 
+  -- 1. Nettoyage absolu des doublons via ctid
+  DELETE FROM public.classes a USING public.classes b WHERE a.nom = b.nom AND a.ctid < b.ctid;
+
+  -- 2. Drop all unique indexes/constraints on (nom) safely
+  FOR r IN (SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'classes' AND indexdef LIKE '%(nom)%') LOOP
+    BEGIN
+      EXECUTE 'ALTER TABLE public.classes DROP CONSTRAINT IF EXISTS ' || quote_ident(r.indexname) || ' CASCADE';
+    EXCEPTION WHEN OTHERS THEN
+      EXECUTE 'DROP INDEX IF EXISTS public.' || quote_ident(r.indexname) || ' CASCADE';
+    END;
+  END LOOP;
+  
+  -- 3. Create the clean constraint
+  ALTER TABLE public.classes ADD CONSTRAINT unique_class_nom UNIQUE(nom);
+END $$;
 
 -- STUDENTS
 CREATE TABLE IF NOT EXISTS students (
@@ -66,14 +88,34 @@ CREATE TABLE IF NOT EXISTS matieres (
   category TEXT DEFAULT 'ECRITE',
   classe_id UUID REFERENCES classes(id) ON DELETE CASCADE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(nom, classe_id)
+  UNIQUE(nom, classe_id) -- Added UNIQUE here
 );
+
+-- CLEANUP & STANDARDIZATION
+DO $$ 
+DECLARE r RECORD;
+BEGIN 
+  -- 1. Nettoyage absolu
+  DELETE FROM public.matieres a USING public.matieres b WHERE a.nom = b.nom AND a.classe_id = b.classe_id AND a.ctid < b.ctid;
+
+  -- 2. Drop all matching unique indexes/constraints safely
+  FOR r IN (SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'matieres' AND indexdef LIKE '%(nom, classe_id)%') LOOP
+    BEGIN
+      EXECUTE 'ALTER TABLE public.matieres DROP CONSTRAINT IF EXISTS ' || quote_ident(r.indexname) || ' CASCADE';
+    EXCEPTION WHEN OTHERS THEN
+      EXECUTE 'DROP INDEX IF EXISTS public.' || quote_ident(r.indexname) || ' CASCADE';
+    END;
+  END LOOP;
+
+  -- 3. Recreate
+  ALTER TABLE public.matieres ADD CONSTRAINT unique_matiere_per_classe UNIQUE(nom, classe_id);
+END $$;
 
 -- GRADES
 CREATE TABLE IF NOT EXISTS grades (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  student_id UUID REFERENCES students(id) ON DELETE CASCADE,
-  matiere_id UUID REFERENCES matieres(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  matiere_id UUID NOT NULL REFERENCES matieres(id) ON DELETE CASCADE,
   interro1 NUMERIC(4,2),
   interro2 NUMERIC(4,2),
   interro3 NUMERIC(4,2),
@@ -85,13 +127,24 @@ CREATE TABLE IF NOT EXISTS grades (
   composition NUMERIC(4,2),
   note_orale NUMERIC(4,2),
   note_pratique NUMERIC(4,2),
-  trimestre INTEGER DEFAULT 1,
-  school_year TEXT DEFAULT '2025-2026',
-  evaluation_type TEXT DEFAULT 'etape',
+  trimestre INTEGER NOT NULL DEFAULT 1,
+  school_year TEXT NOT NULL DEFAULT '2025-2026',
+  evaluation_type TEXT NOT NULL DEFAULT 'etape',
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  UNIQUE(student_id, matiere_id, trimestre, school_year, evaluation_type)
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Force Reset Grades constraint (Critical for ON CONFLICT in seed_data)
+DO $$
+BEGIN
+  ALTER TABLE grades DROP CONSTRAINT IF EXISTS unique_grade_entry;
+  -- Cleanup just in case
+  DELETE FROM grades a USING grades b 
+  WHERE a.id < b.id AND a.student_id = b.student_id AND a.matiere_id = b.matiere_id 
+  AND a.trimestre = b.trimestre AND a.school_year = b.school_year AND a.evaluation_type = b.evaluation_type;
+  
+  ALTER TABLE grades ADD CONSTRAINT unique_grade_entry UNIQUE(student_id, matiere_id, trimestre, school_year, evaluation_type);
+END $$;
 
 -- ABSENCES
 CREATE TABLE IF NOT EXISTS absences (
@@ -126,18 +179,30 @@ CREATE TABLE IF NOT EXISTS school_config (
   value TEXT NOT NULL
 );
 
-INSERT INTO school_config (key, value) VALUES 
+-- CLEANUP OLD NAMES (Fixes "school_config_key_key" errors)
+DO $$ 
+DECLARE r RECORD;
+BEGIN 
+  -- 1. Nettoyage absolu
+  DELETE FROM public.school_config a USING public.school_config b WHERE a.key = b.key AND a.ctid < b.ctid;
+
+  -- 2. Drop all matching indexes/constraints safely
+  FOR r IN (SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND tablename = 'school_config' AND indexdef LIKE '%(key)%') LOOP
+    BEGIN
+      EXECUTE 'ALTER TABLE public.school_config DROP CONSTRAINT IF EXISTS ' || quote_ident(r.indexname) || ' CASCADE';
+    EXCEPTION WHEN OTHERS THEN
+      EXECUTE 'DROP INDEX IF EXISTS public.' || quote_ident(r.indexname) || ' CASCADE';
+    END;
+  END LOOP;
+  
+  -- 3. Ensure Primary Key
+  ALTER TABLE public.school_config ADD PRIMARY KEY (key);
+END $$;
+
+INSERT INTO public.school_config (key, value) VALUES 
 ('current_trimestre', '1'),
 ('current_year', '2025-2026')
-ON CONFLICT (key) DO NOTHING;
-
--- CLEANUP REDUNDANT INDEXES (Fixes "school_config_key_key" errors)
-DO $$ 
-BEGIN 
-  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'school_config_key_key') THEN
-    ALTER TABLE school_config DROP CONSTRAINT school_config_key_key;
-  END IF;
-END $$;
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
 -- 3. SEQUENCES
 CREATE SEQUENCE IF NOT EXISTS matricule_seq START 1;
@@ -516,7 +581,8 @@ BEGIN
     COALESCE(new.raw_user_meta_data->>'prenom', ''), 
     COALESCE(new.raw_user_meta_data->>'nom', ''),
     'parent'
-  );
+  )
+  ON CONFLICT (id) DO NOTHING;
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

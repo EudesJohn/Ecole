@@ -29,7 +29,13 @@ const TeacherDashboard = () => {
   const { handleGenerateBulletin, generatingPdf } = useBulletin();
 
   const showNotif = (msg, type = 'success') => {
-    setNotification({ message: msg, type });
+    // Technical error mapping for a smoother UX
+    let friendlyMsg = msg;
+    if (msg.includes('duplicate key') || msg.includes('23505')) {
+      friendlyMsg = "Une entrée identique existe déjà pour cette sélection (Élève/Matière/Période).";
+    }
+    
+    setNotification({ message: friendlyMsg, type });
     setTimeout(() => setNotification(null), 3000);
   };
 

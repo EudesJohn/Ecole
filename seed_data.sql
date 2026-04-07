@@ -19,7 +19,7 @@ FROM (VALUES
   ('Histoire-Géo', 2),
   ('Physique-Chimie', 2)
 ) as m(nom, coeff), cla
-ON CONFLICT DO NOTHING;
+ON CONFLICT (nom, classe_id) DO NOTHING;
 
 -- 3. Insertion d'Élèves (pour la 6ème A)
 WITH cla AS (SELECT id FROM classes WHERE nom = '6ème A' LIMIT 1)
@@ -45,7 +45,7 @@ ON CONFLICT (matricule) DO NOTHING;
 WITH 
   stu AS (SELECT id FROM students WHERE nom = 'KOUNDÉ' LIMIT 1),
   mat AS (SELECT id FROM matieres WHERE nom = 'Mathématiques' LIMIT 1)
-INSERT INTO grades (student_id, matiere_id, interro1, interro2, devoir, composition, trimestre)
-SELECT stu.id, mat.id, 12, 14, 13, 11, 1
+INSERT INTO grades (student_id, matiere_id, interro1, interro2, dw, composition, trimestre, school_year, evaluation_type)
+SELECT stu.id, mat.id, 12, 14, 13, 11, 1, '2025-2026', 'etape'
 FROM stu, mat
-ON CONFLICT DO NOTHING;
+ON CONFLICT (student_id, matiere_id, trimestre, school_year, evaluation_type) DO NOTHING;
