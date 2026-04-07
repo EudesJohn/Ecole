@@ -126,14 +126,24 @@ const ParentDashboard = () => {
 
       // 6. Logic: Alerts & Moyenne
       const newAlerts = [];
+      const clsCycle = studentData.classe; // Simplified: check if name contains 6, 5, 4, 3, 2, 1, T
+      const isPrimary = !(/[654321T]/.test(clsCycle));
+
       formattedGrades.forEach(g => {
-        const moy = GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition);
+        const moy = isPrimary 
+          ? GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition)
+          : GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
+          
         if (moy < 10) newAlerts.push({ matiere: g.matiere, moyenne: moy.toFixed(1), message: `⚠️ ${g.matiere} — ${moy.toFixed(1)}/20` });
       });
       setAlerts(newAlerts);
 
       if (formattedGrades.length > 0) {
-        const moyennes = formattedGrades.map(g => GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition));
+        const moyennes = formattedGrades.map(g => {
+          return isPrimary 
+            ? GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition)
+            : GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
+        });
         const coeffs = formattedGrades.map(g => {
           const mat = (mats || []).find(m => m.id === g.matiere_id);
           return mat ? parseFloat(mat.coefficient) || 1 : 1;
@@ -185,6 +195,9 @@ const ParentDashboard = () => {
           interro3: g.interro3,
           devoir: g.devoir,
           composition: g.composition,
+          dw: g.dw,
+          d1: g.d1,
+          d2: g.d2,
           max: s.max || 0,
           min: s.min || 0
         };
@@ -427,7 +440,10 @@ const ParentDashboard = () => {
         ) : (
           <div className="space-y-4">
             {grades.map((g, i) => {
-              const moy = GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition);
+              const isPrimary = !(/[654321T]/.test(studentData.classe));
+              const moy = isPrimary 
+                ? GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition)
+                : GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
               const isLow = moy < 10;
               return (
                 <motion.div 
@@ -448,16 +464,38 @@ const ParentDashboard = () => {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-5 gap-2 mb-4">
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
                     {[
-                      ['I1', g.interro1], ['I2', g.interro2], ['I3', g.interro3], 
-                      ['DEV', g.devoir], ['COMP', g.composition]
+                      ['I1', g.interro1], ['I2', g.interro2], ['I3', g.interro3]
                     ].map(([label, val]) => (
                       <div key={label} className="text-center p-2 bg-slate-50 rounded-xl border border-slate-100/50">
                         <p className="text-[8px] text-slate-400 font-black tracking-widest mb-1">{label}</p>
                         <p className="text-[11px] font-black text-slate-700">{val || '--'}</p>
                       </div>
                     ))}
+                    {!(/[654321T]/.test(studentData.classe)) ? (
+                      <>
+                        {[
+                          ['DEV', g.devoir], ['COMP', g.composition]
+                        ].map(([label, val]) => (
+                          <div key={label} className="text-center p-2 bg-slate-50 rounded-xl border border-slate-100/50">
+                            <p className="text-[8px] text-slate-400 font-black tracking-widest mb-1">{label}</p>
+                            <p className="text-[11px] font-black text-slate-700">{val || '--'}</p>
+                          </div>
+                        ))}
+                      </>
+                    ) : (
+                      <>
+                        {[
+                          ['DW', g.dw], ['D1', g.d1], ['D2', g.d2]
+                        ].map(([label, val]) => (
+                          <div key={label} className="text-center p-2 bg-slate-50 rounded-xl border border-slate-100/50">
+                            <p className="text-[8px] text-slate-400 font-black tracking-widest mb-1">{label}</p>
+                            <p className="text-[11px] font-black text-slate-700">{val || '--'}</p>
+                          </div>
+                        ))}
+                      </>
+                    )}
                   </div>
 
                   <div className="relative h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">

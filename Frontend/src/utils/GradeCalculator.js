@@ -1,6 +1,10 @@
 const GradeCalculator = {
-  // Calculate subject average from 5 potential notes (3 interros, 1 devoir, 1 composition)
-  calculateSubjectAverage: (interro1, interro2, interro3, devoir, composition) => {
+  // Calculate subject average
+  // Primary: depends on compositions
+  // Secondary: (((Avg(Interros) + DW) / 2) + D1 + D2) / 3
+  calculateSubjectAverage: (interro1, interro2, interro3, dw, d1, d2, isPrimary = false) => {
+    if (isPrimary) return 0; // Handled by calculatePrimaryAverage
+
     const interros = [
       parseFloat(interro1),
       parseFloat(interro2),
@@ -11,14 +15,14 @@ const GradeCalculator = {
       ? interros.reduce((sum, v) => sum + v, 0) / interros.length 
       : 0;
 
-    const notes = [
-      moyInterro,
-      parseFloat(devoir) || 0,
-      parseFloat(composition) || 0,
-    ];
+    const valDw = parseFloat(dw) || 0;
+    const valD1 = parseFloat(d1) || 0;
+    const valD2 = parseFloat(d2) || 0;
 
-    // Simple average of 3 components: (MoyInterro + Devoir + Compo) / 3
-    const total = notes[0] + notes[1] + notes[2];
+    // Formula: (((MoyInterro + DW) / 2) + D1 + D2) / 3
+    const interroPart = (moyInterro + valDw) / 2;
+    const total = interroPart + valD1 + valD2;
+    
     return Math.round((total / 3) * 100) / 100;
   },
 
@@ -31,12 +35,14 @@ const GradeCalculator = {
     return Math.round((sum / validComps.length) * 100) / 100;
   },
 
-  // Calculate Annual Average: (T1 + T2 + (T3 * 2)) / 4
+  // Calculate Annual Average: (T1 + T2 + T3) / 3
   calculateAnnualAverage: (t1, t2, t3) => {
     const v1 = parseFloat(t1) || 0;
     const v2 = parseFloat(t2) || 0;
     const v3 = parseFloat(t3) || 0;
-    return Math.round(((v1 + v2 + (v3 * 2)) / 4) * 100) / 100;
+
+    // Simple average for secondary
+    return Math.round(((v1 + v2 + v3) / 3) * 100) / 100;
   },
 
   // Calculate weighted overall average (moyenne pondérée)

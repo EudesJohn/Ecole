@@ -630,11 +630,22 @@ const AdminDashboard = () => {
         if (studentGrades.length === 0) return;
 
         // Calculer l'élève (moyenne des moyennes de matières)
+        const isPrimary = cls.cycle === 'primaire' || cls.cycle === 'maternelle';
+        
         const moyennesMatieres = studentGrades.map(g => {
-          // Moyenne simple (I1+I2+I3)/n + D + C / 3
-          const interros = [g.interro1, g.interro2, g.interro3].filter(v => v !== null && v !== undefined);
-          const avgInterro = interros.length > 0 ? interros.reduce((a, b) => a + b, 0) / interros.length : 0;
-          return (avgInterro + (g.devoir || 0) + (g.composition || 0)) / 3.0;
+          if (isPrimary) {
+            // Primaire : Moyenne des compositions comp1 à comp6
+            const comps = [g.comp1, g.comp2, g.comp3, g.comp4, g.comp5, g.comp6].filter(v => v !== null && v !== undefined);
+            return comps.length > 0 ? comps.reduce((a, b) => a + b, 0) / comps.length : 0;
+          } else {
+            // Secondaire : (((AvgInterros + DW)/2) + D1 + D2) / 3
+            const interros = [g.interro1, g.interro2, g.interro3].filter(v => v !== null && v !== undefined);
+            const avgInterro = interros.length > 0 ? interros.reduce((a, b) => a + b, 0) / interros.length : 0;
+            const dw = g.dw || 0;
+            const d1 = g.d1 || 0;
+            const d2 = g.d2 || 0;
+            return (((avgInterro + dw) / 2.0) + d1 + d2) / 3.0;
+          }
         }).filter(m => !isNaN(m));
 
         if (moyennesMatieres.length === 0) return;
@@ -1189,25 +1200,9 @@ const AdminDashboard = () => {
           )}
         </AnimatePresence>
 
-        <div className="p-6 md:p-8 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900">Administration</h1>
-            <p className="text-gray-400 text-sm mt-1">Gerez votre établissement en toute sécurité (Connecté)</p>
-          </motion.div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSafeMode(!safeMode)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${safeMode
-                ? 'bg-amber-100 border-amber-300 text-amber-700 font-bold'
-                : 'bg-green-100 border-green-300 text-green-700'
-                }`}
-            >
-              {safeMode ? '⚠️ Mode Manuel Actif' : '⚡ Mode Temps Réel'}
-            </button>
-            <Button variant="ghost" icon={RefreshCw} size="sm" onClick={handleRepairConnection}>
-              Réparer la connexion
-            </Button>
-          </div>
+        <div className="p-6 md:p-8 pb-4">
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-gray-900">Administration</h1>
+          <p className="text-gray-400 text-sm mt-1">Gérez votre établissement en toute simplicité</p>
         </div>
 
         {/* Content */}

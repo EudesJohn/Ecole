@@ -22,6 +22,8 @@ export const AuthProvider = ({ children }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         setUser(session.user);
+        const metadataRole = session.user.user_metadata?.role || 'parent';
+        setRole(metadataRole);
         fetchProfile(session.user.id, session.user.email, session.user);
       } else {
         setLoading(false);
@@ -32,6 +34,8 @@ export const AuthProvider = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setUser(session.user);
+        const metadataRole = session.user.user_metadata?.role || 'parent';
+        setRole(metadataRole);
         fetchProfile(session.user.id, session.user.email, session.user);
       } else {
         setUser(null);

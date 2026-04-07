@@ -241,9 +241,13 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
   const safeGradesBySubject = Array.isArray(gradesBySubject) ? gradesBySubject : [];
   const safeMatieres = Array.isArray(matieres) ? matieres : [];
 
+  const isPrimary = !(/[654321T]/.test(student.classe || ''));
+  
   const rows = safeGradesBySubject.map(g => {
     const coeff = (safeMatieres.find(m => m.nom === g.matiere) || {}).coefficient || 1;
-    const moy = GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition);
+    const moy = isPrimary 
+      ? GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition)
+      : GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
     const points = moy * coeff;
     const appreciation = GradeCalculator.getAppreciation(moy);
     return { ...g, coeff, moyenne: moy, points, appreciation };
@@ -309,8 +313,18 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
             <Text style={[styles.tableHeaderCell, { width: colWidths.interro1 }]}>I1</Text>
             <Text style={[styles.tableHeaderCell, { width: colWidths.interro2 }]}>I2</Text>
             <Text style={[styles.tableHeaderCell, { width: colWidths.interro3 }]}>I3</Text>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.devoir }]}>Devoir</Text>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.composition }]}>Compo</Text>
+            {isPrimary ? (
+              <>
+                <Text style={[styles.tableHeaderCell, { width: colWidths.devoir }]}>Devoir</Text>
+                <Text style={[styles.tableHeaderCell, { width: colWidths.composition }]}>Compo</Text>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.tableHeaderCell, { width: colWidths.devoir, fontSize: 6 }]}>DW</Text>
+                <Text style={[styles.tableHeaderCell, { width: colWidths.composition, fontSize: 6 }]}>D1</Text>
+                <Text style={[styles.tableHeaderCell, { width: colWidths.composition, fontSize: 6, marginLeft: 2 }]}>D2</Text>
+              </>
+            )}
             <Text style={[styles.tableHeaderCell, { width: colWidths.coeff }]}>Coef</Text>
             <Text style={[styles.tableHeaderCell, { width: colWidths.moyenne }]}>Moy</Text>
             <Text style={[styles.tableHeaderCell, { width: colWidths.forte, color: '#16a34a' }]}>Forte</Text>
@@ -324,8 +338,18 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
               <Text style={[styles.tableCell, { width: colWidths.interro1 }]}>{row.interro1 || '—'}</Text>
               <Text style={[styles.tableCell, { width: colWidths.interro2 }]}>{row.interro2 || '—'}</Text>
               <Text style={[styles.tableCell, { width: colWidths.interro3 }]}>{row.interro3 || '—'}</Text>
-              <Text style={[styles.tableCell, { width: colWidths.devoir }]}>{row.devoir || '—'}</Text>
-              <Text style={[styles.tableCell, { width: colWidths.composition }]}>{row.composition || '—'}</Text>
+              {isPrimary ? (
+                <>
+                  <Text style={[styles.tableCell, { width: colWidths.devoir }]}>{row.devoir || '—'}</Text>
+                  <Text style={[styles.tableCell, { width: colWidths.composition }]}>{row.composition || '—'}</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={[styles.tableCell, { width: colWidths.devoir }]}>{row.dw || '—'}</Text>
+                  <Text style={[styles.tableCell, { width: colWidths.composition }]}>{row.d1 || '—'}</Text>
+                  <Text style={[styles.tableCell, { width: colWidths.composition, marginLeft: 2 }]}>{row.d2 || '—'}</Text>
+                </>
+              )}
               <Text style={[styles.tableCellBold, { width: colWidths.coeff, color: '#1e3a8a' }]}>{row.coeff}</Text>
               <Text style={[styles.tableCellBold, { width: colWidths.moyenne, color: row.moyenne < 10 ? '#ef4444' : '#1e3a8a' }]}>
                 {row.moyenne.toFixed(2)}
@@ -350,7 +374,7 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Rang</Text>
-            <Text style={styles.summaryValue}>{classStats.rang}{classStats.rang === 1 ? 'er' : 'ème'}</Text>
+            <Text style={styles.summaryValue}>{classStats.rang}{classStats.rang == 1 ? 'er' : 'ème'}</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Plus forte moy.</Text>
