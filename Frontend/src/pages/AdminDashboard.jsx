@@ -250,6 +250,15 @@ const AdminDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    setStats({
+      students: students.length,
+      teachers: teachers.length,
+      classes: classes.length,
+      matieres: matieres.length
+    });
+  }, [students, teachers, classes, matieres]);
+
 
 
   // ===== Stats calculés automatiquement quand les données changent =====
