@@ -17,10 +17,26 @@ const GradeCalculator = {
       parseFloat(composition) || 0,
     ];
 
-    // Composition counts double, Devoir counts simple, MoyInterro counts simple
-    // Total weight = 1 (Interros) + 1 (Devoir) + 2 (Composition) = 4
-    const weighted = notes[0] + notes[1] + (notes[2] * 2);
-    return Math.round((weighted / 4) * 100) / 100;
+    // Simple average of 3 components: (MoyInterro + Devoir + Compo) / 3
+    const total = notes[0] + notes[1] + notes[2];
+    return Math.round((total / 3) * 100) / 100;
+  },
+
+  // Calculate Primary average (Maternel to CM2)
+  // Simple average of n compositions
+  calculatePrimaryAverage: (comps) => {
+    const validComps = (comps || []).map(v => parseFloat(v)).filter(v => !isNaN(v));
+    if (validComps.length === 0) return 0;
+    const sum = validComps.reduce((acc, v) => acc + v, 0);
+    return Math.round((sum / validComps.length) * 100) / 100;
+  },
+
+  // Calculate Annual Average: (T1 + T2 + (T3 * 2)) / 4
+  calculateAnnualAverage: (t1, t2, t3) => {
+    const v1 = parseFloat(t1) || 0;
+    const v2 = parseFloat(t2) || 0;
+    const v3 = parseFloat(t3) || 0;
+    return Math.round(((v1 + v2 + (v3 * 2)) / 4) * 100) / 100;
   },
 
   // Calculate weighted overall average (moyenne pondérée)

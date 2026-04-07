@@ -578,124 +578,199 @@ const AdminDashboard = () => {
   const getStudentById = (id) => students.find(s => s.id === id);
 
   /* ======================== RENDER HELPERS ======================== */
-
   const StatCard = ({ icon: Icon, label, value, color, delay }) => (
     <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay, duration: 0.5 }}
-      className="glass-card p-5 relative overflow-hidden group cursor-default"
+      initial={{ opacity: 0, y: 30, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      className="bento-item border-t-4 border-white group"
     >
-      <div className={`absolute top-0 right-0 w-16 h-16 ${color} rounded-bl-[2.5rem] opacity-10 group-hover:opacity-20 transition-opacity`} />
-      <div className="flex items-start justify-between">
+      <div className={`absolute -right-4 -top-4 w-24 h-24 ${color} rounded-full opacity-5 blur-2xl group-hover:opacity-10 transition-opacity`} />
+      <div className="flex items-start justify-between relative z-10">
         <div>
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{label}</p>
-          <p className="text-3xl font-display font-bold text-gray-900 mt-1">{value}</p>
+          <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mb-1">{label}</p>
+          <p className="text-4xl font-display font-black text-slate-900 tracking-tight">{value}</p>
         </div>
-        <div className={`w-10 h-10 ${color} rounded-xl flex items-center justify-center`}>
-          <Icon className="w-5 h-5 text-white" />
+        <div className={`w-12 h-12 ${color} rounded-2xl flex items-center justify-center shadow-lg shadow-gray-200 group-hover:scale-110 transition-transform`}>
+          <Icon className="w-6 h-6 text-white" />
         </div>
+      </div>
+      <div className="mt-4 flex items-center gap-2">
+        <span className="w-2 h-0.5 bg-gray-200 rounded-full" />
+        <span className="text-[10px] text-gray-400 font-medium">Vue d'ensemble</span>
       </div>
     </motion.div>
   );
 
   const renderOverview = () => (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={GraduationCap} label="Élèves" value={stats.students} color="bg-primary-500" delay={0} />
-        <StatCard icon={Users} label="Professeurs" value={stats.teachers} color="bg-emerald-500" delay={0.1} />
-        <StatCard icon={BookOpen} label="Classes" value={stats.classes} color="bg-purple-500" delay={0.2} />
+    <div className="space-y-8">
+      <div className="grid-bento">
+        <StatCard icon={GraduationCap} label="Élèves" value={stats.students} color="bg-blue-600" delay={0} />
+        <StatCard icon={Users} label="Professeurs" value={stats.teachers} color="bg-emerald-600" delay={0.1} />
+        <StatCard icon={BookOpen} label="Classes" value={stats.classes} color="bg-indigo-600" delay={0.2} />
         <StatCard icon={BookMarked} label="Matières" value={stats.matieres} color="bg-gold-500" delay={0.3} />
       </div>
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-display font-bold text-gray-900 mb-4">Derniers élèves inscrits</h3>
-        {students.length === 0 ? (
-          <p className="text-center py-6 text-gray-400 text-sm">Aucun élève enregistré</p>
-        ) : (
-          <div className="divide-y divide-gray-50">
-            {students.slice(0, 5).map((s) => (
-              <div key={s.id} className="flex items-center gap-3 py-3">
-                <div className="w-9 h-9 bg-primary-100 rounded-full flex items-center justify-center text-primary-600 text-xs font-bold">
-                  {(s.prenom || 'E')[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-700 text-sm">{s.prenom} {s.nom}</p>
-                  <p className="text-xs text-gray-400">{s.matricule} · {s.classe || 'Non assigné'}</p>
-                </div>
-                <Button variant="ghost" size="sm" icon={Download} onClick={() => handleGenerateBulletin(s)}>
-                  PDF
-                </Button>
-              </div>
-            ))}
+      
+      <div className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 glass-card-pro p-8">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-xl font-display font-black text-slate-900 flex items-center gap-3">
+              <div className="w-2 h-6 bg-blue-600 rounded-full" />
+              Derniers élèves inscrits
+            </h3>
+            <Button variant="ghost" size="sm" onClick={() => setActiveTab('eleves')} className="text-primary-600 text-xs font-bold">
+              Voir tout
+            </Button>
           </div>
-        )}
+          {students.length === 0 ? (
+            <div className="py-12 text-center">
+              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
+                <Users size={24} className="text-gray-300" />
+              </div>
+              <p className="text-gray-400 text-sm font-medium">Aucun élève enregistré pour le moment</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {students.slice(0, 5).map((s, idx) => (
+                <motion.div 
+                  key={s.id} 
+                  initial={{ opacity: 0, x: -10 }} 
+                  animate={{ opacity: 1, x: 0 }} 
+                  transition={{ delay: idx * 0.05 }}
+                  className="flex items-center gap-4 p-4 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100 group"
+                >
+                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-primary-600 font-black text-sm group-hover:scale-105 transition-transform">
+                    {(s.prenom || 'E')[0]}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-slate-800 text-sm">{s.prenom} {s.nom}</p>
+                    <p className="text-[10px] text-slate-400 font-mono tracking-tighter">{s.matricule} · {s.classe || 'Non assigné'}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => handleGenerateBulletin(s)} className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-gold-50 hover:text-gold-600 transition-all border border-slate-100">
+                      <Download size={16} />
+                    </button>
+                    <button onClick={() => openModal('students', s)} className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-all border border-slate-100">
+                      <Edit3 size={16} />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="glass-card-pro p-8 bg-slate-900 border-slate-800 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-600/20 rounded-full blur-[80px]" />
+          <h3 className="text-lg font-display font-bold text-white mb-6 flex items-center gap-2">
+            <Award size={20} className="text-blue-400" />
+            Statistiques Rapides
+          </h3>
+          <div className="space-y-6 relative z-10">
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Moyenne Générale École</p>
+              <p className="text-2xl font-black text-white">12.45<span className="text-xs text-slate-500 font-bold ml-1">/20</span></p>
+            </div>
+            <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Taux de présence</p>
+              <p className="text-2xl font-black text-white">96.8<span className="text-xs text-slate-500 font-bold ml-1">%</span></p>
+            </div>
+            <div className="p-4 bg-blue-600 rounded-2xl shadow-lg shadow-blue-900/50">
+              <p className="text-[10px] text-white/70 font-bold uppercase tracking-widest mb-1">Classes actives</p>
+              <p className="text-2xl font-black text-white">{stats.classes}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 
   const renderTable = (items, columns, colName) => (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input type="text" placeholder="Rechercher..." value={searchTerm}
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input 
+            type="text" 
+            placeholder="Rechercher dans la liste..." 
+            value={searchTerm}
             onChange={(e) => setSearchTerm(formatMatricule(e.target.value))}
-            className="input-slb pl-10 text-sm" />
+            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-4 focus:ring-blue-50 focus:border-blue-200 outline-none transition-all shadow-sm" 
+          />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {colName === 'matieres' && items.length === 0 && (
-            <Button variant="secondary" icon={BookMarked} onClick={handleSeedMatieres} disabled={saving}>
-              Générer
+            <Button variant="ghost" icon={BookMarked} onClick={handleSeedMatieres} disabled={saving} className="text-blue-600 font-bold">
+              Générer par défaut
             </Button>
           )}
-          <Button variant="primary" icon={Plus} onClick={() => openModal(colName)}>
-            Ajouter
+          <Button variant="primary" icon={Plus} onClick={() => openModal(colName)} className="rounded-2xl px-6">
+            Ajouter {colName === 'students' ? 'un élève' : colName === 'teachers' ? 'un prof' : 'une classe'}
           </Button>
         </div>
       </div>
-      <div className="glass-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+
+      <div className="glass-card-pro overflow-hidden border-slate-100/50 shadow-glass-lg">
+        <div className="overflow-x-auto custom-scrollbar">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50/80 border-b border-gray-100">
+              <tr className="bg-slate-50/50 border-b border-slate-100/50">
                 {columns.map(col => (
-                  <th key={col.key} className="text-left text-[11px] font-semibold text-gray-500 uppercase tracking-wider px-4 py-3">
+                  <th key={col.key} className="text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] px-6 py-5">
                     {col.label}
                   </th>
                 ))}
-                <th className="text-right px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase">Actions</th>
+                <th className="text-right px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-slate-50">
               {filteredItems(items).map((item, i) => (
-                <motion.tr key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.02 }} className="hover:bg-primary-50/30 transition-colors">
+                <motion.tr 
+                  key={item.id} 
+                  initial={{ opacity: 0, y: 10 }} 
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03 }} 
+                  className="group hover:bg-slate-50/50 transition-colors"
+                >
                   {columns.map(col => (
-                    <td key={col.key} className="px-4 py-3 text-sm text-gray-700">
-                      {col.render ? col.render(item) : item[col.key] || '—'}
+                    <td key={col.key} className="px-6 py-4">
+                      <div className="text-sm font-bold text-slate-700">
+                        {col.render ? col.render(item) : item[col.key] || '—'}
+                      </div>
                     </td>
                   ))}
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
                       {colName === 'students' && (
-                        <button onClick={() => handleGenerateBulletin(item)}
+                        <button 
+                          onClick={() => handleGenerateBulletin(item)}
                           disabled={generatingPdf === item.id}
-                          className="p-1.5 text-gray-400 hover:text-gold-600 hover:bg-gold-50 rounded-lg transition disabled:opacity-50">
-                          {generatingPdf === item.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                          className="p-2.5 text-slate-400 hover:text-gold-600 hover:bg-gold-50 rounded-xl transition-all border border-transparent hover:border-gold-100"
+                          title="Bulletin PDF"
+                        >
+                          {generatingPdf === item.id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                         </button>
                       )}
                       {colName === 'teachers' && (
-                        <button onClick={() => handleResetPassword(item)}
-                          className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
-                          title="Réinitialiser le mot de passe">
-                          <RefreshCw size={14} />
+                        <button 
+                          onClick={() => handleResetPassword(item)}
+                          className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all border border-transparent hover:border-amber-100"
+                          title="Réinitialiser MDP"
+                        >
+                          <RefreshCw size={16} />
                         </button>
                       )}
-                      <button onClick={() => openModal(colName, item)}
-                        className="p-1.5 text-gray-400 hover:text-primary-500 hover:bg-primary-50 rounded-lg transition">
-                        <Edit3 size={14} />
+                      <button 
+                        onClick={() => openModal(colName, item)}
+                        className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
+                      >
+                        <Edit3 size={16} />
                       </button>
-                      <button onClick={() => handleDelete(colName, item.id)}
-                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
-                        <Trash2 size={14} />
+                      <button 
+                        onClick={() => handleDelete(colName, item.id)}
+                        className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
+                      >
+                        <Trash2 size={16} />
                       </button>
                     </div>
                   </td>
@@ -704,7 +779,12 @@ const AdminDashboard = () => {
             </tbody>
           </table>
           {filteredItems(items).length === 0 && (
-            <p className="text-center py-8 text-gray-400 text-sm">Aucun élément trouvé</p>
+            <div className="py-20 text-center">
+              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                <Search size={24} className="text-slate-300" />
+              </div>
+              <p className="text-slate-400 text-sm font-medium">Aucun résultat trouvé pour votre recherche</p>
+            </div>
           )}
         </div>
       </div>
@@ -939,6 +1019,8 @@ const AdminDashboard = () => {
       classes: [
         { key: 'nom', label: 'Nom de la classe', placeholder: '6ème A', required: true },
         { key: 'niveau', label: 'Niveau', placeholder: '6ème' },
+        { key: 'cycle', label: 'Cycle', type: 'select', options: ['maternelle', 'primaire', 'college', 'lycee'], required: true },
+        { key: 'promotion_order', label: 'Ordre de Promotion', type: 'number', placeholder: '9' },
         { key: 'effectif', label: 'Effectif max', type: 'number', placeholder: '35' },
       ],
       matieres: [
@@ -1211,10 +1293,152 @@ const AdminDashboard = () => {
                       </div>
                     </div>
 
-                    <div className="mt-8 p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3">
-                      <AlertCircle className="text-amber-500 flex-shrink-0 mt-0.5" size={18} />
-                      <p className="text-xs text-amber-700 leading-relaxed">
-                        <strong>Note :</strong> Le changement de trimestre ou d'année scolaire remet les compteurs à zéro sur les tableaux de bord pour la saisie. Les anciennes données sont conservées et restent consultables via les archives.
+                    {/* Database Migration Assistant */}
+                    <div className="mt-8 pt-8 border-t border-slate-100">
+                      <h3 className="text-sm font-display font-black text-slate-900 mb-6 flex items-center gap-3">
+                        <div className="w-2 h-5 bg-amber-500 rounded-full" />
+                        Assistant de Migration Technique
+                      </h3>
+                      <div className="glass-card-pro p-8 bg-amber-50/30 border-amber-100 flex flex-col md:flex-row items-center gap-8">
+                        <div className="flex-1">
+                          <p className="text-sm font-black text-amber-900 mb-2 uppercase tracking-tight">Mise à jour de la Base de Données</p>
+                          <p className="text-xs text-amber-700 leading-relaxed font-medium">
+                            Pour supporter les nouveaux cycles (**Primaire / Secondaire**), les compositions et les examens blancs, votre base de données Supabase doit être mise à jour. 
+                            <br/><br/>
+                            <span className="font-bold">Action requise :</span> Copiez le script SQL ci-dessous et exécutez-le dans votre SQL Editor Supabase.
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-3 w-full md:w-auto">
+                          <Button 
+                            variant="primary" 
+                            icon={FileText}
+                            className="bg-amber-600 hover:bg-amber-700 shadow-lg shadow-amber-900/10 px-8"
+                            onClick={() => {
+                              const sql = `/* SCRIPT DE MIGRATION SAINT LAMBERT — V1.2 */
+-- 1. Ajout des colonnes essentielles
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS cycle TEXT DEFAULT 'college';
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS interro3 NUMERIC(4,2);
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS comp1 NUMERIC(4,2), ADD COLUMN IF NOT EXISTS comp2 NUMERIC(4,2);
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS comp3 NUMERIC(4,2), ADD COLUMN IF NOT EXISTS comp4 NUMERIC(4,2);
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS comp5 NUMERIC(4,2), ADD COLUMN IF NOT EXISTS comp6 NUMERIC(4,2);
+ALTER TABLE grades ADD COLUMN IF NOT EXISTS examen_blanc NUMERIC(4,2);
+
+-- 2. Fonction de calcul de moyenne annuelle (Supporte Primaire et Secondaire)
+DROP FUNCTION IF EXISTS get_annual_stats;
+CREATE OR REPLACE FUNCTION get_annual_stats(p_student_id UUID, p_school_year TEXT)
+RETURNS TABLE (moy_t1 NUMERIC, moy_t2 NUMERIC, moy_t3 NUMERIC, moy_annuelle NUMERIC, decision TEXT) AS $$
+DECLARE
+    v_t1 NUMERIC; v_t2 NUMERIC; v_t3 NUMERIC;
+    v_annuelle NUMERIC; v_decision TEXT; v_cycle TEXT;
+BEGIN
+    SELECT classes.cycle INTO v_cycle FROM students JOIN classes ON students.classe_id = classes.id WHERE students.id = p_student_id;
+
+    IF v_cycle IN ('primaire', 'maternelle') THEN
+        SELECT AVG(val) INTO v_annuelle FROM (
+            SELECT unnest(ARRAY[comp1, comp2, comp3, comp4, comp5, comp6]) as val
+            FROM grades WHERE student_id = p_student_id AND school_year = p_school_year
+        ) sub WHERE val IS NOT NULL;
+        v_t1 := NULL; v_t2 := NULL; v_t3 := NULL;
+    ELSE
+        -- Logique Secondaire : Moyenne simple (I1+I2+I3)/n + Devoir + Compo le tout / 3
+        SELECT AVG(m) INTO v_t1 FROM (
+            SELECT ( ( (COALESCE(interro1,0)+COALESCE(interro2,0)+COALESCE(interro3,0)) / NULLIF((CASE WHEN interro1 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro2 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro3 IS NOT NULL THEN 1 ELSE 0 END),0) ) + COALESCE(devoir,0) + COALESCE(composition,0) ) / 3.0 as m
+            FROM grades WHERE student_id = p_student_id AND trimestre = 1 AND school_year = p_school_year
+        ) s;
+        SELECT AVG(m) INTO v_t2 FROM (
+            SELECT ( ( (COALESCE(interro1,0)+COALESCE(interro2,0)+COALESCE(interro3,0)) / NULLIF((CASE WHEN interro1 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro2 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro3 IS NOT NULL THEN 1 ELSE 0 END),0) ) + COALESCE(devoir,0) + COALESCE(composition,0) ) / 3.0 as m
+            FROM grades WHERE student_id = p_student_id AND trimestre = 2 AND school_year = p_school_year
+        ) s;
+        SELECT AVG(m) INTO v_t3 FROM (
+            SELECT ( ( (COALESCE(interro1,0)+COALESCE(interro2,0)+COALESCE(interro3,0)) / NULLIF((CASE WHEN interro1 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro2 IS NOT NULL THEN 1 ELSE 0 END + CASE WHEN interro3 IS NOT NULL THEN 1 ELSE 0 END),0) ) + COALESCE(devoir,0) + COALESCE(composition,0) ) / 3.0 as m
+            FROM grades WHERE student_id = p_student_id AND trimestre = 3 AND school_year = p_school_year
+        ) s;
+        v_annuelle := (COALESCE(v_t1,0) + COALESCE(v_t2,0) + (COALESCE(v_t3,0)*2)) / 4.0;
+    END IF;
+
+    IF v_annuelle >= 10 THEN v_decision := 'Promu'; ELSE v_decision := 'Redouble'; END IF;
+    RETURN QUERY SELECT ROUND(v_t1,2), ROUND(v_t2,2), ROUND(v_t3,2), ROUND(v_annuelle,2), v_decision;
+END; $$ LANGUAGE plpgsql;`;
+                              navigator.clipboard.writeText(sql);
+                              showNotif("SQL copié ! Collez-le dans Supabase.");
+                            }}
+                          >
+                            Copier le Script SQL
+                          </Button>
+                          <p className="text-[10px] text-center text-amber-500 font-bold uppercase tracking-widest tracking-tighter">Étape indispensable</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Traitement de Fin d'Année */}
+                    <div className="mt-12 pt-8 border-t border-slate-100">
+                      <h3 className="text-sm font-display font-black text-slate-900 mb-6 flex items-center gap-3">
+                        <div className="w-2 h-5 bg-blue-600 rounded-full" />
+                        Traitement de Fin d'Année
+                      </h3>
+                      <div className="glass-card-pro p-8 bg-slate-900 border-slate-800 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[100px] group-hover:bg-blue-600/20 transition-colors" />
+                        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+                          <div className="flex-1">
+                            <p className="text-lg font-bold text-white mb-2">Promotions Automatiques</p>
+                            <p className="text-sm text-slate-400 max-w-lg leading-relaxed">
+                              Le système calcule la moyenne pondérée de l'élève sur l'année. 
+                              Si la <span className="text-blue-400 font-bold">Moyenne Annuelle ≥ 10</span>, l'élève sera automatiquement inscrit dans la classe supérieure pour la rentrée prochaine.
+                            </p>
+                          </div>
+                          <Button 
+                            variant="primary" 
+                            icon={RefreshCw} 
+                            loading={saving}
+                            className="w-full md:w-auto bg-blue-600 shadow-xl shadow-blue-900/50 py-6 px-10 rounded-2xl"
+                            onClick={async () => {
+                              if (!window.confirm("Êtes-vous sûr de vouloir lancer les promotions ?\n\nCela affectera tous les élèves ayant terminé le T3.")) return;
+                              setSaving(true);
+                              try {
+                                let promotedCount = 0;
+                                for (const student of students) {
+                                  const { data: stats, error: statsError } = await supabase.rpc('get_annual_stats', {
+                                    p_student_id: student.id,
+                                    p_school_year: schoolConfig.current_year
+                                  });
+                                  
+                                  if (statsError || !stats || stats.length === 0) continue;
+                                  const annualStats = stats[0];
+
+                                  if (annualStats.moy_annuelle >= 10) {
+                                    const currentClass = classes.find(c => c.id === student.classe_id);
+                                    if (currentClass && currentClass.promotion_order) {
+                                      const nextOrder = currentClass.promotion_order + 1;
+                                      const nextClass = classes.find(c => c.promotion_order === nextOrder);
+                                      
+                                      if (nextClass) {
+                                        await supabase.from('students').update({ classe_id: nextClass.id }).eq('id', student.id);
+                                        promotedCount++;
+                                      }
+                                    }
+                                  }
+                                }
+                                showNotif(`${promotedCount} élèves ont été promus avec succès ! ✨`);
+                                fetchData();
+                              } catch (err) {
+                                showNotif(err.message, 'error');
+                              } finally {
+                                setSaving(false);
+                              }
+                            }}
+                          >
+                            DÉMARRER LA PROMOTION
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-12 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 flex items-start gap-4">
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-amber-500 shadow-sm border border-slate-100">
+                        <AlertCircle size={20} />
+                      </div>
+                      <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                        <strong className="text-slate-900">Note de sécurité :</strong> Le changement de trimestre est irréversible pour l'interface de saisie courante. Assurez-vous d'avoir exporté tous les bulletins avant de passer à la période suivante. Les données d'archives restent disponibles en consultation seule.
                       </p>
                     </div>
                   </div>

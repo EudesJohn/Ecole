@@ -244,108 +244,142 @@ const ParentDashboard = () => {
   const totalPresent = absences.filter(a => a.status === 'present').length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-primary-50/20 pb-24">
+    <div className="min-h-screen bg-[#fcfdfe] pb-24">
       {/* Header */}
-      <div className="bg-royal-gradient p-6 pb-24 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-10 right-10 w-40 h-40 border border-white/30 rounded-full" />
-          <div className="absolute bottom-0 left-10 w-60 h-60 border border-white/20 rounded-full" />
+      <div className="bg-royal-gradient p-8 pb-32 relative overflow-hidden rounded-b-[3rem] shadow-2xl">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-[-10%] right-[-10%] w-64 h-64 border-[0.5px] border-white/40 rounded-full" />
+          <div className="absolute bottom-[-20%] left-[-10%] w-96 h-96 border-[0.5px] border-white/20 rounded-full" />
         </div>
-        <div className="relative z-10 flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-gold-300" />
+        <div className="relative z-10 flex items-center justify-between mb-8">
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20 shadow-inner">
+              <GraduationCap className="w-6 h-6 text-gold-300" />
             </div>
-            <span className="text-white/90 font-display font-bold">Saint Lambert</span>
-          </div>
-          <button onClick={logout} className="w-9 h-9 bg-white/10 rounded-xl flex items-center justify-center text-white/70 hover:bg-white/20 transition">
-            <LogOut size={18} />
+            <div>
+              <span className="text-white/60 text-[10px] uppercase tracking-widest font-bold">Portail Parent</span>
+              <h2 className="text-white font-display font-bold leading-none">École Saint Lambert</h2>
+            </div>
+          </motion.div>
+          <button onClick={logout} className="w-11 h-11 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white/70 hover:bg-white/20 transition-all border border-white/10">
+            <LogOut size={20} />
           </button>
         </div>
         <div className="relative z-10">
-          <p className="text-primary-200 text-sm">Bienvenue</p>
-          <h1 className="text-2xl font-display font-bold text-white">{studentData.prenom} {studentData.nom}</h1>
-          <p className="text-primary-200 text-xs mt-1 font-mono">{studentData.matricule} · {studentData.classe}</p>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <p className="text-blue-200/80 text-sm font-medium">Tableau de bord de</p>
+            <h1 className="text-3xl md:text-4xl font-display font-black text-white tracking-tight">{studentData.prenom} {studentData.nom}</h1>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="px-2 py-0.5 bg-gold-400/20 text-gold-300 rounded-md text-[10px] font-bold border border-gold-400/30 uppercase tracking-wider">{studentData.classe}</span>
+              <span className="text-blue-200/40 font-mono text-[10px]">{studentData.matricule}</span>
+            </div>
+          </motion.div>
         </div>
       </div>
 
-      {/* Trimester Selector (Archive) */}
-      <div className="px-4 -mt-12 mb-6 relative z-20">
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-1 shadow-xl flex gap-1 border border-white">
+      {/* Trimester Selector (Floating) */}
+      <div className="px-6 -mt-20 mb-8 relative z-30">
+        <div className="glass-card-pro p-1.5 flex gap-1.5">
           {['1', '2', '3'].map((t) => (
             <button
               key={t}
               onClick={() => setSelectedTrimestre(t)}
-              className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
+              className={`flex-1 py-4 rounded-[1.5rem] text-xs font-black transition-all duration-500 flex items-center justify-center gap-2 ${
                 selectedTrimestre === t
-                  ? 'bg-primary-600 text-white shadow-lg shadow-primary-200'
-                  : 'text-gray-500 hover:bg-gray-50'
+                  ? 'bg-royal-gradient text-white shadow-xl shadow-blue-900/20 scale-[1.02]'
+                  : 'text-gray-400 hover:bg-gray-50'
               }`}
             >
-              Tri. {t}
+              Trimestre {t}
               {schoolConfig.current_trimestre === t && (
-                <span className="w-1.5 h-1.5 bg-gold-400 rounded-full animate-pulse" />
+                <span className="w-2 h-2 bg-gold-400 rounded-full animate-pulse shadow-[0_0_10px_#fbbf24]" />
               )}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="px-4 mt-6 relative z-10 mb-6">
-        <div className="grid grid-cols-2 gap-3 mb-3">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl p-4 shadow-glass text-center">
-            <p className="text-2xl font-display font-bold text-primary-500">{moyenneGenerale || '—'}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Moyenne</p>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-            className="bg-white rounded-2xl p-4 shadow-glass text-center border-l-4 border-gold-400">
-            <p className="text-2xl font-display font-bold text-gold-500">{stats.rang || '—'}/{stats.effectif || '—'}</p>
-            <p className="text-xs text-gray-500 mt-0.5">Rang du Trimestre</p>
-          </motion.div>
-        </div>
+      {/* Stats Bento Grid */}
+      <div className="px-6 mb-8 grid grid-cols-2 gap-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }} 
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="bento-item border-l-4 border-blue-600 bg-white shadow-glass-pro"
+        >
+          <div className="flex items-start justify-between">
+            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+              <Award className="text-blue-600" size={16} />
+            </div>
+            <span className="text-[10px] font-bold text-blue-600 uppercase">Moyenne</span>
+          </div>
+          <div className="mt-4">
+            <p className="text-4xl font-display font-black text-slate-900 leading-none">{moyenneGenerale || '00.0'}</p>
+            <p className="text-[10px] text-slate-400 mt-1 font-medium italic">Générale du trimestre</p>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }} 
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3 }}
+          className="bento-item border-l-4 border-gold-400 bg-white shadow-glass-pro"
+        >
+          <div className="flex items-start justify-between">
+            <div className="w-8 h-8 bg-gold-50 rounded-lg flex items-center justify-center">
+              <GraduationCap className="text-gold-600" size={16} />
+            </div>
+            <span className="text-[10px] font-bold text-gold-600 uppercase">Position</span>
+          </div>
+          <div className="mt-4">
+            <p className="text-4xl font-display font-black text-slate-900 leading-none">
+              {stats.rang || '00'}<span className="text-lg text-slate-300 font-bold">/{stats.effectif || '00'}</span>
+            </p>
+            <p className="text-[10px] text-slate-400 mt-1 font-medium italic">Rang de la classe</p>
+          </div>
+        </motion.div>
       </div>
 
       {/* Annual Progression Table */}
-      <div className="mx-4 mb-6">
-        <h3 className="text-sm font-display font-bold text-gray-800 mb-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Award size={16} className="text-primary-500" /> Bilan de l'Année
-          </div>
-          <span className="text-[10px] text-gray-400 font-normal uppercase tracking-wider">{schoolConfig.current_year}</span>
-        </h3>
-        <div className="bg-white rounded-2xl shadow-glass overflow-hidden">
-          <div className="grid grid-cols-4 bg-gray-50/50 p-3 text-[10px] font-bold text-gray-400 uppercase tracking-tighter text-center">
+      <div className="mx-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-display font-black text-slate-800 flex items-center gap-2">
+            <div className="w-1.5 h-4 bg-blue-600 rounded-full" />
+            Bilan de l'Année
+          </h3>
+          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{schoolConfig.current_year}</span>
+        </div>
+        <div className="glass-card-pro overflow-hidden border-slate-100/50">
+          <div className="grid grid-cols-4 bg-slate-50/50 p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100/50">
             <div className="text-left">Période</div>
-            <div>Moy.</div>
-            <div>Rang</div>
+            <div className="text-center">Moy.</div>
+            <div className="text-center">Rang</div>
             <div className="text-right">Statut</div>
           </div>
-          <div className="divide-y divide-gray-50">
+          <div className="divide-y divide-slate-100/50">
             {[1, 2, 3].map((t) => {
               const tData = history[t];
               const isActive = selectedTrimestre === String(t);
               return (
                 <div key={t} onClick={() => setSelectedTrimestre(String(t))} 
-                     className={`grid grid-cols-4 p-3 items-center cursor-pointer transition-colors ${isActive ? 'bg-primary-50/30' : 'hover:bg-gray-50/50'}`}>
-                  <div className="flex items-center gap-2">
-                    <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-primary-500 animate-pulse' : 'bg-gray-200'}`} />
-                    <span className={`text-xs font-bold ${isActive ? 'text-primary-600' : 'text-gray-600'}`}>T{t}</span>
+                     className={`grid grid-cols-4 p-4 items-center cursor-pointer transition-all duration-300 ${isActive ? 'bg-blue-50/40' : 'hover:bg-slate-50/30'}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-blue-600 shadow-[0_0_8px_#2563eb]' : 'bg-slate-200'}`} />
+                    <span className={`text-xs font-black ${isActive ? 'text-blue-700' : 'text-slate-600'}`}>Trimestre {t}</span>
                   </div>
-                  <div className="text-center font-display font-bold text-gray-700 text-xs">
-                    {tData?.moyenne_generale !== undefined ? tData.moyenne_generale.toFixed(2) : '—'}
+                  <div className="text-center font-display font-bold text-slate-900 text-sm">
+                    {tData?.moyenne_generale !== undefined ? tData.moyenne_generale.toFixed(2) : '--.--'}
                   </div>
-                  <div className="text-center text-[10px] font-bold text-gray-500">
-                    {tData?.rang ? `${tData.rang}/${tData.effectif}` : '—'}
+                  <div className="text-center text-[10px] font-bold text-slate-400">
+                    {tData?.rang ? `${tData.rang}/${tData.effectif}` : '--/--'}
                   </div>
                   <div className="text-right">
                     {tData?.moyenne_generale >= 10 ? (
-                      <span className="text-[9px] bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-bold">Passage</span>
+                      <span className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-md text-[9px] font-black uppercase tracking-tighter border border-emerald-100">Admis</span>
                     ) : tData?.moyenne_generale > 0 ? (
-                      <span className="text-[9px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-bold">Insuf.</span>
+                      <span className="px-2 py-1 bg-red-50 text-red-600 rounded-md text-[9px] font-black uppercase tracking-tighter border border-red-100">Rattrap.</span>
                     ) : (
-                      <span className="text-[9px] text-gray-300">N/A</span>
+                      <span className="text-[10px] text-slate-300 font-bold">—</span>
                     )}
                   </div>
                 </div>
@@ -355,145 +389,146 @@ const ParentDashboard = () => {
         </div>
       </div>
 
-      {/* Appreciation */}
-      {moyenneGenerale > 0 && (
-        <div className="mx-4 mb-6 p-4 bg-white rounded-2xl shadow-glass flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${moyenneGenerale >= 14 ? 'bg-emerald-100' : moyenneGenerale >= 10 ? 'bg-gold-100' : 'bg-red-100'}`}>
-            <Award className={`w-5 h-5 ${moyenneGenerale >= 14 ? 'text-emerald-600' : moyenneGenerale >= 10 ? 'text-gold-600' : 'text-red-600'}`} />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-800">{appreciation}</p>
-            <p className="text-xs text-gray-400">Appréciation générale</p>
-          </div>
-        </div>
-      )}
-
-      {/* Alerts */}
-      {alerts.length > 0 && (
-        <div className="mx-4 mb-6 space-y-2">
-          <h3 className="text-sm font-display font-bold text-gray-800 flex items-center gap-2">
-            <Bell size={16} className="text-red-500" /> Alertes
-          </h3>
-          {alerts.map((a, i) => (
-            <div key={i} className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-3">
-              <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-700">{a.message}</p>
+      {/* Appreciation & Alerts */}
+      <div className="px-6 mb-8 space-y-4">
+        {moyenneGenerale > 0 && (
+          <div className="glass-card-pro p-5 border-l-4 border-blue-600 flex items-center gap-4 bg-white">
+            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${moyenneGenerale >= 14 ? 'bg-emerald-50 text-emerald-600' : moyenneGenerale >= 10 ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
+              <Award size={24} />
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* Grades */}
-      <div className="mx-4 mb-6">
-        <h3 className="text-sm font-display font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <BookOpen size={16} className="text-primary-500" /> Notes par matière
-        </h3>
-        {grades.length === 0 ? (
-          <div className="bg-white rounded-2xl p-6 shadow-glass text-center text-gray-400 text-sm">Aucune note</div>
-        ) : grades.map((g, i) => {
-          const moy = GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition);
-          const isLow = moy < 10;
-          return (
-            <motion.div key={g.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="bg-white rounded-2xl p-4 shadow-glass mb-2">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-gray-800">{g.matiere}</h4>
-                <span className={`text-lg font-display font-bold ${isLow ? 'text-red-500' : 'text-primary-500'}`}>{moy.toFixed(1)}/20</span>
-              </div>
-              <div className="grid grid-cols-5 gap-1.5">
-                {[['I1', g.interro1], ['I2', g.interro2], ['I3', g.interro3], ['Dev', g.devoir], ['Comp', g.composition]].map(([label, val]) => (
-                  <div key={label} className="text-center p-1.5 bg-gray-50 rounded-lg">
-                    <p className="text-[9px] text-gray-500">{label}</p>
-                    <p className="text-xs font-bold text-gray-700">{val || '—'}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-2 w-full bg-gray-100 rounded-full h-1.5">
-                <div className={`h-1.5 rounded-full ${isLow ? 'bg-red-400' : 'bg-primary-500'}`}
-                  style={{ width: `${Math.min(moy / 20 * 100, 100)}%` }} />
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Présences */}
-      <div className="mx-4 mb-6">
-        <h3 className="text-sm font-display font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <ClipboardCheck size={16} className="text-emerald-500" /> Suivi de présence
-        </h3>
-        <div className="bg-white rounded-2xl shadow-glass overflow-hidden">
-          <div className="grid grid-cols-2 border-b border-gray-50">
-            <div className="p-4 text-center">
-              <p className="text-2xl font-display font-bold text-emerald-500">{totalPresent}</p>
-              <p className="text-xs text-gray-500">Présences</p>
-            </div>
-            <div className="p-4 text-center border-l border-gray-50">
-              <p className="text-2xl font-display font-bold text-red-500">{totalAbsences}</p>
-              <p className="text-xs text-gray-500">Absences</p>
+            <div>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mb-0.5">Appréciation globale</p>
+              <h4 className="text-sm font-black text-slate-900 uppercase">{appreciation}</h4>
             </div>
           </div>
-          {absences.length === 0 ? (
-            <p className="text-center py-4 text-gray-400 text-sm">Aucune donnée de présence</p>
-          ) : (
-            <div className="divide-y divide-gray-50 max-h-[250px] overflow-y-auto">
-              {absences.map(ab => (
-                <div key={ab.id} className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">{ab.date}</span>
-                    {ab.classe && <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{ab.classe}</span>}
-                  </div>
-                  {ab.status === 'present' ? (
-                    <span className="badge-success text-[10px] flex items-center gap-1"><CheckCircle size={10} /> Présent</span>
-                  ) : (
-                    <span className="badge-danger text-[10px] flex items-center gap-1"><XCircle size={10} /> Absent</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+        )}
 
-      {/* Activity Feed */}
-      <div className="mx-4 mb-6">
-        <h3 className="text-sm font-display font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <Clock size={16} className="text-gold-500" /> Activité récente
-        </h3>
-        {cahierEntries.length === 0 ? (
-          <div className="bg-white rounded-2xl p-6 shadow-glass text-center text-gray-400 text-sm">Aucune activité</div>
-        ) : cahierEntries.slice(0, 10).map((entry) => (
-          <div key={entry.id} className="bg-white rounded-2xl p-4 shadow-glass mb-2">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                <BookOpen size={14} className="text-primary-600" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-800">
-                  Cours : <span className="font-bold text-primary-600">{entry.chapitre}</span>
-                </p>
-                {entry.matiere && <p className="text-xs text-gray-500 mt-0.5">{entry.matiere}</p>}
-                {entry.resume && <p className="text-xs text-gray-400 mt-1 line-clamp-2">{entry.resume}</p>}
-                <p className="text-[10px] text-gray-300 mt-1">{entry.date} · {entry.heure}</p>
-              </div>
+        {alerts.length > 0 && alerts.map((a, i) => (
+          <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+            className="p-4 bg-red-50/50 backdrop-blur-sm border border-red-100 rounded-[1.5rem] flex items-center gap-4">
+            <div className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-red-200">
+              <AlertTriangle size={20} />
             </div>
-          </div>
+            <p className="text-xs font-bold text-red-700 leading-tight">{a.message}</p>
+          </motion.div>
         ))}
       </div>
 
-      {/* Download Bulletin */}
-      <div className="mx-4 mb-6">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-royal-gold rounded-2xl p-6 text-center">
-          <FileText className="w-10 h-10 text-white/80 mx-auto mb-3" />
-          <h3 className="text-lg font-display font-bold text-white mb-1">Bulletin Scolaire</h3>
-          <p className="text-primary-200 text-xs mb-4">Téléchargez le bulletin officiel sécurisé</p>
-          <Button variant="secondary" size="lg" icon={generatingPdf ? Loader2 : Download}
-            loading={generatingPdf}
-            onClick={handleDownloadBulletin}
-            className="bg-white text-primary-600 hover:bg-gray-50">
-            {generatingPdf ? 'Génération...' : 'Télécharger le PDF'}
-          </Button>
+      {/* Grades Grid */}
+      <div className="px-6 mb-8">
+        <h3 className="text-sm font-display font-black text-slate-800 mb-5 flex items-center gap-2">
+          <div className="w-1.5 h-4 bg-indigo-600 rounded-full" />
+          Notes par matière
+        </h3>
+        {grades.length === 0 ? (
+          <div className="glass-card-pro p-10 text-center">
+            <p className="text-slate-400 text-sm font-medium">Bientôt disponible...</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {grades.map((g, i) => {
+              const moy = GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition);
+              const isLow = moy < 10;
+              return (
+                <motion.div 
+                  key={g.id} 
+                  initial={{ opacity: 0, y: 15 }} 
+                  animate={{ opacity: 1, y: 0 }} 
+                  transition={{ delay: i * 0.05 }}
+                  className="glass-card-pro p-5 bg-white border-slate-100 hover:scale-[1.01] hover:shadow-glass-lg"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h4 className="font-black text-slate-800 text-sm uppercase tracking-tight">{g.matiere}</h4>
+                      <p className="text-[10px] text-slate-400 font-bold">Coefficient : {g.coefficient || 1}</p>
+                    </div>
+                    <div className="text-right">
+                      <span className={`text-2xl font-display font-black ${isLow ? 'text-red-500' : 'text-blue-600'}`}>{moy.toFixed(1)}</span>
+                      <span className="text-[10px] text-slate-300 font-black ml-0.5">/20</span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-5 gap-2 mb-4">
+                    {[
+                      ['I1', g.interro1], ['I2', g.interro2], ['I3', g.interro3], 
+                      ['DEV', g.devoir], ['COMP', g.composition]
+                    ].map(([label, val]) => (
+                      <div key={label} className="text-center p-2 bg-slate-50 rounded-xl border border-slate-100/50">
+                        <p className="text-[8px] text-slate-400 font-black tracking-widest mb-1">{label}</p>
+                        <p className="text-[11px] font-black text-slate-700">{val || '--'}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="relative h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }} 
+                      animate={{ width: `${(moy / 20) * 100}%` }}
+                      transition={{ duration: 1, delay: i * 0.1 }}
+                      className={`h-full rounded-full ${isLow ? 'bg-red-400' : 'bg-blue-600'}`} 
+                    />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Attendance & Recent Activity */}
+      <div className="px-6 mb-8 grid grid-cols-1 gap-6">
+        <div className="glass-card-pro p-6">
+          <h3 className="text-sm font-display font-black text-slate-800 mb-5 flex items-center gap-2">
+            <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+            Suivi de Présence
+          </h3>
+          <div className="flex bg-slate-50/50 rounded-2xl overflow-hidden mb-6 border border-slate-100/50">
+            <div className="flex-1 p-4 text-center border-r border-slate-100/50">
+              <p className="text-3xl font-black text-emerald-600 leading-none">{totalPresent}</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Présences</p>
+            </div>
+            <div className="flex-1 p-4 text-center">
+              <p className="text-3xl font-black text-red-500 leading-none">{totalAbsences}</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">Absences</p>
+            </div>
+          </div>
+          <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+            {absences.map(ab => (
+              <div key={ab.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-50 hover:bg-slate-50 transition-colors">
+                <span className="text-[11px] font-black text-slate-500">{ab.date}</span>
+                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter ${ab.status === 'present' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                  {ab.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Final Action: Download */}
+      <div className="px-6 mb-12">
+        <motion.div 
+          whileTap={{ scale: 0.98 }}
+          className="bg-royal-gold p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group text-center"
+        >
+          <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10" />
+          <div className="relative z-10">
+            <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/20 shadow-inner group-hover:rotate-12 transition-transform">
+              <FileText className="text-white" size={32} />
+            </div>
+            <h3 className="text-2xl font-display font-black text-white mb-2 tracking-tight">Bulletin Officiel</h3>
+            <p className="text-blue-200/60 text-[10px] font-bold uppercase tracking-widest mb-8">Téléchargement Sécurisé (QR Code)</p>
+            <Button 
+              variant="white" 
+              size="lg" 
+              icon={generatingPdf ? Loader2 : Download}
+              loading={generatingPdf}
+              onClick={handleDownloadBulletin}
+              className="w-full py-6 rounded-2xl font-black text-blue-900 shadow-xl"
+            >
+              TÉLÉCHARGER LE PDF
+            </Button>
+          </div>
         </motion.div>
       </div>
 

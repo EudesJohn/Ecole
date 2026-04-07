@@ -286,19 +286,19 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
             <Text style={styles.infoLabel}>Nom et Prénoms</Text>
             <Text style={styles.infoValue}>{student.nom} {student.prenom}</Text>
             <Text style={styles.infoLabel}>Date de naissance</Text>
-            <Text style={styles.infoValue}>{student.dateNaissance || '—'}</Text>
+            <Text style={styles.infoValue}>{student.dateNaissance || '01/01/2000'}</Text>
           </View>
           <View style={styles.infoCol}>
             <Text style={styles.infoLabel}>Matricule</Text>
             <Text style={styles.infoValue}>{student.matricule}</Text>
             <Text style={styles.infoLabel}>Classe</Text>
-            <Text style={styles.infoValue}>{student.classe}</Text>
+            <Text style={styles.infoValue}>{student.classe || 'Indéfinie'}</Text>
           </View>
           <View style={styles.infoCol}>
-            <Text style={styles.infoLabel}>Sexe</Text>
-            <Text style={styles.infoValue}>{student.sexe || '—'}</Text>
-            <Text style={styles.infoLabel}>Effectif de la classe</Text>
-            <Text style={styles.infoValue}>{classStats?.effectif || '—'}</Text>
+            <Text style={styles.infoLabel}>Sexe / Effectif</Text>
+            <Text style={styles.infoValue}>{student.sexe || '—'} / {classStats?.effectif || '—'} élèves</Text>
+            <Text style={styles.infoLabel}>Période</Text>
+            <Text style={styles.infoValue}>{trimestre} Trimestre</Text>
           </View>
         </View>
 

@@ -111,6 +111,7 @@ const TeacherDashboard = () => {
               [g.student_id]: {
                 interro1: g.interro1,
                 interro2: g.interro2,
+                interro3: g.interro3,
                 devoir: g.devoir,
                 composition: g.composition,
                 id: g.id
@@ -250,6 +251,12 @@ const TeacherDashboard = () => {
                 interro3: g.interro3,
                 devoir: g.devoir,
                 composition: g.composition,
+                comp1: g.comp1,
+                comp2: g.comp2,
+                comp3: g.comp3,
+                comp4: g.comp4,
+                comp5: g.comp5,
+                comp6: g.comp6,
                 id: g.id
               };
             }
@@ -330,6 +337,12 @@ const TeacherDashboard = () => {
           interro3: (sGrades.interro3 !== '' && sGrades.interro3 !== undefined) ? parseFloat(sGrades.interro3) : null,
           devoir: (sGrades.devoir !== '' && sGrades.devoir !== undefined) ? parseFloat(sGrades.devoir) : null,
           composition: (sGrades.composition !== '' && sGrades.composition !== undefined) ? parseFloat(sGrades.composition) : null,
+          comp1: (sGrades.comp1 !== '' && sGrades.comp1 !== undefined) ? parseFloat(sGrades.comp1) : null,
+          comp2: (sGrades.comp2 !== '' && sGrades.comp2 !== undefined) ? parseFloat(sGrades.comp2) : null,
+          comp3: (sGrades.comp3 !== '' && sGrades.comp3 !== undefined) ? parseFloat(sGrades.comp3) : null,
+          comp4: (sGrades.comp4 !== '' && sGrades.comp4 !== undefined) ? parseFloat(sGrades.comp4) : null,
+          comp5: (sGrades.comp5 !== '' && sGrades.comp5 !== undefined) ? parseFloat(sGrades.comp5) : null,
+          comp6: (sGrades.comp6 !== '' && sGrades.comp6 !== undefined) ? parseFloat(sGrades.comp6) : null,
           trimestre: parseInt(schoolConfig.current_trimestre),
           school_year: schoolConfig.current_year
         };
@@ -491,8 +504,10 @@ const TeacherDashboard = () => {
       // 3. Prepare data for the target student
       const targetGrades = (studentGrades || []).map(g => ({
         matiere: g.matieres?.nom,
+        coefficient: g.matieres?.coefficient,
         interro1: g.interro1,
         interro2: g.interro2,
+        interro3: g.interro3,
         devoir: g.devoir,
         composition: g.composition
       }));
@@ -505,10 +520,18 @@ const TeacherDashboard = () => {
       const qrUrl = await generateQRDataUrl(`https://saintlambert.bj/verify/${student.matricule}`);
 
       await downloadBulletin({
-        student: { ...student, classe: student.classe },
+        student: { 
+          ...student, 
+          dateNaissance: student.date_naissance, 
+          classe: selectedClass 
+        },
         gradesBySubject: targetGrades,
         matieres,
-        classStats: classStats,
+        classStats: {
+          ...classStats,
+          plusForte: classStats.plusForte,
+          plusFaible: classStats.plusFaible
+        },
         qrCodeDataUrl: qrUrl,
         trimestre: `${schoolConfig.current_trimestre}${schoolConfig.current_trimestre === '1' ? 'er' : 'ème'}`
       });
@@ -580,87 +603,11 @@ const TeacherDashboard = () => {
           <AnimatePresence mode="wait">
             <motion.div key={activeTab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
 
-              {/* MES CLASSES */}
-              {activeTab === 'overview' && (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {classes.length === 0 ? (
-                    <div className="col-span-full glass-card p-8 text-center text-gray-400">Aucune classe</div>
-                  ) : classes.map((cls, i) => (
-                    <motion.div key={cls.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.1 }}
-                      onClick={() => { setSelectedClass(cls.nom); loadStudentsByClass(cls.nom); setActiveTab('notes'); }}
-                      className="glass-card p-6 cursor-pointer hover:shadow-glass-lg transition-all group">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 bg-royal-gradient rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
-                          <BookOpen className="w-7 h-7 text-gold-300" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-display font-bold text-gray-900">{cls.nom}</h3>
-                          <p className="text-gray-500 text-sm">{cls.niveau || 'N/A'}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+              {/* APERCU & CLASSES */}
+              {activeTab === 'overview' && renderOverview()}
 
               {/* SAISIE NOTES */}
-              {activeTab === 'notes' && (
-                <div className="space-y-4">
-                  {!selectedClass ? (
-                    <div className="glass-card p-8 text-center text-gray-400">
-                      <Edit3 className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                      <p>Sélectionnez une classe et une matière</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="glass-card overflow-hidden">
-                        <div className="overflow-x-auto">
-                          <table className="w-full">
-                            <thead>
-                              <tr className="bg-gray-50/80 border-b border-gray-100">
-                                <th className="text-center text-[11px] font-semibold text-gray-500 uppercase px-4 py-3">Élève</th>
-                                <th className="text-center text-[11px] font-semibold text-gray-500 uppercase px-2 py-3">Int. 1</th>
-                                <th className="text-center text-[11px] font-semibold text-gray-500 uppercase px-2 py-3">Int. 2</th>
-                                <th className="text-center text-[11px] font-semibold text-gray-500 uppercase px-2 py-3">Int. 3</th>
-                                <th className="text-center text-[11px] font-semibold text-gray-500 uppercase px-2 py-3">Devoir</th>
-                                <th className="text-center text-[11px] font-semibold text-gray-500 uppercase px-2 py-3">Compo</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                              {students.map((s) => (
-                                <tr key={s.id} className="hover:bg-blue-50/30">
-                                  <td className="px-4 py-3">
-                                    <p className="text-sm font-medium text-gray-800">{s.prenom} {s.nom}</p>
-                                    <p className="text-xs text-gray-400 font-mono">{s.matricule}</p>
-                                  </td>
-                                  {['interro1', 'interro2', 'interro3', 'devoir', 'composition'].map(f => (
-                                    <td key={f} className="px-2 py-3">
-                                      <input type="number" min="0" max="20" step="0.5"
-                                        value={grades[s.id]?.[f] || ''}
-                                        onChange={(e) => updateGrade(s.id, f, e.target.value)}
-                                        className="w-16 mx-auto block text-center px-2 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500/30 focus:border-primary-500 outline-none"
-                                        placeholder="/20" />
-                                    </td>
-                                  ))}
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          {students.length === 0 && <p className="text-center py-8 text-gray-400 text-sm">Aucun élève</p>}
-                        </div>
-                      </div>
-                      {students.length > 0 && (
-                        <div className="flex justify-end">
-                          <Button variant="primary" icon={Save} onClick={handleSaveGrades} loading={saving} size="lg">
-                            Enregistrer les notes
-                          </Button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
+              {activeTab === 'notes' && renderGrades()}
 
               {/* CAHIER DE TEXTE */}
               {activeTab === 'cahier' && (
