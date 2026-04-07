@@ -101,4 +101,14 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 4. Simple mapping table for levels (Optional, we can use order)
+-- 4. CONTRAINTES D'UNICITÉ POUR L'UPSERT (Nécessaire pour enregistrer les notes)
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_grade_per_trimestre') THEN
+        ALTER TABLE grades ADD CONSTRAINT unique_grade_per_trimestre UNIQUE (student_id, matiere_id, trimestre, school_year);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_absence_per_day') THEN
+        ALTER TABLE absences ADD CONSTRAINT unique_absence_per_day UNIQUE (student_id, date, matiere_id);
+    END IF;
+END $$;

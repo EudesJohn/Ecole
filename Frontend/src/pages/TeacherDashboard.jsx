@@ -257,13 +257,22 @@ const TeacherDashboard = () => {
                 comp4: g.comp4,
                 comp5: g.comp5,
                 comp6: g.comp6,
+                dw: g.dw,
+                d1: g.d1,
+                d2: g.d2,
                 id: g.id
               };
             }
 
             // Global stats per matiere
             if (!statsByMatiere[g.matiere_id]) statsByMatiere[g.matiere_id] = [];
-            const studentAvg = GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition);
+            const cls = classes.find(c => c.id === g.classes?.id); // Should be checked if possible
+            const isPrimary = (cls?.cycle === 'primaire' || cls?.cycle === 'maternelle');
+
+            const studentAvg = isPrimary 
+              ? GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition)
+              : GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
+
             statsByMatiere[g.matiere_id].push(studentAvg);
           });
 
@@ -353,7 +362,7 @@ const TeacherDashboard = () => {
 
       // Supabase supports upsert by natural key or ID
       // Here we filter and upsert. For simplicity, we delete existing and re-insert or use upsert if we have IDs.
-      const { error } = await supabase.from('grades').upsert(upserts, { onConflict: 'student_id,matiere_id,trimestre' });
+      const { error } = await supabase.from('grades').upsert(upserts, { onConflict: 'student_id,matiere_id,trimestre,school_year' });
 
       if (error) throw error;
       showNotif(`Notes enregistrées avec succès ✅`);
