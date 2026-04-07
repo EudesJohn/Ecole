@@ -12,22 +12,19 @@ export const GradesTable = ({
   onSave, 
   saving 
 }) => {
+  // Force composition for primary/maternelle
+  const effectiveEvalType = isPrimary ? 'composition' : evaluationType;
+
   return (
     <div className="space-y-6">
       {isPrimary && (
         <div className="glass-card p-4 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 bg-gray-50 p-1 rounded-xl border border-gray-100">
-            <button onClick={() => setEvaluationType('etape')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${evaluationType === 'etape' ? 'bg-white shadow-sm text-primary-600' : 'text-gray-500 hover:text-gray-700'}`}>
-              Évaluation Mensuelle
-            </button>
-            <button onClick={() => setEvaluationType('composition')}
-              className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${evaluationType === 'composition' ? 'bg-white shadow-sm text-gold-600' : 'text-gray-500 hover:text-gray-700'}`}>
-              Composition
-            </button>
+          <div>
+            <h3 className="text-lg font-black text-slate-800">Saisie des Compositions</h3>
+            <p className="text-xs text-slate-400 font-medium">Cycle Primaire / Maternelle</p>
           </div>
           <Button variant="primary" icon={Check} onClick={onSave} loading={saving}>
-            Enregistrer les {evaluationType === 'etape' ? 'notes d&apos;étape' : 'compositions'}
+            Enregistrer les compositions
           </Button>
         </div>
       )}
@@ -46,12 +43,7 @@ export const GradesTable = ({
                 <th className="text-left text-[11px] font-bold text-gray-400 uppercase px-6 py-4">Élève</th>
                 {['I 1', 'I 2', 'I 3'].map(i => <th key={i} className="px-2 py-4 text-center text-[10px] font-bold text-gray-400 uppercase">{i}</th>)}
                 {isPrimary ? (
-                  evaluationType === 'etape' ? (
-                    <>
-                      <th className="px-2 py-4 text-center text-[10px] font-bold text-primary-500 uppercase">CM</th>
-                      <th className="px-2 py-4 text-center text-[10px] font-bold text-emerald-500 uppercase">CP</th>
-                    </>
-                  ) : <th className="px-2 py-4 text-center text-[10px] font-bold text-gold-600 uppercase">Compo</th>
+                  <th className="px-2 py-4 text-center text-[10px] font-bold text-gold-600 uppercase tracking-widest">Composition</th>
                 ) : (
                   <>
                     <th className="px-2 py-4 text-center text-[10px] font-bold text-primary-500 uppercase">DW</th>
@@ -59,14 +51,14 @@ export const GradesTable = ({
                     <th className="px-2 py-4 text-center text-[10px] font-bold text-gold-600 uppercase">D 2</th>
                   </>
                 )}
-                <th className="px-6 py-4 text-center text-[11px] font-bold text-gray-500 uppercase">Moyenne</th>
+                <th className="px-6 py-4 text-center text-[11px] font-bold text-gray-500 uppercase tracking-widest">Moyenne</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 bg-white">
               {students.map(s => {
                 const sg = grades[s.id] || {};
                 const moy = isPrimary 
-                  ? (evaluationType === 'etape' ? GradeCalculator.calculateStepGrade(sg.note_cm, sg.note_cp) : (sg.composition || 0))
+                  ? (parseFloat(sg.composition) || 0)
                   : GradeCalculator.calculateSubjectAverage(sg.interro1, sg.interro2, sg.interro3, sg.dw, sg.d1, sg.d2);
 
                 return (
@@ -84,29 +76,12 @@ export const GradesTable = ({
                       </td>
                     ))}
                     {isPrimary ? (
-                      evaluationType === 'etape' ? (
-                        <>
-                          <td className="px-1 py-2 text-center">
-                            <input type="number" step="0.25" min="0" max="19.5"
-                              value={sg.note_cm ?? ''}
-                              onChange={(e) => updateGrade(s.id, 'note_cm', e.target.value)}
-                              className="w-14 h-9 text-center text-sm rounded-lg border border-blue-100 bg-blue-50/30 font-bold" />
-                          </td>
-                          <td className="px-1 py-2 text-center">
-                            <input type="number" step="0.25" min="0" max="1"
-                              value={sg.note_cp ?? ''}
-                              onChange={(e) => updateGrade(s.id, 'note_cp', e.target.value)}
-                              className="w-14 h-9 text-center text-sm rounded-lg border border-emerald-100 bg-emerald-50/30 font-bold" />
-                          </td>
-                        </>
-                      ) : (
-                        <td className="px-1 py-2 text-center">
-                          <input type="number" step="0.25" min="0" max="20"
-                            value={sg.composition ?? ''}
-                            onChange={(e) => updateGrade(s.id, 'composition', e.target.value)}
-                            className="w-20 h-9 text-center text-sm rounded-lg border border-gold-200 bg-gold-50/30 font-bold" />
-                        </td>
-                      )
+                      <td className="px-1 py-2 text-center">
+                        <input type="number" step="0.25" min="0" max="20"
+                          value={sg.composition ?? ''}
+                          onChange={(e) => updateGrade(s.id, 'composition', e.target.value)}
+                          className="w-24 h-9 text-center text-sm rounded-lg border border-gold-200 bg-gold-50/30 font-black text-gold-700 focus:ring-4 focus:ring-gold-100" />
+                      </td>
                     ) : (
                       <>
                         <td className="px-1 py-2 text-center">

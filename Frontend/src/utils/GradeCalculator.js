@@ -57,14 +57,8 @@ const GradeCalculator = {
     if (!grades || grades.length === 0) return 0;
 
     if (cycle === 'primaire' || cycle === 'maternelle') {
-      const etape = grades.find(g => g.evaluation_type === 'etape');
       const compo = grades.find(g => g.evaluation_type === 'composition');
-      
-      const noteEtape = etape ? GradeCalculator.calculateStepGrade(etape.note_cm, etape.note_cp) : 0;
-      const noteCompo = compo ? parseFloat(compo.composition) || 0 : 0;
-      
-      const count = (etape ? 1 : 0) + (compo ? 1 : 0);
-      return count > 0 ? (noteEtape + noteCompo) / count : 0;
+      return compo ? parseFloat(compo.composition) || 0 : 0;
     }
 
     // For secondary, we usually have one record per subject/trimestre containing all 6 notes
