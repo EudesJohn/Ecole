@@ -277,7 +277,12 @@ const AdminDashboard = () => {
 
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
+      const getBackendUrl = () => {
+        const url = import.meta.env.VITE_BACKEND_URL;
+        if (!url || url.includes('your_backend_url')) return '';
+        return url;
+      };
+      const backendUrl = getBackendUrl();
 
       if (modalType === 'students' && !editItem) {
         // CALL BACKEND API FOR STUDENT CREATION (Generates Matricule & PIN)
@@ -353,7 +358,12 @@ const AdminDashboard = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const getBackendUrl = () => {
+        const url = import.meta.env.VITE_BACKEND_URL;
+        if (!url || url.includes('your_backend_url')) return '';
+        return url;
+      };
+      const backendUrl = getBackendUrl();
 
       const response = await fetch(`${backendUrl}/api/admin/teachers/reset-password`, {
         method: 'POST',
