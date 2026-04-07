@@ -42,7 +42,7 @@ const AdminDashboard = () => {
       if (updatedConfig.current_year) toUpdate.current_year = updatedConfig.current_year;
 
       const updates = Object.entries(toUpdate).map(([key, value]) => 
-        supabase.from('school_config').upsert({ key, value })
+        supabase.from('school_config').upsert({ key, value }, { onConflict: 'key' })
       );
       
       const results = await Promise.all(updates);

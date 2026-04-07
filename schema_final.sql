@@ -65,7 +65,8 @@ CREATE TABLE IF NOT EXISTS matieres (
   coefficient INTEGER DEFAULT 1,
   category TEXT DEFAULT 'ECRITE',
   classe_id UUID REFERENCES classes(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(nom, classe_id)
 );
 
 -- GRADES
@@ -129,6 +130,14 @@ INSERT INTO school_config (key, value) VALUES
 ('current_trimestre', '1'),
 ('current_year', '2025-2026')
 ON CONFLICT (key) DO NOTHING;
+
+-- CLEANUP REDUNDANT INDEXES (Fixes "school_config_key_key" errors)
+DO $$ 
+BEGIN 
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'school_config_key_key') THEN
+    ALTER TABLE school_config DROP CONSTRAINT school_config_key_key;
+  END IF;
+END $$;
 
 -- 3. SEQUENCES
 CREATE SEQUENCE IF NOT EXISTS matricule_seq START 1;
