@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Shield, GraduationCap, Users, Loader2 } from 'lucide-react';
 
@@ -13,37 +13,37 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, loginParent, user } = useAuth();
+  const { login, loginParent } = useAuth();
   const navigate = useNavigate();
 
   const formatMatricule = (value) => {
     // Nettoyer tous les caractères spéciaux, garder seulement lettres et chiffres
     const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    
+
     // Si c'est trop court, rester tel quel
     if (clean.length <= 4) return clean;
-    
+
     // Si c'est entre 5 et 7, ajouter l'espace après les 4 premiers chiffres
     if (clean.length <= 7) {
       const part1 = clean.substring(0, 4);
       const part2 = clean.substring(4);
       // Forcer "SLB" si les parents commencent à taper après les 4 chiffres
       if (part2.length > 0 && !'SLB'.startsWith(part2)) {
-          return `${part1} SLB ${part2}`;
+        return `${part1} SLB ${part2}`;
       }
       return `${part1} ${part2}`;
     }
-    
+
     // Format complet: 0001 SLB 26
     const part1 = clean.substring(0, 4);
     // Extraire la fin après "SLB" si présent dans la chaîne nettoyée
     let part3 = '';
     if (clean.includes('SLB')) {
-        part3 = clean.split('SLB')[1] || '';
+      part3 = clean.split('SLB')[1] || '';
     } else {
-        part3 = clean.substring(4); // Fallback si SLB n'est pas tapé mais le reste oui
+      part3 = clean.substring(4); // Fallback si SLB n'est pas tapé mais le reste oui
     }
-    
+
     return `${part1} SLB ${part3.substring(0, 2)}`.trim();
   };
 
@@ -93,7 +93,7 @@ const Login = () => {
       >
         <div className="glass-card-lg p-8 md:p-10">
           {/* Logo & Title */}
-          <motion.div 
+          <motion.div
             className="text-center mb-8"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -114,22 +114,20 @@ const Login = () => {
           <div className="flex bg-gray-100/80 rounded-2xl p-1 mb-6 relative">
             <button
               onClick={() => { setMode('admin'); setError(''); }}
-              className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
-                mode === 'admin'
+              className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'admin'
                   ? 'bg-white shadow-md text-primary-500'
                   : 'text-gray-500 hover:text-primary-400'
-              }`}
+                }`}
             >
               <Shield size={16} />
               Admin / Prof
             </button>
             <button
               onClick={() => { setMode('parent'); setError(''); }}
-              className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${
-                mode === 'parent'
+              className={`flex-1 py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'parent'
                   ? 'bg-white shadow-md text-gold-600'
                   : 'text-gray-500 hover:text-gold-500'
-              }`}
+                }`}
             >
               <Users size={16} />
               Parent
@@ -249,11 +247,10 @@ const Login = () => {
               disabled={loading}
               whileHover={{ scale: loading ? 1 : 1.01 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
-              className={`w-full py-4 px-6 rounded-2xl font-bold shadow-xl transition-all duration-300 flex items-center justify-center gap-2 ${
-                mode === 'admin'
+              className={`w-full py-4 px-6 rounded-2xl font-bold shadow-xl transition-all duration-300 flex items-center justify-center gap-2 ${mode === 'admin'
                   ? 'bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white'
                   : 'bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-600 hover:to-gold-700 text-white'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {loading ? (
                 <>

@@ -2,15 +2,15 @@ import { motion } from 'framer-motion';
 import { Search, Plus, Edit3, Trash2, Download, RefreshCw, Loader2, BookMarked } from 'lucide-react';
 import { Button } from '../../UI/Button';
 
-export const EntityTable = ({ 
-  items, 
-  columns, 
-  colName, 
-  searchTerm, 
-  setSearchTerm, 
-  onAdd, 
-  onEdit, 
-  onDelete, 
+export const EntityTable = ({
+  items,
+  columns,
+  colName,
+  searchTerm,
+  setSearchTerm,
+  onAdd,
+  onEdit,
+  onDelete,
   onExtraAction,
   extraActionIcon: ExtraIcon,
   extraActionLabel,
@@ -19,7 +19,7 @@ export const EntityTable = ({
 }) => {
   const filteredItems = !searchTerm ? items : items.filter(item =>
     Object.values(item).some(v =>
-      String(v).toLowerCase().includes(searchTerm.toLowerCase())
+      v != null && String(v).toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -28,12 +28,12 @@ export const EntityTable = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative flex-1 max-w-md">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input 
-            type="text" 
-            placeholder="Rechercher dans la liste..." 
+          <input
+            type="text"
+            placeholder="Rechercher dans la liste..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-4 focus:ring-blue-50 focus:border-blue-200 outline-none transition-all shadow-sm" 
+            className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-100 rounded-2xl text-sm focus:ring-4 focus:ring-blue-50 focus:border-blue-200 outline-none transition-all shadow-sm"
           />
         </div>
         <div className="flex items-center gap-3">
@@ -63,11 +63,11 @@ export const EntityTable = ({
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filteredItems.map((item, i) => (
-                <motion.tr 
-                  key={item.id} 
-                  initial={{ opacity: 0, y: 10 }} 
+                <motion.tr
+                  key={item.id}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }} 
+                  transition={{ delay: i * 0.03 }}
                   className="group hover:bg-slate-50/50 transition-colors"
                 >
                   {columns.map(col => (
@@ -80,7 +80,7 @@ export const EntityTable = ({
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
                       {onExtraAction && ExtraIcon && colName !== 'matieres' && (
-                        <button 
+                        <button
                           onClick={() => onExtraAction(item)}
                           disabled={generatingId === item.id}
                           className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
@@ -89,13 +89,13 @@ export const EntityTable = ({
                           {generatingId === item.id ? <Loader2 size={16} className="animate-spin" /> : <ExtraIcon size={16} />}
                         </button>
                       )}
-                      <button 
+                      <button
                         onClick={() => onEdit(item)}
                         className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
                       >
                         <Edit3 size={16} />
                       </button>
-                      <button 
+                      <button
                         onClick={() => onDelete(item.id)}
                         className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
                       >

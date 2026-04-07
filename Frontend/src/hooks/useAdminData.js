@@ -2,20 +2,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 
 export const useAdminData = () => {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({
-    classes: [],
-    matieres: [],
-    students: [],
-    teachers: [],
-    absences: [],
-    cahiers: [],
-    grades: [],
-    schoolConfig: { current_trimestre: '1', current_year: '2025-2026' }
-  });
+  const [error, setError] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const results = await Promise.all([
         supabase.from('classes').select('*').order('nom'),
@@ -27,6 +18,10 @@ export const useAdminData = () => {
         supabase.from('school_config').select('*'),
         supabase.from('grades').select('*')
       ]);
+
+      // Check results for errors
+      const failed = results.find(r => r.error);
+      if (failed) throw failed.error;
 
       const [
         { data: classesData },
@@ -53,6 +48,7 @@ export const useAdminData = () => {
       });
     } catch (err) {
       console.error('Error fetching admin data:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -76,5 +72,5 @@ export const useAdminData = () => {
     };
   }, [fetchData]);
 
-  return { ...data, loading, refresh: fetchData };
+  return { ...data, loading, error, refresh: fetchData };
 };

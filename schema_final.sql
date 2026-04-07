@@ -186,11 +186,17 @@ DROP POLICY IF EXISTS "Profiles are readable" ON profiles;
 CREATE POLICY "Profiles are readable" ON profiles FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Everyone reads subjects" ON matieres;
 CREATE POLICY "Everyone reads subjects" ON matieres FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admins manage subjects" ON matieres;
+CREATE POLICY "Admins manage subjects" ON matieres FOR ALL USING (check_is_admin());
 DROP POLICY IF EXISTS "Everyone reads classes" ON classes;
 CREATE POLICY "Everyone reads classes" ON classes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admins manage classes" ON classes;
+CREATE POLICY "Admins manage classes" ON classes FOR ALL USING (check_is_admin());
 DROP POLICY IF EXISTS "Students readable by authorized" ON students;
 CREATE POLICY "Students readable by authorized" ON students FOR SELECT 
 USING (parent_id = auth.uid() OR check_is_admin() OR check_is_teacher());
+DROP POLICY IF EXISTS "Admins manage students" ON students;
+CREATE POLICY "Admins manage students" ON students FOR ALL USING (check_is_admin());
 DROP POLICY IF EXISTS "Grades manageable" ON grades;
 CREATE POLICY "Grades manageable" ON grades FOR ALL USING (check_is_admin() OR check_is_teacher());
 DROP POLICY IF EXISTS "Grades readable by parents" ON grades;

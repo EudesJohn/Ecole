@@ -34,33 +34,49 @@ const AdminDashboard = () => {
   };
 
   const handleSave = async () => {
+    if (!modalType) return;
     setSaving(true);
     try {
-      // For sensitive entities (students/teachers), use the API
-      if (!editItem && (modalType === 'students' || modalType === 'professeurs')) {
-        const route = modalType === 'professeurs' ? 'teachers' : 'students';
-        const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/admin/${route}`, {
+      // 1. Prepare Payload
+      const payload = { ...formData };
+      
+      // Remove UI-only or relation-based fields that aren't in the DB schema
+      const unwantedFields = [
+        'id', 'classes', 'profiles', 'students', 'matieres', 
+        'classe', 'full_name', 'created_at', 'updated_at', 'studentsData'
+      ];
+      unwantedFields.forEach(f => delete payload[f]);
+
+      // 2. Decide Strategy (API for Create Student/Teacher, Supabase for everything else)
+      const isNewSensitive = !editItem && (modalType === 'students' || modalType === 'professeurs' || modalType === 'eleves');
+      
+      if (isNewSensitive) {
+        const routeMap = { 'professeurs': 'teachers', 'eleves': 'students', 'students': 'students' };
+        const route = routeMap[modalType];
+        
+        // Use relative path if baseUrl is not provided
+        const baseUrl = import.meta.env.VITE_BACKEND_URL || '';
+        const response = await fetch(`${baseUrl}/api/admin/${route}`, {
           method: 'POST',
           headers: { 
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
           },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(payload)
         });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Erreur API');
-        showNotif(`Succès ! Matricule: ${result.matricule || 'Généré'}, PIN: ${result.pin || result.password || 'Généré'}`);
-      } else {
-        // For other entities or updates, use direct Supabase
-        const payload = { ...formData };
-        const unwantedFields = ['id', 'classes', 'profiles', 'students', 'matieres', 'classe', 'full_name', 'created_at', 'updated_at'];
-        unwantedFields.forEach(f => delete payload[f]);
 
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `Erreur Serveur (${response.status})`);
+        
+        showNotif(`Succès ! Matricule: ${result.matricule || 'OK'}, Accès: ${result.pin || result.password || 'Généré'}`);
+      } else {
+        // Direct Supabase Update/Insert
         const tableMap = {
           'classes': 'classes',
           'matieres': 'matieres',
           'professeurs': 'profiles',
-          'eleves': 'students'
+          'eleves': 'students',
+          'students': 'students'
         };
         const table = tableMap[modalType] || modalType;
 
@@ -70,13 +86,18 @@ const AdminDashboard = () => {
         } else {
           res = await supabase.from(table).insert([payload]);
         }
-        if (res.error) throw res.error;
+        
+        if (res.error) {
+          console.error(`Supabase Error (${table}):`, res.error);
+          throw new Error(res.error.message || 'Erreur lors de la sauvegarde');
+        }
         showNotif('Enregistré avec succès !');
       }
 
       setModalOpen(false);
       refresh();
     } catch (err) {
+      console.error('Save Error:', err);
       showNotif(err.message, 'error');
     } finally {
       setSaving(false);

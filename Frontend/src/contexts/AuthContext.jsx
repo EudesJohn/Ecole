@@ -10,6 +10,46 @@ export const AuthProvider = ({ children }) => {
   const [studentData, setStudentData] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
 
+  const fetchProfile = async (userId, sessionUser) => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (!error && data) {
+        setRole(data.role);
+        setUserProfile(data);
+        if (data.role === 'parent') {
+          const { data: children } = await supabase
+            .from('students')
+            .select('*, classes(nom, niveau, cycle)')
+            .eq('parent_id', userId);
+
+          if (children && children.length > 0) {
+            const stData = children[0]; // Par défaut le premier enfant
+            setStudentData({
+              ...stData,
+              classeNom: stData.classes?.nom || 'Non assignée',
+              cycle: stData.classes?.cycle || 'primaire'
+            });
+          }
+        }
+      } else {
+        // Fallback metadata
+        const metadataRole = sessionUser?.user_metadata?.role || 'parent';
+        setRole(metadataRole);
+      }
+    } catch (err) {
+      console.error('Error fetching profile:', err);
+      setRole('guest');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Initial check for session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -36,46 +76,6 @@ export const AuthProvider = ({ children }) => {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  const fetchProfile = async (userId, sessionUser) => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (!error && data) {
-        setRole(data.role);
-        setUserProfile(data);
-        if (data.role === 'parent') {
-          const { data: children } = await supabase
-            .from('students')
-            .select('*, classes(nom, niveau, cycle)')
-            .eq('parent_id', userId);
-
-          if (children && children.length > 0) {
-            const stData = children[0]; // Par défaut le premier enfant
-            setStudentData({ 
-              ...stData, 
-              classeNom: stData.classes?.nom || 'Non assignée',
-              cycle: stData.classes?.cycle || 'primaire'
-            });
-          }
-        }
-      } else {
-        // Fallback metadata
-        const metadataRole = sessionUser?.user_metadata?.role || 'parent';
-        setRole(metadataRole);
-      }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
-      setRole('guest');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({

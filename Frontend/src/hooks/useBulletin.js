@@ -19,12 +19,12 @@ export const useBulletin = () => {
       if (rpcError) throw rpcError;
 
       const classStats = {
-        effectif: statsData.general_stats.effectif || 0,
-        plusForte: statsData.general_stats.max_moyenne || 0,
-        plusFaible: statsData.general_stats.min_moyenne || 0,
-        studentAverage: statsData.general_stats.moyenne_generale || 0,
-        rang: statsData.general_stats.rang || 1,
-        subjectStats: statsData.subject_stats || []
+        effectif: statsData?.general_stats?.effectif || 0,
+        plusForte: statsData?.general_stats?.max_moyenne || 0,
+        plusFaible: statsData?.general_stats?.min_moyenne || 0,
+        studentAverage: statsData?.general_stats?.moyenne_generale || 0,
+        rang: statsData?.general_stats?.rang || 1,
+        subjectStats: statsData?.subject_stats || []
       };
 
       // 2. Fetch specific grades for target student
@@ -51,8 +51,8 @@ export const useBulletin = () => {
       const targetGrades = Object.keys(gradesByMatiere).map(matiereId => {
         const subjectGrades = gradesByMatiere[matiereId];
         const first = subjectGrades[0];
-        const sStat = (classStats.subjectStats || []).find(ss => ss.matiere_id === matiereId) || {};
-        
+        const sStat = (classStats.subjectStats || []).find(ss => String(ss.matiere_id) === String(matiereId)) || {};
+
         return {
           matiere: first.matieres?.nom,
           matiere_id: matiereId,
@@ -81,10 +81,10 @@ export const useBulletin = () => {
 
       // 5. Download Bulletin
       const studentClass = classes.find(c => c.id === student.classe_id);
-      
+
       await downloadBulletin({
-        student: { 
-          ...student, 
+        student: {
+          ...student,
           classe: studentClass?.nom || 'N/A',
           cycle: studentClass?.cycle || 'primaire',
           dateNaissance: student.date_naissance
