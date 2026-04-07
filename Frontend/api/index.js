@@ -8,16 +8,32 @@ const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json());
 
+// Main handler for Vercel
+const router = express.Router();
+
 // Basic route
-app.get('/api', (req, res) => {
-  res.json({ message: 'École SLB Unified Backend Ready on Vercel' });
+router.get('/', (req, res) => {
+  res.json({ 
+    message: 'École SLB Unified Backend Ready on Vercel',
+    env: process.env.NODE_ENV,
+    status: 'online'
+  });
 });
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/admin', require('./routes/admin'));
-app.use('/api/teacher', require('./routes/teacher'));
-app.use('/api/parent', require('./routes/parent'));
+router.use('/auth', require('./routes/auth'));
+router.use('/admin', require('./routes/admin'));
+router.use('/teacher', require('./routes/teacher'));
+router.use('/parent', require('./routes/parent'));
 
-// Vercel handles the listening, we just export the app
+// Mount everything on /api (production) AND / (backup)
+app.use('/api', router);
+app.use('/', router); 
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('API Error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
 module.exports = app;
