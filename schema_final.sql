@@ -125,6 +125,11 @@ CREATE TABLE IF NOT EXISTS school_config (
   value TEXT NOT NULL
 );
 
+INSERT INTO school_config (key, value) VALUES 
+('current_trimestre', '1'),
+('current_year', '2025-2026')
+ON CONFLICT (key) DO NOTHING;
+
 -- 3. SEQUENCES
 CREATE SEQUENCE IF NOT EXISTS matricule_seq START 1;
 DROP FUNCTION IF EXISTS get_next_matricule CASCADE;
@@ -167,6 +172,7 @@ ALTER TABLE matieres ENABLE ROW LEVEL SECURITY;
 ALTER TABLE grades ENABLE ROW LEVEL SECURITY;
 ALTER TABLE absences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cahier_texte ENABLE ROW LEVEL SECURITY;
+ALTER TABLE school_config ENABLE ROW LEVEL SECURITY;
 
 -- Security Helpers
 DROP FUNCTION IF EXISTS check_is_admin CASCADE;
@@ -197,6 +203,10 @@ CREATE POLICY "Students readable by authorized" ON students FOR SELECT
 USING (parent_id = auth.uid() OR check_is_admin() OR check_is_teacher());
 DROP POLICY IF EXISTS "Admins manage students" ON students;
 CREATE POLICY "Admins manage students" ON students FOR ALL USING (check_is_admin());
+DROP POLICY IF EXISTS "Everyone reads config" ON school_config;
+CREATE POLICY "Everyone reads config" ON school_config FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Admins manage config" ON school_config;
+CREATE POLICY "Admins manage config" ON school_config FOR ALL USING (check_is_admin());
 DROP POLICY IF EXISTS "Grades manageable" ON grades;
 CREATE POLICY "Grades manageable" ON grades FOR ALL USING (check_is_admin() OR check_is_teacher());
 DROP POLICY IF EXISTS "Grades readable by parents" ON grades;

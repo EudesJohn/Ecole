@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useBulletin } from '../hooks/useBulletin';
 import { useAdminData } from '../hooks/useAdminData';
 import { supabase } from '../supabase';
-import { Download, AlertCircle, CheckCircle, Plus, Trash2, Edit } from 'lucide-react';
+import { Download, AlertCircle, CheckCircle, Plus, Trash2, Edit, Settings } from 'lucide-react';
 import { OverviewTab } from '../components/Dashboard/Admin/OverviewTab';
 import { EntityTable } from '../components/Dashboard/Admin/EntityTable';
 
@@ -31,6 +31,32 @@ const AdminDashboard = () => {
   const showNotif = (msg, type = 'success') => {
     setNotification({ message: msg, type });
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  const handleConfigSave = async (updatedConfig) => {
+    setSaving(true);
+    try {
+      // Filter out temp frontend fields
+      const toUpdate = {};
+      if (updatedConfig.current_trimestre) toUpdate.current_trimestre = updatedConfig.current_trimestre;
+      if (updatedConfig.current_year) toUpdate.current_year = updatedConfig.current_year;
+
+      const updates = Object.entries(toUpdate).map(([key, value]) => 
+        supabase.from('school_config').upsert({ key, value })
+      );
+      
+      const results = await Promise.all(updates);
+      const failed = results.find(r => r.error);
+      if (failed) throw failed.error;
+      
+      showNotif('Configuration mise à jour !');
+      setFormData({}); // Clear temp year edit
+      refresh();
+    } catch (err) {
+      showNotif(err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSave = async () => {
@@ -229,6 +255,85 @@ const AdminDashboard = () => {
                 { key: 'chapitre', label: 'Leçon' }
               ]}
             />
+          )}
+
+          {activeTab === 'bulletins' && (
+            <EntityTable 
+              items={students} colName="students" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
+              onEdit={(item) => openModal('eleves', item)} 
+              onExtraAction={(item) => handleGenerateBulletin(item, schoolConfig, classes, matieres)} 
+              extraActionIcon={Download} extraActionLabel="Générer Bulletin" generatingId={generatingPdf}
+              columns={[
+                { key: 'matricule', label: 'Matricule' },
+                { key: 'fullname', label: 'Élève', render: (s) => (
+                  <div><p className="font-bold">{s.prenom} {s.nom}</p><p className="text-[10px] text-slate-400">{s.classe || 'N/A'}</p></div>
+                )},
+                { key: 'classe', label: 'Classe' }
+              ]}
+            />
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="glass-card-pro p-8 max-w-2xl animate-fade-in mx-auto">
+              <h2 className="text-2xl font-display font-black text-slate-900 mb-8 flex items-center gap-3">
+                <div className="p-3 bg-primary-50 rounded-2xl text-primary-600"><Settings size={24} /></div>
+                Configuration de l'Etablissement
+              </h2>
+              <div className="space-y-8">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Trimestre Actuel</label>
+                    <select 
+                      className="input-slb w-full" 
+                      value={schoolConfig.current_trimestre} 
+                      onChange={e => handleConfigSave({ current_trimestre: e.target.value })}
+                    >
+                      <option value="1">1er Trimestre</option>
+                      <option value="2">2ème Trimestre</option>
+                      <option value="3">3ème Trimestre</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Année Scolaire</label>
+                    <input 
+                      type="text" 
+                      className="input-slb w-full font-mono" 
+                      value={formData.current_year !== undefined ? formData.current_year : (schoolConfig.current_year || '')} 
+                      onChange={e => setFormData({ ...formData, current_year: e.target.value })}
+                      onBlur={() => {
+                        if (formData.current_year && formData.current_year !== schoolConfig.current_year) {
+                          handleConfigSave({ current_year: formData.current_year });
+                        }
+                      }}
+                      placeholder="ex: 2025-2026"
+                    />
+                  </div>
+                </div>
+                
+                <div className="p-6 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
+                  <div className="flex gap-4">
+                    <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-amber-500 shrink-0">
+                      <AlertCircle size={20} />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-600 leading-relaxed font-bold">
+                        Note Importante
+                      </p>
+                      <p className="text-[11px] text-slate-400 leading-relaxed mt-1">
+                        La modification de ces paramètres impacte instantanément la génération de tous les nouveaux bulletins ainsi que les statistiques affichées sur le tableau de bord pour l'ensemble des utilisateurs.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
+                  <p className="text-[10px] text-slate-400 font-bold italic">Dernière mise à jour : {new Date().toLocaleDateString()}</p>
+                   <Button variant="primary" onClick={() => handleConfigSave({ ...schoolConfig, ...formData })} loading={saving} size="sm">
+                     Tout Enregistrer
+                   </Button>
+                </div>
+              </div>
+            </div>
           )}
         </AnimatePresence>
       </main>

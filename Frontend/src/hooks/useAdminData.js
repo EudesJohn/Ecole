@@ -47,7 +47,7 @@ export const useAdminData = () => {
 
       const configObj = (configData || []).reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {});
 
-      setData({
+      setData(prev => ({
         classes: classesData || [],
         matieres: (matieresData || []).map(m => ({ ...m, classe: m.classes?.nom })),
         students: (studentsData || []).map(s => ({ ...s, classe: s.classes?.nom })),
@@ -55,8 +55,8 @@ export const useAdminData = () => {
         absences: absencesData || [],
         cahiers: cahierData || [],
         grades: gradesData || [],
-        schoolConfig: { ...data.schoolConfig, ...configObj }
-      });
+        schoolConfig: { ...prev.schoolConfig, ...configObj }
+      }));
     } catch (err) {
       console.error('Error fetching admin data:', err);
       setError(err.message);
