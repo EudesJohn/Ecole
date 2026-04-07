@@ -103,7 +103,7 @@ $$ LANGUAGE plpgsql;
 
 -- 4. NETTOYAGE DES DOUBLONS AVANT LES CONTRAINTES (Garantit que le script ne plante pas)
 DELETE FROM absences a USING (
-    SELECT MIN(id) as min_id, student_id, date, matiere_id 
+    SELECT MIN(id::text)::uuid as min_id, student_id, date, matiere_id 
     FROM absences 
     GROUP BY student_id, date, matiere_id 
     HAVING COUNT(*) > 1
@@ -111,7 +111,7 @@ DELETE FROM absences a USING (
 WHERE a.student_id = b.student_id AND a.date = b.date AND a.matiere_id = b.matiere_id AND a.id > b.min_id;
 
 DELETE FROM grades a USING (
-    SELECT MIN(id) as min_id, student_id, matiere_id, trimestre, school_year 
+    SELECT MIN(id::text)::uuid as min_id, student_id, matiere_id, trimestre, school_year 
     FROM grades 
     GROUP BY student_id, matiere_id, trimestre, school_year 
     HAVING COUNT(*) > 1
