@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Shield, GraduationCap, Users, Loader2 } from 'lucide-react';
@@ -48,7 +48,8 @@ const Login = () => {
   };
 
   // Redirect si déjà connecté (via composant, pas navigate())
-  if (user) return <Navigate to="/" replace />;
+  // COMMENTÉ POUR ÉVITER LE CONFLIT DE REDIRECTION RACE CONDITION
+  // if (user) return <Navigate to="/" replace />;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

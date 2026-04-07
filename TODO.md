@@ -1,38 +1,36 @@
-# Saint Lambert (SLB) ERP Scolaire - Pure Supabase Implementation
-Ultra-sécurisé, Mobile-first pour parents Bénin. React + Tailwind + Supabase (Auth/Database/Storage) + react-pdf + QR.
+# Saint Lambert (SLB) ERP Scolaire - Supabase Implementation
+Ultra-sécurisé, Mobile-first pour parents Bénin. React + Tailwind + Supabase (Auth/Database/Storage) + QR.
 
-**STATUS**: 🚀 Plan approved. Implementing step-by-step.
+**STATUS**: 🚀 Architecture consolidée. Migration vers Supabase terminée. Audit global en cours.
 
-## 1. BASE & AUTH ✅ In Progress
-- [x] Create detailed TODO.md (this file)
-- [x] Create generateSLBId.js (Frontend/utils) → Pure Firestore sequential 0001 SLB 26
-- [x] Refactor Login.jsx → Dual-mode w/ Royal/Gold theme, parent matricule+nom (anon + sim claims)
-- [ ] Update AuthContext.jsx → Enhanced parent claims handling
-- [x] Tailwind theme Royal Blue #1e3a8a / Gold #d4af37
-- [ ] Frontend: npm i framer-motion @react-pdf/renderer qrcode.react recharts lucide-react clsx tailwind-merge
-- [ ] Tailwind: Royal Blue (#1e3a8a)/Gold (#d4af37) theme
+## 1. ARCHITECTURE & AUTH ✅ Terminée
+- [x] Consolidation du Backend sur `Frontend/api` (Vercel Functions)
+- [x] Refonte de l'authentification avec Supabase Auth
+- [x] Gestion des rôles (Admin, Prof, Parent) via metadata et table `profiles`
+- [x] Système de Matricule séquentiel (0001 SLB 26) géré par SQL
 
-## 2. SECURITY & RULES
-- [ ] Firestore.rules → Strict: parent read own student, prof write assigned classes
-- [ ] Upload rules: firebase deploy --only firestore:rules
-- [ ] QR Verify page: /verify/[bulletin_id] → Public Firestore read
+## 2. BASE DE DONNÉES (SQL) ✅ Terminé
+- [x] Schéma de base (Classes, Matières, Élèves, Notes)
+- [x] Logique de moyennes hybride (Bénin Primaire vs Secondaire)
+- [x] **CORRECTION** : Ajout de `matiere_id` à la table `absences`
+- [x] Unification des RPC (`get_detailed_stats`, `get_class_stats_for_bulletin`, `get_annual_stats`)
+- [x] Audit final des politiques RLS
 
-## 3. CORE COMPONENTS
-- [ ] GradeCalculator.js → Moyennes pondérées, rangs, coeffs
-- [ ] SecureBulletin.jsx → PDF w/ watermark, header, QR(link saintlambert.bj/verify/[id])
-- [ ] ParentDashboard → Real-time child data, alerts (<10), bulletin viewer
+## 3. FONCTIONNALITÉS CŒUR ✅ Terminée
+- [x] GradeCalculator.js : Logique de calcul unifiée
+- [x] QR Code : Génération et page de vérification publique
+- [x] Bulletins PDF : Export complet avec rangs et statistiques
+- [x] Nettoyage du code mort dans AdminDashboard.jsx
 
-## 4. PORTALS
-- [ ] Admin: Classes/matieres/coeffs/enrollement (+matricule auto)
-- [ ] Teacher: Notes grid, Cahier texte, Appel numérique
-- [ ] Mobile Bottom Nav (parents)
+## 4. PORTAILS ✅ Finalisation
+- [x] Admin : Gestion complète (Élèves, Profs, Classes)
+- [x] Teacher : Saisie des notes par trimestre, Cahier de texte
+- [x] Parent : Vue temps réel, téléchargement de bulletins
+- [x] Appel numérique : Correction du filtrage par matière
 
-## 5. POLISH & DEPLOY
-- [ ] Animations (Framer), Skeletons, Perf
-- [ ] Seed demo data
-- [ ] Firebase deploy (hosting + functions if needed)
-- [ ] Test: Login parent, gen bulletin, QR verify
-
-**Next**: User run `cd Frontend && npm install framer-motion @react-pdf/renderer qrcode.react recharts lucide-react clsx tailwind-merge`
-**Track**: Update [x] after each tool success.
-
+## 5. POLISH & DÉPLOIEMENT
+- [ ] Animations Framer Motion pour une expérience "Premium"
+- [x] Déploiement sur Vercel (Frontend + Serverless API)
+- [x] Synchronisation avec GitHub
+- [x] Audit Global de Stabilité (Terminé)
+- [ ] Test final : Cycle de vie complet d'un élève

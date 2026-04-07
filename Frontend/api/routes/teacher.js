@@ -17,7 +17,7 @@ router.use(verifyToken, (req, res, next) => {
  */
 router.post('/grades', async (req, res) => {
   try {
-    const { student_id, matiere_id, interro1, interro2, devoir, composition, trimestre } = req.body;
+    const { student_id, matiere_id, interro1, interro2, dw, d1, d2, note_cm, note_cp, composition, trimestre, evaluation_type } = req.body;
 
     if (!student_id || !matiere_id) {
       return res.status(400).json({ error: 'ID élève et ID matière requis' });
@@ -28,13 +28,19 @@ router.post('/grades', async (req, res) => {
       .upsert({
         student_id,
         matiere_id,
-        interro1: (interro1 !== undefined && interro1 !== '' && interro1 !== null) ? parseFloat(interro1) : null,
-        interro2: (interro2 !== undefined && interro2 !== '' && interro2 !== null) ? parseFloat(interro2) : null,
-        devoir: (devoir !== undefined && devoir !== '' && devoir !== null) ? parseFloat(devoir) : null,
-        composition: (composition !== undefined && composition !== '' && composition !== null) ? parseFloat(composition) : null,
+        interro1: parseFloat(interro1) || null,
+        interro2: parseFloat(interro2) || null,
+        dw: parseFloat(dw) || null,
+        d1: parseFloat(d1) || null,
+        d2: parseFloat(d2) || null,
+        note_cm: parseFloat(note_cm) || null,
+        note_cp: parseFloat(note_cp) || null,
+        composition: parseFloat(composition) || null,
         trimestre: trimestre || 1,
+        school_year: req.body.school_year || '2025-2026',
+        evaluation_type: evaluation_type || 'etape',
         updated_at: new Date()
-      }, { onConflict: 'student_id,matiere_id,trimestre' })
+      }, { onConflict: 'student_id,matiere_id,trimestre,school_year,evaluation_type' })
       .select();
 
     if (error) throw error;
@@ -51,16 +57,18 @@ router.post('/grades', async (req, res) => {
  */
 router.post('/absences', async (req, res) => {
   try {
-    const { student_id, classe_id, date, status } = req.body;
+    const { student_id, classe_id, matiere_id, date, status, school_year } = req.body;
 
     const { data, error } = await supabase
       .from('absences')
       .upsert({
         student_id,
         classe_id,
+        matiere_id,
         date: date || new Date().toISOString().split('T')[0],
-        status: status || 'absent'
-      }, { onConflict: 'student_id,date' })
+        status: status || 'absent',
+        school_year: school_year || '2025-2026'
+      }, { onConflict: 'student_id,date,matiere_id,school_year' })
       .select();
 
     if (error) throw error;

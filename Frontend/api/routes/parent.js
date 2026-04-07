@@ -1,6 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const verifyToken = require('../middleware/verifyToken');
 const { supabase } = require('../supabase');
 
 /**
@@ -15,7 +14,8 @@ router.get('/student/:matricule', async (req, res) => {
     const { data: verificationData, error } = await supabase
       .rpc('verify_bulletin', {
         p_matricule: matricule.trim(),
-        p_trimestre: 1
+        p_trimestre: 1,
+        p_school_year: '2025-2026' // Valeur par défaut, pourrait être passée en query param
       });
 
     if (error || !verificationData) {

@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { supabase } = require('./supabase');
+// const { supabase } = require('./supabase'); // Suppressed if not needed here
 
 const app = express();
 
@@ -32,7 +32,7 @@ app.use('/api', router);
 app.use('/', router); 
 
 // Global Error Handler
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error('API Error:', err);
   res.status(500).json({ error: 'Internal Server Error' });
 });

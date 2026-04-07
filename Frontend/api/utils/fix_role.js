@@ -15,11 +15,11 @@ async function fixRLS() {
     // but since we only have profiles access here comfortably, we assume profiles has no email.
     // Wait, if profiles don't have email, how do we find admin?
     // Let's use the supabase auth admin API to find by email.
-    const { data: users, error: listError } = await supabase.auth.admin.listUsers();
+    const { data: users, error: _listError } = await supabase.auth.admin.listUsers();
     const adminUser = users?.users?.find(u => u.email === 'saintlambert@gmail.com');
     if (!adminUser) { console.log('Admin user not found'); return; }
 
-    const { data: profile, error: fetchError } = await supabase
+    const { data: profile, error: _fetchError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', adminUser.id)

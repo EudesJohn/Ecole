@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import {
   LayoutDashboard, Users, BookOpen, GraduationCap, UserCog,
   FileText, Settings, LogOut, Menu, X, ClipboardCheck, Award

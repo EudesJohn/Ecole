@@ -1,5 +1,5 @@
 import {
-  Document, Page, View, Text, StyleSheet, Font, Image, pdf
+  Document, Page, View, Text, StyleSheet, Image
 } from '@react-pdf/renderer';
 import GradeCalculator from '../utils/GradeCalculator';
 
@@ -7,7 +7,7 @@ import GradeCalculator from '../utils/GradeCalculator';
 // This eliminates "Offset outside bounds" and "403 Forbidden" errors.
 const FONT_REGULAR = 'Helvetica';
 const FONT_BOLD = 'Helvetica-Bold';
-const FONT_ITALIC = 'Helvetica-Oblique';
+
 
 const styles = StyleSheet.create({
   page: {
@@ -218,47 +218,59 @@ const styles = StyleSheet.create({
   },
 });
 
-const colWidths = {
-  matiere: '17%',
-  interro1: '7%',
-  interro2: '7%',
-  interro3: '7%',
-  devoir: '7%',
-  composition: '7%',
-  coeff: '5%',
-  moyenne: '8%',
-  forte: '8%',
-  faible: '8%',
-  points: '9%',
-  appreciation: '10%',
-};
+
+
 
 const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCodeDataUrl, trimestre = '1er', schoolYear = '2025-2026' }) => {
-  const year = new Date().getFullYear();
-  const bulletinId = `SLB-${(student.matricule || '').replace(/\s/g, '')}-T${trimestre}-${Date.now()}`;
+  
+
   
   // Calculate per-subject averages — Absolute type safety
   const safeGradesBySubject = Array.isArray(gradesBySubject) ? gradesBySubject : [];
   const safeMatieres = Array.isArray(matieres) ? matieres : [];
 
-  const isPrimary = !(/[654321T]/.test(student.classe || ''));
   
+
   const rows = safeGradesBySubject.map(g => {
-    const coeff = (safeMatieres.find(m => m.nom === g.matiere) || {}).coefficient || 1;
-    const moy = isPrimary 
-      ? GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition)
-      : GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
+    const matInfo = safeMatieres.find(m => (m.nom === g.matiere || m.id === g.matiere_id)) || {};
+    const coeff = matInfo.coefficient || 1;
+    const category = matInfo.category || 'ECRITE';
+    
+    const moy = GradeCalculator.getMoyenneByCycle(g, student.cycle);
     const points = moy * coeff;
     const appreciation = GradeCalculator.getAppreciation(moy);
-    return { ...g, coeff, moyenne: moy, points, appreciation };
+    
+    return { 
+      ...g, 
+      coeff, 
+      category, 
+      moyenne: moy, 
+      points, 
+      appreciation,
+      moyenneEtape: GradeCalculator.calculateStepGrade(g.note_cm, g.note_cp)
+    };
   });
 
+  const isPrimaryData = student.cycle === 'primaire' || student.cycle === 'maternelle';
+
+  // Group by category for primary
+  const categories = {
+    'ORALE': rows.filter(r => r.category === 'ORALE'),
+    'ECRITE': rows.filter(r => r.category === 'ECRITE'),
+    'PRATIQUE': rows.filter(r => r.category === 'PRATIQUE'),
+  };
+
   // Calculate overall weighted average
-  const moyennes = rows.map(r => r.moyenne);
-  const coeffs = rows.map(r => parseFloat(r.coeff));
-  const moyenneGenerale = GradeCalculator.calculateMoyennePondere(moyennes, coeffs);
-  const rang = classStats?.rang || '—';
+  const safeRows = rows.filter(r => r.moyenne !== null);
+  const moyenneGenerale = GradeCalculator.calculateMoyennePondere(
+    safeRows.map(r => r.moyenne),
+    safeRows.map(r => r.coeff)
+  );
+  
+  const subjectsSuccess = safeRows.filter(r => r.moyenne >= 10).length;
+  const totalSubjects = safeRows.length;
   const appreciation = GradeCalculator.getAppreciation(moyenneGenerale);
+
 
   return (
     <Document>
@@ -306,63 +318,98 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
           </View>
         </View>
 
-        {/* Grades Table */}
-        <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.matiere, textAlign: 'left' }]}>Matière</Text>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.interro1 }]}>I1</Text>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.interro2 }]}>I2</Text>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.interro3 }]}>I3</Text>
-            {isPrimary ? (
-              <>
-                <Text style={[styles.tableHeaderCell, { width: colWidths.devoir }]}>Devoir</Text>
-                <Text style={[styles.tableHeaderCell, { width: colWidths.composition }]}>Compo</Text>
-              </>
-            ) : (
-              <>
-                <Text style={[styles.tableHeaderCell, { width: colWidths.devoir, fontSize: 6 }]}>DW</Text>
-                <Text style={[styles.tableHeaderCell, { width: colWidths.composition, fontSize: 6 }]}>D1</Text>
-                <Text style={[styles.tableHeaderCell, { width: colWidths.composition, fontSize: 6, marginLeft: 2 }]}>D2</Text>
-              </>
-            )}
-            <Text style={[styles.tableHeaderCell, { width: colWidths.coeff }]}>Coef</Text>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.moyenne }]}>Moy</Text>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.forte, color: '#16a34a' }]}>Forte</Text>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.faible, color: '#dc2626' }]}>Faible</Text>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.points }]}>Points</Text>
-            <Text style={[styles.tableHeaderCell, { width: colWidths.appreciation }]}>Appréciation</Text>
-          </View>
-          {rows.map((row, i) => (
-            <View key={i} style={[styles.tableRow, i % 2 === 1 && styles.tableRowAlt]}>
-              <Text style={[styles.tableCell, { width: colWidths.matiere, textAlign: 'left', fontWeight: 700 }]}>{row.matiere}</Text>
-              <Text style={[styles.tableCell, { width: colWidths.interro1 }]}>{row.interro1 || '—'}</Text>
-              <Text style={[styles.tableCell, { width: colWidths.interro2 }]}>{row.interro2 || '—'}</Text>
-              <Text style={[styles.tableCell, { width: colWidths.interro3 }]}>{row.interro3 || '—'}</Text>
-              {isPrimary ? (
-                <>
-                  <Text style={[styles.tableCell, { width: colWidths.devoir }]}>{row.devoir || '—'}</Text>
-                  <Text style={[styles.tableCell, { width: colWidths.composition }]}>{row.composition || '—'}</Text>
-                </>
-              ) : (
-                <>
-                  <Text style={[styles.tableCell, { width: colWidths.devoir }]}>{row.dw || '—'}</Text>
-                  <Text style={[styles.tableCell, { width: colWidths.composition }]}>{row.d1 || '—'}</Text>
-                  <Text style={[styles.tableCell, { width: colWidths.composition, marginLeft: 2 }]}>{row.d2 || '—'}</Text>
-                </>
-              )}
-              <Text style={[styles.tableCellBold, { width: colWidths.coeff, color: '#1e3a8a' }]}>{row.coeff}</Text>
-              <Text style={[styles.tableCellBold, { width: colWidths.moyenne, color: row.moyenne < 10 ? '#ef4444' : '#1e3a8a' }]}>
-                {row.moyenne.toFixed(2)}
-              </Text>
-              <Text style={[styles.tableCellBold, { width: colWidths.forte, color: '#16a34a' }]}>{(row.max || 0).toFixed(2)}</Text>
-              <Text style={[styles.tableCellBold, { width: colWidths.faible, color: '#dc2626' }]}>{(row.min || 0).toFixed(2)}</Text>
-              <Text style={[styles.tableCellBold, { width: colWidths.points, color: '#d4af37' }]}>
-                {row.points.toFixed(2)}
-              </Text>
-              <Text style={[styles.tableCell, { width: colWidths.appreciation, fontSize: 6.5 }]}>{row.appreciation}</Text>
+        {/* Grades Table - Dynamic by Cycle */}
+        {isPrimaryData ? (
+          <View style={styles.table}>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.tableHeaderCell, { width: '25%', textAlign: 'left' }]}>Matières</Text>
+              <Text style={[styles.tableHeaderCell, { width: '15%' }]}>Moy. Étapes</Text>
+              <Text style={[styles.tableHeaderCell, { width: '15%' }]}>Composition</Text>
+              <Text style={[styles.tableHeaderCell, { width: '10%' }]}>Coef</Text>
+              <Text style={[styles.tableHeaderCell, { width: '15%' }]}>Moy / 20</Text>
+              <Text style={[styles.tableHeaderCell, { width: '20%' }]}>Appréciation</Text>
             </View>
-          ))}
-        </View>
+            
+            {Object.entries(categories).map(([cat, catRows]) => (
+              catRows.length > 0 && (
+                <View key={cat}>
+                  <View style={{ backgroundColor: '#f1f5f9', padding: 4, borderBottom: '0.5pt solid #e2e8f0' }}>
+                    <Text style={{ fontSize: 7, fontFamily: FONT_BOLD, color: '#475569' }}>BLOC : {cat}</Text>
+                  </View>
+                  {catRows.map((row, i) => (
+                    <View key={i} style={[styles.tableRow, i % 2 === 1 && styles.tableRowAlt]}>
+                      <Text style={[styles.tableCell, { width: '25%', textAlign: 'left', fontFamily: FONT_BOLD }]}>{row.matiere}</Text>
+                      <Text style={[styles.tableCell, { width: '15%' }]}>{row.moyenneEtape.toFixed(2)}</Text>
+                      <Text style={[styles.tableCell, { width: '15%' }]}>{row.composition || '—'}</Text>
+                      <Text style={[styles.tableCell, { width: '10%' }]}>{row.coeff}</Text>
+                      <Text style={[styles.tableCellBold, { width: '15%', color: row.moyenne < 10 ? '#ef4444' : '#1e3a8a' }]}>
+                        {row.moyenne.toFixed(2)}
+                      </Text>
+                      <Text style={[styles.tableCell, { width: '20%', fontSize: 7 }]}>{row.appreciation}</Text>
+                    </View>
+                  ))}
+                </View>
+              )
+            ))}
+          </View>
+        ) : (
+          <View style={styles.table}>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.tableHeaderCell, { width: '20%', textAlign: 'left' }]}>Matière</Text>
+              <Text style={[styles.tableHeaderCell, { width: '8%' }]}>I1</Text>
+              <Text style={[styles.tableHeaderCell, { width: '8%' }]}>I2</Text>
+              <Text style={[styles.tableHeaderCell, { width: '8%' }]}>I3</Text>
+              <Text style={[styles.tableHeaderCell, { width: '8%' }]}>DW</Text>
+              <Text style={[styles.tableHeaderCell, { width: '8%' }]}>D1</Text>
+              <Text style={[styles.tableHeaderCell, { width: '8%' }]}>D2</Text>
+              <Text style={[styles.tableHeaderCell, { width: '8%' }]}>Coef</Text>
+              <Text style={[styles.tableHeaderCell, { width: '8%' }]}>Moy</Text>
+              <Text style={[styles.tableHeaderCell, { width: '16%' }]}>Appréciation</Text>
+            </View>
+            {rows.map((row, i) => (
+              <View key={i} style={[styles.tableRow, i % 2 === 1 && styles.tableRowAlt]}>
+                <Text style={[styles.tableCell, { width: '20%', textAlign: 'left', fontFamily: FONT_BOLD }]}>{row.matiere}</Text>
+                <Text style={[styles.tableCell, { width: '8%' }]}>{row.interro1 || '—'}</Text>
+                <Text style={[styles.tableCell, { width: '8%' }]}>{row.interro2 || '—'}</Text>
+                <Text style={[styles.tableCell, { width: '8%' }]}>{row.interro3 || '—'}</Text>
+                <Text style={[styles.tableCell, { width: '8%' }]}>{row.dw || '—'}</Text>
+                <Text style={[styles.tableCell, { width: '8%' }]}>{row.d1 || '—'}</Text>
+                <Text style={[styles.tableCell, { width: '8%' }]}>{row.d2 || '—'}</Text>
+                <Text style={[styles.tableCellBold, { width: '8%', color: '#1e3a8a' }]}>{row.coeff}</Text>
+                <Text style={[styles.tableCellBold, { width: '8%', color: row.moyenne < 10 ? '#ef4444' : '#1e3a8a' }]}>
+                  {row.moyenne.toFixed(2)}
+                </Text>
+                <Text style={[styles.tableCell, { width: '16%', fontSize: 7 }]}>{row.appreciation}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Attitudes & Success Section - Primary only */}
+        {isPrimaryData && (
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 15 }}>
+            <View style={{ flex: 2, padding: 10, border: '1pt solid #e2e8f0', borderRadius: 4 }}>
+               <Text style={{ fontSize: 7, color: '#64748b', marginBottom: 5, fontFamily: FONT_BOLD }}>ATTITUDES & CONDUITE</Text>
+               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 7 }}>Assiduité / Ponctualité :</Text>
+                  <Text style={{ fontSize: 7, fontFamily: FONT_BOLD }}>Tr&egrave;s Bonne</Text>
+               </View>
+               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 7 }}>Discipline / Tenue :</Text>
+                  <Text style={{ fontSize: 7, fontFamily: FONT_BOLD }}>Exemplaire</Text>
+               </View>
+               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 7 }}>Travail / Effort :</Text>
+                  <Text style={{ fontSize: 7, fontFamily: FONT_BOLD }}>S&eacute;rieux</Text>
+               </View>
+            </View>
+            <View style={{ flex: 1, padding: 10, backgroundColor: '#f0f9ff', border: '1pt solid #bae6fd', borderRadius: 4, alignItems: 'center', justifyContent: 'center' }}>
+               <Text style={{ fontSize: 7, color: '#0369a1', marginBottom: 2 }}>RÉCAPITULATION</Text>
+               <Text style={{ fontSize: 16, fontFamily: FONT_BOLD, color: '#0369a1' }}>{subjectsSuccess} / {totalSubjects}</Text>
+               <Text style={{ fontSize: 6, color: '#0369a1' }}>Mati&egrave;res Valid&eacute;es</Text>
+            </View>
+          </View>
+        )}
 
         {/* Summary Cards */}
         <View style={styles.summaryBox}>
@@ -415,9 +462,9 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
         {/* Footer with QR */}
         <View style={styles.footer}>
           <View>
-            <Text style={styles.footerText}>Bulletin généré automatiquement par le système SLB</Text>
-            <Text style={styles.footerText}>ID: {bulletinId}</Text>
-            <Text style={[styles.footerText, { color: '#1e3a8a' }]}>saintlambert.bj/verify/{bulletinId}</Text>
+            <Text style={styles.footerText}>Bulletin généré par le système SLB</Text>
+            <Text style={styles.footerText}>Réf: {student.matricule} • {trimestre} Trim. • {schoolYear}</Text>
+            <Text style={[styles.footerText, { color: '#1e3a8a', fontFamily: FONT_BOLD }]}>Vérifier sur : saintlambert.bj/verify/{student.matricule}/{trimestre.replace(/[^0-9]/g, '')}/{schoolYear}</Text>
           </View>
           <View style={styles.qrContainer}>
             {qrCodeDataUrl && (

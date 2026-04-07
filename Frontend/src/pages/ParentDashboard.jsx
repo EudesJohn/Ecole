@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-hot-toast';
+
+import { useAuth } from '../hooks/useAuth';
 import BottomNav from '../components/UI/BottomNav';
 import SkeletonLoader from '../components/UI/SkeletonLoader';
 import { Button } from '../components/UI/Button';
@@ -8,8 +10,8 @@ import GradeCalculator from '../utils/GradeCalculator';
 import { downloadBulletin, generateQRDataUrl } from '../utils/bulletinTasks';
 import { supabase } from '../supabase';
 import {
-  BookOpen, FileText, Bell, AlertTriangle, Download, Award, Clock,
-  LogOut, GraduationCap, CheckCircle, XCircle, ClipboardCheck, Loader2
+  FileText, AlertTriangle, Download, Award,
+  LogOut, GraduationCap, Loader2
 } from 'lucide-react';
 
 const ParentDashboard = () => {
@@ -17,7 +19,6 @@ const ParentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [grades, setGrades] = useState([]);
   const [matieres, setMatieres] = useState([]);
-  const [cahierEntries, setCahierEntries] = useState([]);
   const [absences, setAbsences] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [moyenneGenerale, setMoyenneGenerale] = useState(0);
@@ -79,32 +80,24 @@ const ParentDashboard = () => {
 
       setAbsences(absData || []);
 
-      // 4. Fetch Cahier de Texte for Current Year
-      const { data: cahierData } = await supabase
-        .from('cahier_texte')
-        .select('*, matieres(nom)')
-        .eq('classe_id', studentData.classe_id)
-        .eq('school_year', schoolConfig.current_year)
-        .order('date', { ascending: false })
-        .limit(10);
-
-      setCahierEntries(cahierData?.map(d => ({ ...d, matiere: d.matieres?.nom })) || []);
+      // 4. Fetch Cahier de Texte for Current Year (logic removed if unused, but kept for future use if needed)
+      // setCahierEntries(cahierData?.map(d => ({ ...d, matiere: d.matieres?.nom })) || []);
 
       // 5. Fetch Detailed Stats for the Stats Cards AND ALL TRIMESTRES for history
       const fetchHistoryStats = async (t) => {
-        console.log(`🔍 Tentative de récupération des stats Archive T${t} pour l'année: ${schoolConfig.current_year}...`);
+
         const { data, error } = await supabase.rpc('get_detailed_stats', {
           p_student_id: studentData.id,
           p_trimestre: parseInt(t),
           p_school_year: schoolConfig.current_year
         });
         if (error) console.error(`❌ Erreur Archive T${t}:`, error);
-        if (data) console.log(`📊 Résultat Archive T${t}:`, data);
+
         return { trimestre: t, data };
       };
 
       const results = await Promise.all([1, 2, 3].map(t => fetchHistoryStats(t)));
-      
+
       const historyMap = {};
       results.forEach(res => {
         if (res.data?.general_stats) {
@@ -126,23 +119,18 @@ const ParentDashboard = () => {
 
       // 6. Logic: Alerts & Moyenne
       const newAlerts = [];
-      const clsCycle = studentData.classe; // Simplified: check if name contains 6, 5, 4, 3, 2, 1, T
-      const isPrimary = !(/[654321T]/.test(clsCycle));
+      // const isPrimary = studentData.cycle === 'primaire' || studentData.cycle === 'maternelle';
 
       formattedGrades.forEach(g => {
-        const moy = isPrimary 
-          ? GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition)
-          : GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
-          
+        const moy = GradeCalculator.getMoyenneByCycle(g, studentData.cycle);
+
         if (moy < 10) newAlerts.push({ matiere: g.matiere, moyenne: moy.toFixed(1), message: `⚠️ ${g.matiere} — ${moy.toFixed(1)}/20` });
       });
       setAlerts(newAlerts);
 
       if (formattedGrades.length > 0) {
         const moyennes = formattedGrades.map(g => {
-          return isPrimary 
-            ? GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition)
-            : GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
+          return GradeCalculator.getMoyenneByCycle(g, studentData.cycle);
         });
         const coeffs = formattedGrades.map(g => {
           const mat = (mats || []).find(m => m.id === g.matiere_id);
@@ -176,38 +164,31 @@ const ParentDashboard = () => {
 
       if (statsError) throw statsError;
       if (!statsData || !statsData.general_stats) {
-        alert('Données de statistiques indisponibles.');
+        toast.error('Données de statistiques indisponibles.');
         setGeneratingPdf(false);
         return;
       }
 
-      // 2. Préparer les notes à partir de l'état local (très fiable) enrichi avec les min/max
-      // On s'assure que chaque note a ses records de classe (max/min)
-      const subjectStats = Array.isArray(statsData.subject_stats) ? statsData.subject_stats : [];
+
+      // 2. Préparer les notes à partir de l'état local enrichi avec les min/max issus du RPC
+      const subjectStats = (statsData?.subject_stats) || [];
       
       const gradesBySubject = grades.map(g => {
         const s = subjectStats.find(ss => ss.matiere_id === g.matiere_id) || {};
         return {
+          ...g,
           matiere: g.matiere,
-          matiere_id: g.matiere_id,
-          interro1: g.interro1,
-          interro2: g.interro2,
-          interro3: g.interro3,
-          devoir: g.devoir,
-          composition: g.composition,
-          dw: g.dw,
-          d1: g.d1,
-          d2: g.d2,
           max: s.max || 0,
           min: s.min || 0
         };
       });
 
       if (gradesBySubject.length === 0) {
-        alert("Aucune note n'a été trouvée pour cet élève.");
+        toast.error("Aucune note n'a été trouvée pour cet élève.");
         setGeneratingPdf(false);
         return;
       }
+
 
       const classStats = {
         effectif: statsData.general_stats.effectif || 0,
@@ -220,7 +201,7 @@ const ParentDashboard = () => {
       const qrCodeDataUrl = await generateQRDataUrl(`https://saintlambert.bj/verify/${encodeURIComponent(studentData.matricule)}/${selectedTrimestre}/${schoolConfig.current_year}`);
 
       await downloadBulletin({
-        student: { ...studentData, dateNaissance: studentData.date_naissance },
+        student: { ...studentData, dateNaissance: studentData.date_naissance, cycle: studentData.cycle },
         gradesBySubject: gradesBySubject, // Notes enrichies avec records de classe
         matieres,
         classStats: classStats,
@@ -230,8 +211,9 @@ const ParentDashboard = () => {
       });
     } catch (err) {
       console.error(err);
-      alert('Erreur lors de la génération: ' + err.message);
+      toast.error('Erreur lors de la génération: ' + err.message);
     }
+
     setGeneratingPdf(false);
   };
 
@@ -297,11 +279,10 @@ const ParentDashboard = () => {
             <button
               key={t}
               onClick={() => setSelectedTrimestre(t)}
-              className={`flex-1 py-4 rounded-[1.5rem] text-xs font-black transition-all duration-500 flex items-center justify-center gap-2 ${
-                selectedTrimestre === t
+              className={`flex-1 py-4 rounded-[1.5rem] text-xs font-black transition-all duration-500 flex items-center justify-center gap-2 ${selectedTrimestre === t
                   ? 'bg-royal-gradient text-white shadow-xl shadow-blue-900/20 scale-[1.02]'
                   : 'text-gray-400 hover:bg-gray-50'
-              }`}
+                }`}
             >
               Trimestre {t}
               {schoolConfig.current_trimestre === t && (
@@ -314,8 +295,8 @@ const ParentDashboard = () => {
 
       {/* Stats Bento Grid */}
       <div className="px-6 mb-8 grid grid-cols-2 gap-4">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }} 
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
           className="bento-item border-l-4 border-blue-600 bg-white shadow-glass-pro"
@@ -332,8 +313,8 @@ const ParentDashboard = () => {
           </div>
         </motion.div>
 
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.9 }} 
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
           className="bento-item border-l-4 border-gold-400 bg-white shadow-glass-pro"
@@ -358,7 +339,7 @@ const ParentDashboard = () => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-display font-black text-slate-800 flex items-center gap-2">
             <div className="w-1.5 h-4 bg-blue-600 rounded-full" />
-            Bilan de l'Année
+            Bilan de l&apos;Année
           </h3>
           <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{schoolConfig.current_year}</span>
         </div>
@@ -374,8 +355,8 @@ const ParentDashboard = () => {
               const tData = history[t];
               const isActive = selectedTrimestre === String(t);
               return (
-                <div key={t} onClick={() => setSelectedTrimestre(String(t))} 
-                     className={`grid grid-cols-4 p-4 items-center cursor-pointer transition-all duration-300 ${isActive ? 'bg-blue-50/40' : 'hover:bg-slate-50/30'}`}>
+                <div key={t} onClick={() => setSelectedTrimestre(String(t))}
+                  className={`grid grid-cols-4 p-4 items-center cursor-pointer transition-all duration-300 ${isActive ? 'bg-blue-50/40' : 'hover:bg-slate-50/30'}`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-blue-600 shadow-[0_0_8px_#2563eb]' : 'bg-slate-200'}`} />
                     <span className={`text-xs font-black ${isActive ? 'text-blue-700' : 'text-slate-600'}`}>Trimestre {t}</span>
@@ -440,16 +421,14 @@ const ParentDashboard = () => {
         ) : (
           <div className="space-y-4">
             {grades.map((g, i) => {
-              const isPrimary = !(/[654321T]/.test(studentData.classe));
-              const moy = isPrimary 
-                ? GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.devoir, g.composition)
-                : GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
+              // const isPrimary = studentData.cycle === 'primaire' || studentData.cycle === 'maternelle';
+              const moy = GradeCalculator.getMoyenneByCycle(g, studentData.cycle);
               const isLow = moy < 10;
               return (
-                <motion.div 
-                  key={g.id} 
-                  initial={{ opacity: 0, y: 15 }} 
-                  animate={{ opacity: 1, y: 0 }} 
+                <motion.div
+                  key={g.id}
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05 }}
                   className="glass-card-pro p-5 bg-white border-slate-100 hover:scale-[1.01] hover:shadow-glass-lg"
                 >
@@ -463,47 +442,51 @@ const ParentDashboard = () => {
                       <span className="text-[10px] text-slate-300 font-black ml-0.5">/20</span>
                     </div>
                   </div>
-                  
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-4">
-                    {[
-                      ['I1', g.interro1], ['I2', g.interro2], ['I3', g.interro3]
-                    ].map(([label, val]) => (
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                    {['interro1', 'interro2', 'interro3'].map(label => (
                       <div key={label} className="text-center p-2 bg-slate-50 rounded-xl border border-slate-100/50">
-                        <p className="text-[8px] text-slate-400 font-black tracking-widest mb-1">{label}</p>
-                        <p className="text-[11px] font-black text-slate-700">{val || '--'}</p>
+                        <p className="text-[8px] text-slate-400 font-black tracking-widest mb-1 uppercase">{label}</p>
+                        <p className="text-[11px] font-black text-slate-700">{g[label] || '--'}</p>
                       </div>
                     ))}
-                    {!(/[654321T]/.test(studentData.classe)) ? (
+                    {(studentData.cycle === 'primaire' || studentData.cycle === 'maternelle') ? (
                       <>
-                        {[
-                          ['DEV', g.devoir], ['COMP', g.composition]
-                        ].map(([label, val]) => (
-                          <div key={label} className="text-center p-2 bg-slate-50 rounded-xl border border-slate-100/50">
-                            <p className="text-[8px] text-slate-400 font-black tracking-widest mb-1">{label}</p>
-                            <p className="text-[11px] font-black text-slate-700">{val || '--'}</p>
-                          </div>
-                        ))}
+                        <div className="text-center p-2 bg-blue-50 rounded-xl border border-blue-100">
+                          <p className="text-[8px] text-blue-400 font-black tracking-widest mb-1 uppercase">Étapes</p>
+                          <p className="text-[11px] font-black text-blue-700">
+                            {GradeCalculator.calculateStepGrade(g.note_cm, g.note_cp).toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="text-center p-2 bg-gold-50 rounded-xl border border-gold-100">
+                          <p className="text-[8px] text-gold-500 font-black tracking-widest mb-1 uppercase">Comp</p>
+                          <p className="text-[11px] font-black text-gold-700">{g.composition || '--'}</p>
+                        </div>
                       </>
                     ) : (
                       <>
-                        {[
-                          ['DW', g.dw], ['D1', g.d1], ['D2', g.d2]
-                        ].map(([label, val]) => (
-                          <div key={label} className="text-center p-2 bg-slate-50 rounded-xl border border-slate-100/50">
-                            <p className="text-[8px] text-slate-400 font-black tracking-widest mb-1">{label}</p>
-                            <p className="text-[11px] font-black text-slate-700">{val || '--'}</p>
-                          </div>
-                        ))}
+                        <div className="text-center p-2 bg-primary-50 rounded-xl border border-primary-100">
+                          <p className="text-[8px] text-primary-500 font-black tracking-widest mb-1 uppercase">DW</p>
+                          <p className="text-[11px] font-black text-primary-700">{g.dw || '--'}</p>
+                        </div>
+                        <div className="text-center p-2 bg-gold-50 rounded-xl border border-gold-100">
+                          <p className="text-[8px] text-gold-500 font-black tracking-widest mb-1 uppercase">D1</p>
+                          <p className="text-[11px] font-black text-gold-700">{g.d1 || '--'}</p>
+                        </div>
+                        <div className="text-center p-2 bg-gold-50 rounded-xl border border-gold-100">
+                          <p className="text-[8px] text-gold-500 font-black tracking-widest mb-1 uppercase">D2</p>
+                          <p className="text-[11px] font-black text-gold-700">{g.d2 || '--'}</p>
+                        </div>
                       </>
                     )}
                   </div>
 
                   <div className="relative h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }} 
+                    <motion.div
+                      initial={{ width: 0 }}
                       animate={{ width: `${(moy / 20) * 100}%` }}
                       transition={{ duration: 1, delay: i * 0.1 }}
-                      className={`h-full rounded-full ${isLow ? 'bg-red-400' : 'bg-blue-600'}`} 
+                      className={`h-full rounded-full ${isLow ? 'bg-red-400' : 'bg-blue-600'}`}
                     />
                   </div>
                 </motion.div>
@@ -545,7 +528,7 @@ const ParentDashboard = () => {
 
       {/* Final Action: Download */}
       <div className="px-6 mb-12">
-        <motion.div 
+        <motion.div
           whileTap={{ scale: 0.98 }}
           className="bg-royal-gold p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden group text-center"
         >
@@ -556,9 +539,9 @@ const ParentDashboard = () => {
             </div>
             <h3 className="text-2xl font-display font-black text-white mb-2 tracking-tight">Bulletin Officiel</h3>
             <p className="text-blue-200/60 text-[10px] font-bold uppercase tracking-widest mb-8">Téléchargement Sécurisé (QR Code)</p>
-            <Button 
-              variant="white" 
-              size="lg" 
+            <Button
+              variant="white"
+              size="lg"
               icon={generatingPdf ? Loader2 : Download}
               loading={generatingPdf}
               onClick={handleDownloadBulletin}

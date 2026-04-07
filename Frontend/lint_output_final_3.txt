@@ -1,4 +1,0 @@
-
-> ecole-frontend@0.0.0 lint
-> eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0
-

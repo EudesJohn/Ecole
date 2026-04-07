@@ -1,14 +1,7 @@
-/* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 
-const AuthContext = createContext();
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be within AuthProvider');
-  return context;
-};
+export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -21,22 +14,18 @@ export const AuthProvider = ({ children }) => {
     // Initial check for session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setUser(session.user);
-        const metadataRole = session.user.user_metadata?.role || 'parent';
-        setRole(metadataRole);
-        fetchProfile(session.user.id, session.user.email, session.user);
+        fetchProfile(session.user.id, session.user);
       } else {
         setLoading(false);
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
         setUser(session.user);
         const metadataRole = session.user.user_metadata?.role || 'parent';
         setRole(metadataRole);
-        fetchProfile(session.user.id, session.user.email, session.user);
+        fetchProfile(session.user.id, session.user);
       } else {
         setUser(null);
         setRole(null);
@@ -48,14 +37,9 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId, userEmail, sessionUser) => {
+  const fetchProfile = async (userId, sessionUser) => {
     setLoading(true);
     try {
-      // 1. Initial role from metadata (Instant response)
-      const initialRole = sessionUser?.user_metadata?.role || null;
-      if (initialRole) setRole(initialRole);
-
-      // 2. Fetch from database (Authoritative but might be slow)
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -66,23 +50,28 @@ export const AuthProvider = ({ children }) => {
         setRole(data.role);
         setUserProfile(data);
         if (data.role === 'parent') {
-          const { data: stData } = await supabase.from('students').select('*, classes(nom, niveau)').eq('parent_id', userId).single();
-          if (stData) {
-            setStudentData({ ...stData, classe: stData.classes?.nom || 'Non assignée' });
+          const { data: children } = await supabase
+            .from('students')
+            .select('*, classes(nom, niveau, cycle)')
+            .eq('parent_id', userId);
+
+          if (children && children.length > 0) {
+            const stData = children[0]; // Par défaut le premier enfant
+            setStudentData({ 
+              ...stData, 
+              classeNom: stData.classes?.nom || 'Non assignée',
+              cycle: stData.classes?.cycle || 'primaire'
+            });
           }
         }
       } else {
-        // Fallback to metadata if DB profile is missing but we know the role from Auth
-        if (initialRole) {
-          setRole(initialRole);
-        } else {
-          setRole('parent');
-        }
+        // Fallback metadata
+        const metadataRole = sessionUser?.user_metadata?.role || 'parent';
+        setRole(metadataRole);
       }
     } catch (err) {
       console.error('Error fetching profile:', err);
-      // Ensure we don't stay in a loading loop or null role if user is authenticated
-      if (!role) setRole('guest'); 
+      setRole('guest');
     } finally {
       setLoading(false);
     }
@@ -124,7 +113,7 @@ export const AuthProvider = ({ children }) => {
       setRole(null);
       setStudentData(null);
       setUserProfile(null);
-      
+
       await supabase.auth.signOut();
     } catch (err) {
       console.error('Error during logout:', err);
