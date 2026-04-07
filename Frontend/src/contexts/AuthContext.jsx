@@ -47,8 +47,9 @@ export const AuthProvider = ({ children }) => {
   const fetchProfile = async (userId, userEmail, sessionUser) => {
     setLoading(true);
     try {
-      // 1. Initial role from metadata (Fastest, works "d'un coup")
-      let initialRole = sessionUser?.user_metadata?.role || null;
+      // 1. Initial role from metadata (Instant response)
+      const initialRole = sessionUser?.user_metadata?.role || null;
+      if (initialRole) setRole(initialRole);
 
       // 2. Fetch from database (Authoritative but might be slow)
       const { data, error } = await supabase

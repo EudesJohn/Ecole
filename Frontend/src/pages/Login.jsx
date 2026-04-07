@@ -57,8 +57,8 @@ const Login = () => {
     try {
       if (mode === 'admin') {
         await login(email, password);
-        // Check user role from Firestore to redirect properly
-        navigate('/admin');
+        // Utiliser la redirection racine pour laisser RoleRedirect gérer selon le profil chargé
+        navigate('/');
       } else {
         await loginParent(matricule, pin);
         navigate('/parent');
