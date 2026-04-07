@@ -2,7 +2,18 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 
 export const useAdminData = () => {
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [data, setData] = useState({
+    classes: [],
+    matieres: [],
+    students: [],
+    teachers: [],
+    absences: [],
+    cahiers: [],
+    grades: [],
+    schoolConfig: { current_trimestre: '1', current_year: '2025-2026' }
+  });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
