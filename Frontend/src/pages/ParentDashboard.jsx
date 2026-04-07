@@ -270,7 +270,7 @@ const ParentDashboard = () => {
       </div>
 
       {/* Trimester Selector (Archive) */}
-      <div className="px-4 -mt-4 mb-6 relative z-20">
+      <div className="px-4 -mt-8 mb-4 relative z-20">
         <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-1 shadow-xl flex gap-1 border border-white">
           {['1', '2', '3'].map((t) => (
             <button
@@ -292,7 +292,7 @@ const ParentDashboard = () => {
       </div>
 
       {/* Stats */}
-      <div className="px-4 -mt-10 relative z-10 mb-6">
+      <div className="px-4 mt-2 relative z-10 mb-6">
         <div className="grid grid-cols-2 gap-3 mb-3">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="bg-white rounded-2xl p-4 shadow-glass text-center">

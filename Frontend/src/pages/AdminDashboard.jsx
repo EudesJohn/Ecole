@@ -264,15 +264,34 @@ const AdminDashboard = () => {
       let result;
       const payload = { ...formData };
 
-      // Special logic for class mapping (using stable ID instead of names now)
-      if (payload.classe && modalType !== 'classes') {
-        payload.classe_id = payload.classe;
-        delete payload.classe;
-      }
+      // Nettoyage des champs de jointure et colonnes calculées/virtuelles
+      // Ces champs provoquent des erreurs lors de l'UPDATE (PostgREST ne les trouve pas dans le cache du schéma)
+      const unwantedFields = [
+        'id', // L'ID ne doit pas être dans le corps de l'UPDATE
+        'classes', 
+        'profiles', 
+        'students', 
+        'matieres', 
+        'classe', // Helper string added in fetchData or from dropdown
+        'full_name', // Generated column
+        'created_at',
+        'updated_at',
+        'createdAt',
+        'updatedAt'
+      ];
+      
+      // On garde une copie de 'classe' (ID de la classe) avant suppression
+      const selectedClasseId = payload.classe;
+      
+      unwantedFields.forEach(field => delete payload[field]);
 
-      // REMOVE GENERATED COLUMNS
-      if (modalType === 'teachers') {
-        delete payload.full_name;
+      // Injection de classe_id (UUID ou null)
+      if (modalType !== 'classes') {
+        if (selectedClasseId) {
+          payload.classe_id = selectedClasseId;
+        } else if (selectedClasseId === '' || selectedClasseId === null) {
+          payload.classe_id = null;
+        }
       }
 
       const { data: { session } } = await supabase.auth.getSession();
