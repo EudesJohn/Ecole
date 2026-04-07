@@ -277,7 +277,7 @@ const AdminDashboard = () => {
 
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || '';
 
       if (modalType === 'students' && !editItem) {
         // CALL BACKEND API FOR STUDENT CREATION (Generates Matricule & PIN)
