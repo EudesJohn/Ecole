@@ -513,61 +513,39 @@ const ParentDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
-                    {/* New JSONB Array priority */}
-                    {Array.isArray(g.compositions) && g.compositions.length > 0 ? (
-                      g.compositions.map((c, idx) => c !== null && c !== undefined && c !== '' ? (
-                        <div key={idx} className="text-center p-2 rounded-xl border bg-gold-50 border-gold-100">
-                          <p className="text-[8px] font-black tracking-widest mb-1 uppercase text-gold-500">C{idx + 1}</p>
-                          <p className="text-[11px] font-black text-gold-700">{c}</p>
-                        </div>
-                      ) : null)
-                    ) : (
-                      /* Legacy Fallback */
-                      ['interro1', 'interro2', 'interro3'].map((field, idx) => {
-                        const value = g[field];
-                        const isPrimary = ['primaire', 'maternelle'].includes(studentData.cycle?.toLowerCase());
-                        const label = isPrimary ? `C${idx + 1}` : `I${idx + 1}`;
-                        if (value === null || value === undefined || value === '') return null;
-                        
-                        return (
-                          <div key={field} className={`text-center p-2 rounded-xl border ${isPrimary ? 'bg-gold-50 border-gold-100' : 'bg-slate-50 border-slate-100/50'}`}>
-                            <p className={`text-[8px] font-black tracking-widest mb-1 uppercase ${isPrimary ? 'text-gold-500' : 'text-slate-400'}`}>{label}</p>
-                            <p className={`text-[11px] font-black ${isPrimary ? 'text-gold-700' : 'text-slate-700'}`}>{value}</p>
-                          </div>
-                        );
-                      })
-                    )}
-                    {(studentData.cycle?.toLowerCase() === 'primaire' || studentData.cycle?.toLowerCase() === 'maternelle') ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                    {['primaire', 'maternelle'].includes(studentData.cycle?.toLowerCase()) ? (
+                      /* Simplified Monthly View */
                       <>
-                        {(g.note_cm || g.note_cp) && (
+                        {sub.composition !== null && sub.composition !== undefined && sub.composition !== '' && (
+                          <div className="text-center p-2 bg-gold-50 border border-gold-100 rounded-xl">
+                            <p className="text-[8px] font-black tracking-widest mb-1 uppercase text-gold-500">Composition</p>
+                            <p className="text-[11px] font-black text-gold-700">{sub.composition}</p>
+                          </div>
+                        )}
+                        {(sub.note_cm || sub.note_cp) && (
                           <div className="text-center p-2 bg-blue-50 rounded-xl border border-blue-100">
                             <p className="text-[8px] text-blue-400 font-black tracking-widest mb-1 uppercase">Étapes</p>
                             <p className="text-[11px] font-black text-blue-700">
-                              {GradeCalculator.calculateStepGrade(g.note_cm, g.note_cp).toFixed(2)}
+                              {GradeCalculator.calculateStepGrade(sub.note_cm, sub.note_cp).toFixed(2)}
                             </p>
-                          </div>
-                        )}
-                        {g.composition && (
-                          <div className="text-center p-2 bg-indigo-50 rounded-xl border border-indigo-100">
-                            <p className="text-[8px] text-indigo-400 font-black tracking-widest mb-1 uppercase">Comp.</p>
-                            <p className="text-[11px] font-black text-indigo-700">{g.composition}</p>
                           </div>
                         )}
                       </>
                     ) : (
+                      /* Secondary System */
                       <>
+                        {['interro1', 'interro2', 'interro3'].map((field, idx) => (
+                          sub[field] !== null && sub[field] !== undefined && sub[field] !== '' && (
+                            <div key={field} className="text-center p-2 bg-slate-50 border border-slate-100/50 rounded-xl">
+                              <p className="text-[8px] font-black tracking-widest mb-1 uppercase text-slate-400">I{idx + 1}</p>
+                              <p className="text-[11px] font-black text-slate-700">{sub[field]}</p>
+                            </div>
+                          )
+                        ))}
                         <div className="text-center p-2 bg-primary-50 rounded-xl border border-primary-100">
                           <p className="text-[8px] text-primary-500 font-black tracking-widest mb-1 uppercase">DW</p>
-                          <p className="text-[11px] font-black text-primary-700">{g.dw || '--'}</p>
-                        </div>
-                        <div className="text-center p-2 bg-gold-50 rounded-xl border border-gold-100">
-                          <p className="text-[8px] text-gold-500 font-black tracking-widest mb-1 uppercase">D1</p>
-                          <p className="text-[11px] font-black text-gold-700">{g.d1 || '--'}</p>
-                        </div>
-                        <div className="text-center p-2 bg-gold-50 rounded-xl border border-gold-100">
-                          <p className="text-[8px] text-gold-500 font-black tracking-widest mb-1 uppercase">D2</p>
-                          <p className="text-[11px] font-black text-gold-700">{g.d2 || '--'}</p>
+                          <p className="text-[11px] font-black text-primary-700">{sub.dw || '--'}</p>
                         </div>
                       </>
                     )}

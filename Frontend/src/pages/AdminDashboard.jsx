@@ -506,21 +506,6 @@ const AdminDashboard = () => {
                 </select>
                 <input type="number" placeholder="Effectif Max" className="input-slb" value={formData.effectif || 35} onChange={e => setFormData({ ...formData, effectif: parseInt(e.target.value) })} />
               </div>
-              {['maternelle', 'primaire'].includes(formData.cycle) && (
-                <div className="mt-4">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">Nombre de compositions</p>
-                  <input 
-                    type="number" 
-                    min="1"
-                    max="10"
-                    placeholder="Nb Compositions" 
-                    className="input-slb w-full" 
-                    value={formData.compo_count || 1} 
-                    onChange={e => setFormData({ ...formData, compo_count: parseInt(e.target.value) })} 
-                  />
-                  <p className="text-[10px] text-slate-300 mt-1 italic">Définit le nombre de colonnes de notes dans l&apos;espace professeur.</p>
-                </div>
-              )}
             </>
           )}
 
