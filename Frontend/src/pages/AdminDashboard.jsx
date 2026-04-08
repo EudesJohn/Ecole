@@ -541,6 +541,13 @@ const AdminDashboard = () => {
                 <option value="M">Masculin</option>
                 <option value="F">Féminin</option>
               </select>
+              <input 
+                type="tel" 
+                placeholder="Téléphone du Parent (ex: +229 90 00 00 00)" 
+                className="input-slb" 
+                value={formData.telephone_parent || ''} 
+                onChange={e => setFormData({ ...formData, telephone_parent: e.target.value })} 
+              />
             </>
           )}
 
