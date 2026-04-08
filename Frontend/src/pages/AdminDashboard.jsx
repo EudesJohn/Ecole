@@ -21,9 +21,9 @@ const AdminDashboard = () => {
   const [editItem, setEditItem] = useState(null);
   const [formData, setFormData] = useState({});
 
-  const { 
-    classes, matieres, students, teachers, absences, cahiers, 
-    schoolConfig, loading, refresh 
+  const {
+    classes, matieres, students, teachers, absences, cahiers,
+    schoolConfig, loading, refresh
   } = useAdminData();
 
   const { handleGenerateBulletin, generatingPdf } = useBulletin();
@@ -37,7 +37,7 @@ const AdminDashboard = () => {
       else if (msg.includes('nom')) friendlyMsg = "Cet élément (nom/titre) existe déjà.";
       else friendlyMsg = "Un enregistrement identique existe déjà dans la base.";
     }
-    
+
     setNotification({ message: friendlyMsg, type });
     setTimeout(() => setNotification(null), 3000);
   };
@@ -50,14 +50,14 @@ const AdminDashboard = () => {
       if (updatedConfig.current_trimestre) toUpdate.current_trimestre = updatedConfig.current_trimestre;
       if (updatedConfig.current_year) toUpdate.current_year = updatedConfig.current_year;
 
-      const updates = Object.entries(toUpdate).map(([key, value]) => 
+      const updates = Object.entries(toUpdate).map(([key, value]) =>
         supabase.from('school_config').upsert({ key, value }, { onConflict: 'key' })
       );
-      
+
       const results = await Promise.all(updates);
       const failed = results.find(r => r.error);
       if (failed) throw failed.error;
-      
+
       showNotif('Configuration mise à jour !');
       setFormData({}); // Clear temp year edit
       refresh();
@@ -74,28 +74,31 @@ const AdminDashboard = () => {
     try {
       // 1. Prepare Payload
       const payload = { ...formData };
-      
+
       // Remove UI-only or relation-based fields that aren't in the DB schema
       const unwantedFields = [
-        'id', 'classes', 'profiles', 'students', 'matieres', 
+        'id', 'classes', 'profiles', 'students', 'matieres',
         'classe', 'full_name', 'created_at', 'updated_at', 'studentsData'
       ];
       unwantedFields.forEach(f => delete payload[f]);
 
       // 2. Decide Strategy (API for Create Student/Teacher, Supabase for everything else)
-      const isNewSensitive = !editItem && (modalType === 'students' || modalType === 'professeurs' || modalType === 'eleves');
-      
+      // Les élèves sont gérés directement par Supabase maintenant (le matricule est auto-généré).
+      // Seuls les professeurs nécessitent l'API pour créer l'utilisateur Auth.
+      const isNewSensitive = !editItem && modalType === 'professeurs';
+
       if (isNewSensitive) {
-        const routeMap = { 'professeurs': 'teachers', 'eleves': 'students', 'students': 'students' };
-        const route = routeMap[modalType];
-        
         // Use relative path if baseUrl is not provided
         let baseUrl = import.meta.env.VITE_BACKEND_URL || '';
         if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
 
-        const response = await fetch(`${baseUrl}/api/admin/${route}`, {
+        // Mot de passe temporaire pour le professeur
+        payload.password = 'Slb' + Math.floor(1000 + Math.random() * 9000);
+        payload.role = 'teacher';
+
+        const response = await fetch(`${baseUrl}/api/create-user`, {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
           },
@@ -112,8 +115,8 @@ const AdminDashboard = () => {
         }
 
         if (!response.ok) throw new Error(result.error || `Erreur Serveur (${response.status})`);
-        
-        showNotif(`Succès ! Matricule: ${result.matricule || 'OK'}, Accès: ${result.pin || result.password || 'Généré'}`);
+
+        showNotif(`Succès ! Professeur ajouté. Mot de passe provisoire : ${payload.password}`);
       } else {
         // Direct Supabase Update/Insert
         const tableMap = {
@@ -138,7 +141,7 @@ const AdminDashboard = () => {
             res = await supabase.from(table).insert([payload]);
           }
         }
-        
+
         if (res.error) {
           console.error(`Supabase Error (${table}):`, res.error);
           throw new Error(res.error.message || 'Erreur lors de la sauvegarde');
@@ -185,7 +188,7 @@ const AdminDashboard = () => {
   return (
     <div className="flex min-h-screen bg-[#fcfdfe]">
       <Sidebar role="admin" activeTab={activeTab} onTabChange={setActiveTab} />
-      
+
       <main className="flex-1 p-6 md:p-10 pt-24 md:pt-10 overflow-auto">
         <header className="mb-10 animate-fade-in">
           <div className="flex items-center gap-3 text-primary-500 font-black text-[10px] uppercase tracking-[0.3em] mb-2 opacity-60">
@@ -204,38 +207,42 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === 'eleves' && (
-            <EntityTable 
+            <EntityTable
               items={students} colName="students" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
               onAdd={() => openModal('eleves')} onEdit={(item) => openModal('eleves', item)} onDelete={(id) => handleDelete('eleves', id)}
               onExtraAction={handleGenerateBulletin} extraActionIcon={Download} extraActionLabel="Bulletin" generatingId={generatingPdf}
               columns={[
                 { key: 'matricule', label: 'Matricule' },
-                { key: 'fullname', label: 'Élève', render: (s) => (
-                  <div><p className="font-bold">{s.prenom} {s.nom}</p><p className="text-[10px] text-slate-400">{s.sexe === 'M' ? 'Garçon' : 'Fille'}</p></div>
-                )},
+                {
+                  key: 'fullname', label: 'Élève', render: (s) => (
+                    <div><p className="font-bold">{s.prenom} {s.nom}</p><p className="text-[10px] text-slate-400">{s.sexe === 'M' ? 'Garçon' : 'Fille'}</p></div>
+                  )
+                },
                 { key: 'classe', label: 'Classe' }
               ]}
             />
           )}
 
           {activeTab === 'professeurs' && (
-            <EntityTable 
+            <EntityTable
               items={teachers} colName="teachers" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
               onAdd={() => openModal('professeurs')} onEdit={(item) => openModal('professeurs', item)} onDelete={(id) => handleDelete('professeurs', id)}
               columns={[
                 { key: 'full_name', label: 'Nom' },
                 { key: 'email', label: 'Email' },
-                { key: 'matiere', label: 'Spécialité', render: (t) => (
-                  <div className="flex flex-wrap gap-1">
-                    {(Array.isArray(t.matiere) ? t.matiere : []).map(m => <span key={m} className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold">{m}</span>)}
-                  </div>
-                )}
+                {
+                  key: 'matiere', label: 'Spécialité', render: (t) => (
+                    <div className="flex flex-wrap gap-1">
+                      {(Array.isArray(t.matiere) ? t.matiere : []).map(m => <span key={m} className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-bold">{m}</span>)}
+                    </div>
+                  )
+                }
               ]}
             />
           )}
 
           {activeTab === 'classes' && (
-            <EntityTable 
+            <EntityTable
               items={classes} colName="classes" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
               onAdd={() => openModal('classes')} onEdit={(item) => openModal('classes', item)} onDelete={(id) => handleDelete('classes', id)}
               columns={[
@@ -247,7 +254,7 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === 'matieres' && (
-            <EntityTable 
+            <EntityTable
               items={matieres} colName="matieres" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
               onAdd={() => openModal('matieres')} onEdit={(item) => openModal('matieres', item)} onDelete={(id) => handleDelete('matieres', id)}
               columns={[
@@ -260,7 +267,7 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === 'presences' && (
-            <EntityTable 
+            <EntityTable
               items={absences} colName="absences" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
               columns={[
                 { key: 'date', label: 'Date' },
@@ -272,7 +279,7 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === 'cahiers' && (
-            <EntityTable 
+            <EntityTable
               items={cahiers} colName="cahiers" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
               columns={[
                 { key: 'date', label: 'Date' },
@@ -284,16 +291,18 @@ const AdminDashboard = () => {
           )}
 
           {activeTab === 'bulletins' && (
-            <EntityTable 
+            <EntityTable
               items={students} colName="students" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
-              onEdit={(item) => openModal('eleves', item)} 
-              onExtraAction={(item) => handleGenerateBulletin(item, schoolConfig, classes, matieres)} 
+              onEdit={(item) => openModal('eleves', item)}
+              onExtraAction={(item) => handleGenerateBulletin(item, schoolConfig, classes, matieres)}
               extraActionIcon={Download} extraActionLabel="Générer Bulletin" generatingId={generatingPdf}
               columns={[
                 { key: 'matricule', label: 'Matricule' },
-                { key: 'fullname', label: 'Élève', render: (s) => (
-                  <div><p className="font-bold">{s.prenom} {s.nom}</p><p className="text-[10px] text-slate-400">{s.classe || 'N/A'}</p></div>
-                )},
+                {
+                  key: 'fullname', label: 'Élève', render: (s) => (
+                    <div><p className="font-bold">{s.prenom} {s.nom}</p><p className="text-[10px] text-slate-400">{s.classe || 'N/A'}</p></div>
+                  )
+                },
                 { key: 'classe', label: 'Classe' }
               ]}
             />
@@ -309,9 +318,9 @@ const AdminDashboard = () => {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Trimestre Actuel</label>
-                    <select 
-                      className="input-slb w-full" 
-                      value={schoolConfig.current_trimestre} 
+                    <select
+                      className="input-slb w-full"
+                      value={schoolConfig.current_trimestre}
                       onChange={e => handleConfigSave({ current_trimestre: e.target.value })}
                     >
                       <option value="1">1er Trimestre</option>
@@ -321,10 +330,10 @@ const AdminDashboard = () => {
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Année Scolaire</label>
-                    <input 
-                      type="text" 
-                      className="input-slb w-full font-mono" 
-                      value={formData.current_year !== undefined ? formData.current_year : (schoolConfig.current_year || '')} 
+                    <input
+                      type="text"
+                      className="input-slb w-full font-mono"
+                      value={formData.current_year !== undefined ? formData.current_year : (schoolConfig.current_year || '')}
                       onChange={e => setFormData({ ...formData, current_year: e.target.value })}
                       onBlur={() => {
                         if (formData.current_year && formData.current_year !== schoolConfig.current_year) {
@@ -335,7 +344,7 @@ const AdminDashboard = () => {
                     />
                   </div>
                 </div>
-                
+
                 <div className="p-6 bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
                   <div className="flex gap-4">
                     <div className="w-10 h-10 bg-white rounded-xl shadow-sm flex items-center justify-center text-amber-500 shrink-0">
@@ -354,9 +363,9 @@ const AdminDashboard = () => {
 
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                   <p className="text-[10px] text-slate-400 font-bold italic">Dernière mise à jour : {new Date().toLocaleDateString()}</p>
-                   <Button variant="primary" onClick={() => handleConfigSave({ ...schoolConfig, ...formData })} loading={saving} size="sm">
-                     Tout Enregistrer
-                   </Button>
+                  <Button variant="primary" onClick={() => handleConfigSave({ ...schoolConfig, ...formData })} loading={saving} size="sm">
+                    Tout Enregistrer
+                  </Button>
                 </div>
               </div>
             </div>
@@ -368,8 +377,8 @@ const AdminDashboard = () => {
         <div className="space-y-4 p-4">
           {modalType === 'classes' && (
             <>
-              <input type="text" placeholder="Nom de la classe (ex: 6ème A)" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({...formData, nom: e.target.value})} />
-              <select className="input-slb" value={formData.cycle || 'secondaire'} onChange={e => setFormData({...formData, cycle: e.target.value})}>
+              <input type="text" placeholder="Nom de la classe (ex: 6ème A)" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
+              <select className="input-slb" value={formData.cycle || 'secondaire'} onChange={e => setFormData({ ...formData, cycle: e.target.value })}>
                 <option value="maternelle">Maternelle</option>
                 <option value="primaire">Primaire</option>
                 <option value="secondaire">Secondaire</option>
@@ -379,13 +388,13 @@ const AdminDashboard = () => {
 
           {modalType === 'matieres' && (
             <>
-              <input type="text" placeholder="Nom de la matière" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({...formData, nom: e.target.value})} />
-              <select className="input-slb" value={formData.classe_id || ''} onChange={e => setFormData({...formData, classe_id: e.target.value})}>
+              <input type="text" placeholder="Nom de la matière" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
+              <select className="input-slb" value={formData.classe_id || ''} onChange={e => setFormData({ ...formData, classe_id: e.target.value })}>
                 <option value="">Sélectionner une classe</option>
                 {classes.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
               </select>
-              <input type="number" placeholder="Coefficient" className="input-slb" value={formData.coefficient || 1} onChange={e => setFormData({...formData, coefficient: parseInt(e.target.value)})} />
-              <select className="input-slb" value={formData.category || 'ECRITE'} onChange={e => setFormData({...formData, category: e.target.value})}>
+              <input type="number" placeholder="Coefficient" className="input-slb" value={formData.coefficient || 1} onChange={e => setFormData({ ...formData, coefficient: parseInt(e.target.value) })} />
+              <select className="input-slb" value={formData.category || 'ECRITE'} onChange={e => setFormData({ ...formData, category: e.target.value })}>
                 <option value="ECRITE">Écrit</option>
                 <option value="ORALE">Oral</option>
                 <option value="PRATIQUE">Pratique</option>
@@ -395,13 +404,13 @@ const AdminDashboard = () => {
 
           {modalType === 'eleves' && (
             <>
-              <input type="text" placeholder="Prénom" className="input-slb" value={formData.prenom || ''} onChange={e => setFormData({...formData, prenom: e.target.value})} />
-              <input type="text" placeholder="Nom" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({...formData, nom: e.target.value})} />
-              <select className="input-slb" value={formData.classe_id || ''} onChange={e => setFormData({...formData, classe_id: e.target.value})}>
+              <input type="text" placeholder="Prénom" className="input-slb" value={formData.prenom || ''} onChange={e => setFormData({ ...formData, prenom: e.target.value })} />
+              <input type="text" placeholder="Nom" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
+              <select className="input-slb" value={formData.classe_id || ''} onChange={e => setFormData({ ...formData, classe_id: e.target.value })}>
                 <option value="">Sélectionner une classe</option>
                 {classes.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
               </select>
-              <select className="input-slb" value={formData.sexe || 'M'} onChange={e => setFormData({...formData, sexe: e.target.value})}>
+              <select className="input-slb" value={formData.sexe || 'M'} onChange={e => setFormData({ ...formData, sexe: e.target.value })}>
                 <option value="M">Masculin</option>
                 <option value="F">Féminin</option>
               </select>
@@ -410,18 +419,18 @@ const AdminDashboard = () => {
 
           {modalType === 'professeurs' && (
             <>
-              <input type="text" placeholder="Prénom" className="input-slb" value={formData.prenom || ''} onChange={e => setFormData({...formData, prenom: e.target.value})} />
-              <input type="text" placeholder="Nom" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({...formData, nom: e.target.value})} />
-              <input type="email" placeholder="Email (pour connexion)" className="input-slb" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
-              
+              <input type="text" placeholder="Prénom" className="input-slb" value={formData.prenom || ''} onChange={e => setFormData({ ...formData, prenom: e.target.value })} />
+              <input type="text" placeholder="Nom" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
+              <input type="email" placeholder="Email (pour connexion)" className="input-slb" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+
               <div className="space-y-2">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Matières (séparées par des virgules)</p>
-                <input 
-                  type="text" 
-                  placeholder="Français, Mathématiques..." 
-                  className="input-slb" 
-                  value={Array.isArray(formData.matiere) ? formData.matiere.join(', ') : (formData.matiere || '')} 
-                  onChange={e => setFormData({...formData, matiere: e.target.value.split(',').map(s => s.trim()).filter(s => s !== '')})} 
+                <input
+                  type="text"
+                  placeholder="Français, Mathématiques..."
+                  className="input-slb"
+                  value={Array.isArray(formData.matiere) ? formData.matiere.join(', ') : (formData.matiere || '')}
+                  onChange={e => setFormData({ ...formData, matiere: e.target.value.split(',').map(s => s.trim()).filter(s => s !== '') })}
                 />
               </div>
 
@@ -430,16 +439,16 @@ const AdminDashboard = () => {
                 <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-100">
                   {classes.map(c => (
                     <label key={c.id} className="flex items-center gap-2 p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
-                        checked={(formData.classe_assignee || []).includes(c.nom)} 
+                        checked={(formData.classe_assignee || []).includes(c.nom)}
                         onChange={e => {
                           const current = formData.classe_assignee || [];
                           if (e.target.checked) {
-                            setFormData({...formData, classe_assignee: [...current, c.nom]});
+                            setFormData({ ...formData, classe_assignee: [...current, c.nom] });
                           } else {
-                            setFormData({...formData, classe_assignee: current.filter(id => id !== c.nom)});
+                            setFormData({ ...formData, classe_assignee: current.filter(id => id !== c.nom) });
                           }
                         }}
                       />
