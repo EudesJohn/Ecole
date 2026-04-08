@@ -33,6 +33,17 @@ router.post('/students', async (req, res) => {
     const pin = generateSecurePassword();
     const email = `${matricule.replace(/\s+/g, '').toLowerCase()}@slb.bj`;
     
+    // 0. Vérifier si un orphelin existe déjà (email présent en Auth mais pas en SQL)
+    const { data: existingProfiles } = await supabase.from('profiles').select('id').eq('email', email);
+    if (existingProfiles && existingProfiles.length === 0) {
+      // Si l'email est dans Auth mais pas Profile, on tente de supprimer l'orphelin d'abord
+      const { data: users } = await supabase.auth.admin.listUsers();
+      const existingAuthUser = users.users.find(u => u.email === email);
+      if (existingAuthUser) {
+        await supabase.auth.admin.deleteUser(existingAuthUser.id);
+      }
+    }
+
     // 1. Create Parent Auth user
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email,
@@ -98,6 +109,16 @@ router.post('/teachers', async (req, res) => {
 
     if (!email) return res.status(400).json({ error: 'Email required' });
     if (!password) password = generateSecurePassword();
+
+    // 0. Vérifier si un orphelin existe déjà
+    const { data: existingProfiles } = await supabase.from('profiles').select('id').eq('email', email);
+    if (!existingProfiles || existingProfiles.length === 0) {
+      const { data: users } = await supabase.auth.admin.listUsers();
+      const existingAuthUser = users.users.find(u => u.email === email);
+      if (existingAuthUser) {
+        await supabase.auth.admin.deleteUser(existingAuthUser.id);
+      }
+    }
 
     const matiereArray = Array.isArray(matiere) ? matiere : (matiere ? [matiere] : []);
     const classeArray = Array.isArray(classe_assignee) ? classe_assignee : (classe_assignee ? [classe_assignee] : []);
