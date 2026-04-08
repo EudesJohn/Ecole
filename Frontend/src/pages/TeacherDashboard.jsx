@@ -88,17 +88,38 @@ const TeacherDashboard = () => {
   }, [selectedClass, selectedMatiere, evaluationType, loadStudents, loadCahier, loadGrades]);
 
   const handleSaveGrades = async () => {
+    if (!selectedClass || !selectedMatiere) {
+      showNotif('Veuillez sélectionner la classe ET la matière avant d\'enregistrer les notes.', 'error');
+      return;
+    }
+
     setSaving(true);
     try {
       const cls = classes.find(c => c.nom === selectedClass);
       const mat = matieres.find(m => m.nom === selectedMatiere && m.classe_id === cls?.id);
+      
+      const gradeList = Object.values(grades);
+      const hasInvalidGrade = gradeList.some(g => {
+        return Object.keys(g).some(key => {
+          if (['student_id', 'matiere_id', 'trimestre', 'school_year', 'evaluation_type'].includes(key)) return false;
+          const val = parseFloat(g[key]);
+          return !isNaN(val) && (val < 0 || val > 20);
+        });
+      });
+
+      if (hasInvalidGrade) {
+        showNotif('Toutes les notes doivent être comprises entre 0 et 20.', 'error');
+        setSaving(false);
+        return;
+      }
+
       const upserts = Object.keys(grades).map(sid => ({
         ...grades[sid],
         student_id: sid,
         matiere_id: mat.id,
         trimestre: parseInt(schoolConfig.current_trimestre),
         school_year: schoolConfig.current_year,
-        evaluation_type: cls.cycle === 'secondaire' ? 'composition' : evaluationType
+        evaluation_type: ['primaire', 'maternelle'].includes(cls.cycle?.toLowerCase()) ? 'composition' : (cls.cycle === 'secondaire' ? 'composition' : evaluationType)
       }));
       const { error } = await supabase.from('grades').upsert(upserts, { onConflict: 'student_id,matiere_id,trimestre,school_year,evaluation_type' });
       if (error) throw error;
