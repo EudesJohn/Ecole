@@ -29,6 +29,9 @@ const ParentDashboard = () => {
   const [selectedTrimestre, setSelectedTrimestre] = useState('1');
   const [stats, setStats] = useState({ effectif: 0, rang: null, max_moyenne: null, min_moyenne: null });
   const [history, setHistory] = useState({ 1: null, 2: null, 3: null });
+  const [availablePeriods, setAvailablePeriods] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState(null);
+  const isPrimary = ['primaire', 'maternelle'].includes(studentData?.cycle?.toLowerCase());
 
   // 1. Initial Load: Fetch School Config once
   useEffect(() => {
@@ -46,6 +49,25 @@ const ParentDashboard = () => {
     if (studentData) fetchConfig();
   }, [studentData]);
 
+  // 1b. Fetch Available Periods for Primary
+  useEffect(() => {
+    const fetchPeriods = async () => {
+      if (!isPrimary || !studentData?.id) return;
+      const { data } = await supabase
+        .from('grades')
+        .select('period_label')
+        .eq('student_id', studentData.id)
+        .order('created_at', { ascending: false });
+      
+      const periods = [...new Set((data || []).map(d => d.period_label))].filter(Boolean);
+      setAvailablePeriods(periods);
+      if (periods.length > 0 && !selectedPeriod) {
+        setSelectedPeriod(periods[0]);
+      }
+    };
+    fetchPeriods();
+  }, [isPrimary, studentData, selectedTrimestre]);
+
   const loadStudentData = useCallback(async () => {
     if (!studentData?.id && !studentData?.matricule) return;
     setLoading(true);
@@ -58,14 +80,21 @@ const ParentDashboard = () => {
 
       setMatieres(mats || []);
 
-      // 2. Fetch Grades for SELECTED TRIMESTRE and YEAR
-      const { data: gradesData } = await supabase
+      // 2. Fetch Grades for SELECTED PERIOD and YEAR
+      const query = supabase
         .from('grades')
         .select('*, matieres(nom)')
         .eq('student_id', studentData.id)
-        .eq('trimestre', parseInt(selectedTrimestre))
         .eq('school_year', schoolConfig.current_year)
         .eq('evaluation_type', 'composition');
+
+      if (isPrimary && selectedPeriod) {
+        query.eq('period_label', selectedPeriod);
+      } else {
+        query.eq('trimestre', parseInt(selectedTrimestre));
+      }
+
+      const { data: gradesData } = await query;
 
       const formattedGrades = (gradesData || []).map(g => ({
         ...g,
@@ -92,7 +121,8 @@ const ParentDashboard = () => {
         const { data, error } = await supabase.rpc('get_detailed_stats', {
           p_student_id: studentData.id,
           p_trimestre: parseInt(t),
-          p_school_year: schoolConfig.current_year
+          p_school_year: schoolConfig.current_year,
+          p_period_label: isPrimary ? selectedPeriod : null
         });
         if (error) console.error(`❌ Erreur Archive T${t}:`, error);
 
@@ -289,24 +319,42 @@ const ParentDashboard = () => {
         </div>
       </div>
 
-      {/* Trimester Selector (Floating) */}
       <div className="px-6 -mt-20 mb-8 relative z-30">
-        <div className="glass-card-pro p-1.5 flex gap-1.5">
-          {['1', '2', '3'].map((t) => (
-            <button
-              key={t}
-              onClick={() => setSelectedTrimestre(t)}
-              className={`flex-1 py-4 rounded-[1.5rem] text-xs font-black transition-all duration-500 flex items-center justify-center gap-2 ${selectedTrimestre === t
-                  ? 'bg-royal-gradient text-white shadow-xl shadow-blue-900/20 scale-[1.02]'
-                  : 'text-gray-400 hover:bg-gray-50'
-                }`}
-            >
-              Trimestre {t}
-              {schoolConfig.current_trimestre === t && (
-                <span className="w-2 h-2 bg-gold-400 rounded-full animate-pulse shadow-[0_0_10px_#fbbf24]" />
-              )}
-            </button>
-          ))}
+        <div className="glass-card-pro p-1.5 flex gap-1.5 overflow-x-auto custom-scrollbar no-scrollbar">
+          {isPrimary ? (
+            availablePeriods.length > 0 ? availablePeriods.map((p) => (
+              <button
+                key={p}
+                onClick={() => setSelectedPeriod(p)}
+                className={`min-w-[120px] py-4 rounded-[1.5rem] text-xs font-black transition-all duration-500 whitespace-nowrap px-4 ${selectedPeriod === p
+                    ? 'bg-royal-gradient text-white shadow-xl shadow-blue-900/20 scale-[1.02]'
+                    : 'text-gray-400 hover:bg-gray-50'
+                  }`}
+              >
+                {p}
+              </button>
+            )) : (
+              <div className="flex-1 py-4 text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                Aucune composition enregistrée
+              </div>
+            )
+          ) : (
+            ['1', '2', '3'].map((t) => (
+              <button
+                key={t}
+                onClick={() => setSelectedTrimestre(t)}
+                className={`flex-1 py-4 rounded-[1.5rem] text-xs font-black transition-all duration-500 flex items-center justify-center gap-2 ${selectedTrimestre === t
+                    ? 'bg-royal-gradient text-white shadow-xl shadow-blue-900/20 scale-[1.02]'
+                    : 'text-gray-400 hover:bg-gray-50'
+                  }`}
+              >
+                Trimestre {t}
+                {schoolConfig.current_trimestre === t && (
+                  <span className="w-2 h-2 bg-gold-400 rounded-full animate-pulse shadow-[0_0_10px_#fbbf24]" />
+                )}
+              </button>
+            ))
+          )}
         </div>
       </div>
 

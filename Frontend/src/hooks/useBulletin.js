@@ -5,7 +5,7 @@ import { generateQRDataUrl, downloadBulletin } from '../utils/bulletinTasks';
 export const useBulletin = () => {
   const [generatingPdf, setGeneratingPdf] = useState(null);
 
-  const handleGenerateBulletin = async (student, schoolConfig, classes, matieres) => {
+  const handleGenerateBulletin = async (student, schoolConfig, classes, matieres, periodLabel = null) => {
     setGeneratingPdf(student.id);
     try {
       if (!student.classe_id) throw new Error("Cet élève n'est pas assigné à une classe.");
@@ -14,7 +14,8 @@ export const useBulletin = () => {
       const { data: statsData, error: rpcError } = await supabase.rpc('get_detailed_stats', {
         p_student_id: student.id,
         p_trimestre: parseInt(schoolConfig.current_trimestre),
-        p_school_year: schoolConfig.current_year
+        p_school_year: schoolConfig.current_year,
+        p_period_label: periodLabel
       });
       if (rpcError) throw rpcError;
 
@@ -28,13 +29,20 @@ export const useBulletin = () => {
       };
 
       // 2. Fetch specific grades for target student
-      const { data: studentGrades, error: gradesError } = await supabase
+      const query = supabase
         .from('grades')
         .select('*, matieres(nom, coefficient)')
         .eq('student_id', student.id)
-        .eq('trimestre', parseInt(schoolConfig.current_trimestre))
         .eq('school_year', schoolConfig.current_year)
         .eq('evaluation_type', 'composition');
+
+      if (periodLabel) {
+        query.eq('period_label', periodLabel);
+      } else {
+        query.eq('trimestre', parseInt(schoolConfig.current_trimestre));
+      }
+
+      const { data: studentGrades, error: gradesError } = await query;
 
       if (gradesError) throw gradesError;
       if (!studentGrades || studentGrades.length === 0) {
@@ -77,8 +85,8 @@ export const useBulletin = () => {
       });
 
       // 4. Generate QR code
-      // Format: https://saintlambert.bj/verify/MATRICULE/TRIMESTRE/YEAR
-      const qrUrl = await generateQRDataUrl(`https://saintlambert.bj/verify/${encodeURIComponent(student.matricule)}/${schoolConfig.current_trimestre}/${schoolConfig.current_year}`);
+      const qrText = `https://saintlambert.bj/verify/${student.matricule}/${schoolConfig.current_trimestre}/${schoolConfig.current_year}${periodLabel ? `?p=${encodeURIComponent(periodLabel)}` : ''}`;
+      const qrUrl = await generateQRDataUrl(qrText);
 
       // 5. Download Bulletin
       const studentClass = classes.find(c => c.id === student.classe_id);
@@ -95,8 +103,9 @@ export const useBulletin = () => {
         matieres,
         classStats,
         qrCodeDataUrl: qrUrl,
-        trimestre: `${schoolConfig.current_trimestre}${schoolConfig.current_trimestre === '1' ? 'er' : 'ème'}`,
-        schoolYear: schoolConfig.current_year
+        trimestre: periodLabel || `${schoolConfig.current_trimestre}${schoolConfig.current_trimestre === '1' ? 'er' : 'ème'}`,
+        schoolYear: schoolConfig.current_year,
+        periodLabel: periodLabel
       });
 
       return true;

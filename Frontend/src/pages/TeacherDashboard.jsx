@@ -23,6 +23,7 @@ const TeacherDashboard = () => {
   const [saving, setSaving] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedMatiere, setSelectedMatiere] = useState('');
+  const [periodLabel, setPeriodLabel] = useState(new Date().toLocaleDateString('fr-FR', { month: 'long' }));
   const [students, setStudents] = useState([]);
   const [grades, setGrades] = useState({});
   const [attendance, setAttendance] = useState({});
@@ -124,10 +125,11 @@ const TeacherDashboard = () => {
           matiere_id: mat.id,
           trimestre: parseInt(schoolConfig.current_trimestre),
           school_year: schoolConfig.current_year,
-          evaluation_type: 'composition'
+          evaluation_type: 'composition',
+          period_label: periodLabel || `Trimestre ${schoolConfig.current_trimestre}`
         };
       });
-      const { error } = await supabase.from('grades').upsert(upserts, { onConflict: 'student_id,matiere_id,trimestre,school_year,evaluation_type' });
+      const { error } = await supabase.from('grades').upsert(upserts, { onConflict: 'student_id,matiere_id,trimestre,school_year,evaluation_type,period_label' });
       if (error) throw error;
       showNotif('Notes enregistrées !');
     } catch (err) {
@@ -230,6 +232,18 @@ const TeacherDashboard = () => {
               </p>
             )}
           </div>
+          {['primaire', 'maternelle'].includes(classes.find(c => c.nom === selectedClass)?.cycle?.toLowerCase()) && (
+            <div className="space-y-1">
+              <input 
+                type="text" 
+                placeholder="Ex: Janvier ou Composition de Mars" 
+                className="input-slb w-full" 
+                value={periodLabel} 
+                onChange={e => setPeriodLabel(e.target.value)} 
+              />
+              <p className="text-[10px] font-black text-gold-600 uppercase tracking-widest pl-2">Nom de la Période</p>
+            </div>
+          )}
         </section>
 
         <AnimatePresence mode="wait">

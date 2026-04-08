@@ -275,7 +275,9 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
   const totalSubjects = safeRows.length;
   const validationRatio = `${subjectsSuccess} / ${totalSubjects}`;
   const appreciation = GradeCalculator.getAppreciation(moyenneGenerale);
-
+  const periodTitle = isPrimaryData && props.periodLabel && !props.periodLabel.toLowerCase().startsWith('trimestre')
+    ? `Composition de ${props.periodLabel}`
+    : `${trimestre} Trimestre`;
 
   return (
     <Document>
