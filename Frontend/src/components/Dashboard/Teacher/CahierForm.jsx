@@ -28,28 +28,35 @@ export const CahierForm = ({
           {editId ? 'Modifier l\'entrée' : 'Nouveau contenu'}
         </h3>
         <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 items-end">
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Date</label>
-              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="input-slb text-sm" />
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                <div className="w-1 h-1 bg-blue-500 rounded-full" /> Date
+              </label>
+              <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="input-slb text-xs h-[52px] font-bold" />
             </div>
-            <div className="flex items-center gap-2 p-2 bg-slate-50/50 rounded-2xl border border-slate-100 h-[52px]">
-              <div className="flex-1 min-w-0">
-                <input 
-                  type="time" 
-                  value={form.h_debut} 
-                  onChange={(e) => setForm({ ...form, h_debut: e.target.value })} 
-                  className="bg-transparent border-none appearance-none focus:ring-0 p-0 text-[11px] font-black text-slate-700 w-full text-center" 
-                />
-              </div>
-              <div className="text-slate-300 text-[10px] font-bold">à</div>
-              <div className="flex-1 min-w-0">
-                <input 
-                  type="time" 
-                  value={form.h_fin} 
-                  onChange={(e) => setForm({ ...form, h_fin: e.target.value })} 
-                  className="bg-transparent border-none appearance-none focus:ring-0 p-0 text-[11px] font-black text-slate-700 w-full text-center" 
-                />
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                <div className="w-1 h-1 bg-emerald-500 rounded-full" /> Horaires
+              </label>
+              <div className="flex items-center gap-2 px-3 bg-slate-50/50 rounded-2xl border border-slate-100 h-[52px]">
+                <div className="flex-1 min-w-0">
+                  <input 
+                    type="time" 
+                    value={form.h_debut} 
+                    onChange={(e) => setForm({ ...form, h_debut: e.target.value })} 
+                    className="bg-transparent border-none appearance-none focus:ring-0 p-0 text-[12px] font-black text-slate-700 w-full text-center" 
+                  />
+                </div>
+                <div className="text-slate-300 text-[10px] font-black">au</div>
+                <div className="flex-1 min-w-0">
+                  <input 
+                    type="time" 
+                    value={form.h_fin} 
+                    onChange={(e) => setForm({ ...form, h_fin: e.target.value })} 
+                    className="bg-transparent border-none appearance-none focus:ring-0 p-0 text-[12px] font-black text-slate-700 w-full text-center" 
+                  />
+                </div>
               </div>
             </div>
           </div>

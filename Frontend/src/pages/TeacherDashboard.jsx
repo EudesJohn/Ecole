@@ -106,6 +106,10 @@ const TeacherDashboard = () => {
   };
 
   const handleSaveCahier = async () => {
+    if (!selectedClass || !selectedMatiere) {
+      showNotif('Veuillez sélectionner une classe et une matière avant d\'enregistrer.', 'error');
+      return;
+    }
     setSaving(true);
     try {
       const cls = classes.find(c => c.nom === selectedClass);
