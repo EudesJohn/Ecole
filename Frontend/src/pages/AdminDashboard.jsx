@@ -354,7 +354,8 @@ const AdminDashboard = () => {
                 { key: 'date', label: 'Date' },
                 { key: 'matiere', label: 'Matière', render: (c) => c.matieres?.nom },
                 { key: 'classe', label: 'Classe', render: (c) => c.classes?.nom },
-                { key: 'chapitre', label: 'Leçon' }
+                { key: 'chapitre', label: 'Leçon' },
+                { key: 'resume', label: 'Résumé du cours', render: (c) => <span className="text-[10px] text-slate-400 font-normal line-clamp-2">{c.resume}</span> }
               ]}
             />
           )}
@@ -447,11 +448,14 @@ const AdminDashboard = () => {
           {modalType === 'classes' && (
             <>
               <input type="text" placeholder="Nom de la classe (ex: 6ème A)" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
-              <select className="input-slb" value={formData.cycle || 'secondaire'} onChange={e => setFormData({ ...formData, cycle: e.target.value })}>
-                <option value="maternelle">Maternelle</option>
-                <option value="primaire">Primaire</option>
-                <option value="secondaire">Secondaire</option>
-              </select>
+              <div className="grid grid-cols-2 gap-4">
+                <select className="input-slb" value={formData.cycle || 'secondaire'} onChange={e => setFormData({ ...formData, cycle: e.target.value })}>
+                  <option value="maternelle">Maternelle</option>
+                  <option value="primaire">Primaire</option>
+                  <option value="secondaire">Secondaire</option>
+                </select>
+                <input type="number" placeholder="Effectif Max" className="input-slb" value={formData.effectif || 35} onChange={e => setFormData({ ...formData, effectif: parseInt(e.target.value) })} />
+              </div>
             </>
           )}
 
