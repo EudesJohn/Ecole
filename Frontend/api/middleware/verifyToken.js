@@ -16,7 +16,11 @@ const verifyToken = async (req, res, next) => {
     
     if (error || !user) {
       console.error('VerifyToken: Token rejected by Supabase Auth:', error?.message || 'No user found');
-      return res.status(401).json({ error: error?.message || 'Invalid token' });
+      return res.status(401).json({ 
+        error: error?.message || 'Invalid token',
+        code: error?.code,
+        hint: 'Check if your browser session is still valid. Try logging out and back in.'
+      });
     }
 
     req.user = user;
