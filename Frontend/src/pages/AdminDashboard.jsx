@@ -82,6 +82,10 @@ const AdminDashboard = () => {
       ];
       unwantedFields.forEach(f => delete payload[f]);
 
+      // Sécurité : Supprimer explicitement le matricule du payload s'il est vide 
+      // pour forcer la base de données PostgreSQL à utiliser sa valeur par défaut auto-générée
+      if (!payload.matricule) delete payload.matricule;
+
       // 2. Decide Strategy (API for Create Student/Teacher, Supabase for everything else)
       // Les élèves sont gérés directement par Supabase maintenant (le matricule est auto-généré).
       // Seuls les professeurs nécessitent l'API pour créer l'utilisateur Auth.
