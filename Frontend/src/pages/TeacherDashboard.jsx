@@ -9,7 +9,7 @@ import { useTeacherData } from '../hooks/useTeacherData';
 import { supabase } from '../supabase';
 import { 
   AlertCircle, CheckCircle, GraduationCap, Users, BookOpen, 
-  ClipboardCheck, Award, FileText, Download, Loader2 
+  ClipboardCheck, Award, FileText, Download, Loader2, Plus 
 } from 'lucide-react';
 import { GradesTable } from '../components/Dashboard/Teacher/GradesTable';
 import { CahierForm } from '../components/Dashboard/Teacher/CahierForm';
