@@ -318,13 +318,18 @@ const TeacherDashboard = () => {
                     {students.map(s => {
                       const sg = grades[s.id] || {};
                       const cls = classes.find(c => c.nom === selectedClass);
+                      const hasNotes = Object.keys(sg).length > 0;
                       const moy = GradeCalculator.getMoyenneByCycle(sg, cls?.cycle || 'secondaire');
                       return (
                         <tr key={s.id}>
                           <td className="px-6 py-4 font-bold text-slate-700">{s.prenom} {s.nom}</td>
-                          <td className="px-6 py-4 text-center font-black text-blue-600">{moy.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-center font-black text-blue-600">
+                            {hasNotes ? moy.toFixed(2) : <span className="text-slate-300">--.--</span>}
+                          </td>
                           <td className="px-6 py-4 text-right">
-                             <span className="px-2 py-1 bg-slate-50 text-[10px] font-bold text-slate-400 rounded-lg uppercase">{GradeCalculator.getAppreciation(moy)}</span>
+                             <span className="px-2 py-1 bg-slate-50 text-[10px] font-bold text-slate-400 rounded-lg uppercase">
+                               {hasNotes ? GradeCalculator.getAppreciation(moy) : "Pas de notes"}
+                             </span>
                           </td>
                         </tr>
                       );
@@ -338,7 +343,13 @@ const TeacherDashboard = () => {
           {activeTab === 'bulletins' && (
             <EntityTable 
               items={students} colName="students"
-              onExtraAction={(item) => handleGenerateBulletin(item, schoolConfig, classes, matieres)}
+              onExtraAction={async (item) => {
+                try {
+                  await handleGenerateBulletin(item, schoolConfig, classes, matieres);
+                } catch (err) {
+                  showNotif(err.message, 'error');
+                }
+              }}
               extraActionIcon={Download} extraActionLabel="Bulletin" generatingId={generatingPdf}
               columns={[
                 { key: 'matricule', label: 'Matricule' },

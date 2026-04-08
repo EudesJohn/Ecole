@@ -416,7 +416,7 @@ const ParentDashboard = () => {
         </h3>
         {grades.length === 0 ? (
           <div className="glass-card-pro p-10 text-center">
-            <p className="text-slate-400 text-sm font-medium">Bientôt disponible...</p>
+            <p className="text-slate-400 text-sm font-medium">Aucune note n&apos;a été enregistrée pour ce trimestre.</p>
           </div>
         ) : (
           <div className="space-y-4">
