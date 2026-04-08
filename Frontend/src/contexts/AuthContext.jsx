@@ -92,7 +92,8 @@ export const AuthProvider = ({ children }) => {
       throw new Error('Veuillez remplir les informations.');
     }
 
-    const email = `${matricule.replace(/\s+/g, '').toLowerCase()}@slb.bj`;
+    const cleanMatricule = matricule.toString().replace(/\s+/g, '').toLowerCase();
+    const email = `${cleanMatricule}@slb.bj`;
 
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,

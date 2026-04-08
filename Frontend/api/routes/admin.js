@@ -175,13 +175,24 @@ router.post('/students/reset-pin', async (req, res) => {
 
     if (studentError) throw studentError;
 
-    // 2. Update Auth password for parent
+    // 1. Update Auth password for parent FIRST
     if (student.parent_id) {
       const { error: authError } = await supabase.auth.admin.updateUserById(student.parent_id, {
         password: newPin
       });
-      if (authError) throw authError;
+      if (authError) {
+        console.error('Auth update failed for parent:', authError.message);
+        throw authError;
+      }
     }
+
+    // 2. Update students table (as fallback and for admin visibility)
+    const { error: studentUpdateError } = await supabase
+      .from('students')
+      .update({ pin_code: newPin })
+      .eq('id', id);
+
+    if (studentUpdateError) throw studentUpdateError;
 
     res.json({ success: true, pin: newPin });
   } catch (error) {
