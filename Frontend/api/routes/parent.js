@@ -10,12 +10,19 @@ router.get('/student/:matricule', async (req, res) => {
   try {
     const { matricule } = req.params;
 
-    // Utilisation de la fonction SQL sécurisée pour ne renvoyer que l'essentiel
+    // 1. Récupérer la configuration actuelle de l'école
+    const { data: schoolConfig } = await supabase.from('school_config').select('*').limit(1).single();
+    if (!schoolConfig) throw new Error('Configuration école introuvable');
+
+    const trimestre = req.query.trimestre ? parseInt(req.query.trimestre) : parseInt(schoolConfig.current_trimestre);
+    const schoolYear = req.query.school_year || schoolConfig.current_year;
+
+    // 2. Utilisation de la fonction SQL sécurisée
     const { data: verificationData, error } = await supabase
       .rpc('verify_bulletin', {
         p_matricule: matricule.trim(),
-        p_trimestre: 1,
-        p_school_year: '2025-2026' // Valeur par défaut, pourrait être passée en query param
+        p_trimestre: trimestre,
+        p_school_year: schoolYear
       });
 
     if (error || !verificationData) {
