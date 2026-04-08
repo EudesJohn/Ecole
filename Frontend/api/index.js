@@ -46,7 +46,8 @@ app.use((err, req, res, _next) => {
 app.use((req, res) => {
   res.status(404).json({ 
     error: `Route ${req.method} ${req.url} not found`,
-    hint: 'Ensure your fetch URL matches the API structure.'
+    path: req.path,
+    hint: 'Ensure your fetch URL matches the API structure. If you see /api/api, check your Express and Vercel routing.'
   });
 });
 
