@@ -64,7 +64,8 @@ const ParentDashboard = () => {
         .select('*, matieres(nom)')
         .eq('student_id', studentData.id)
         .eq('trimestre', parseInt(selectedTrimestre))
-        .eq('school_year', schoolConfig.current_year);
+        .eq('school_year', schoolConfig.current_year)
+        .eq('evaluation_type', 'composition');
 
       const formattedGrades = (gradesData || []).map(g => ({
         ...g,

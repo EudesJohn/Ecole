@@ -23,7 +23,6 @@ const TeacherDashboard = () => {
   const [saving, setSaving] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedMatiere, setSelectedMatiere] = useState('');
-  const [evaluationType, setEvaluationType] = useState('etape');
   const [students, setStudents] = useState([]);
   const [grades, setGrades] = useState({});
   const [attendance, setAttendance] = useState({});
@@ -66,7 +65,7 @@ const TeacherDashboard = () => {
     const map = {};
     (data || []).forEach(g => { map[g.student_id] = g; });
     setGrades(map);
-  }, [classes, matieres, schoolConfig, evaluationType]);
+  }, [classes, matieres, schoolConfig]);
 
   const loadCahier = useCallback(async (clsName) => {
     const cls = classes.find(c => c.nom === clsName);
@@ -85,7 +84,7 @@ const TeacherDashboard = () => {
       loadCahier(selectedClass);
       if (selectedMatiere) loadGrades(selectedClass, selectedMatiere);
     }
-  }, [selectedClass, selectedMatiere, evaluationType, loadStudents, loadCahier, loadGrades]);
+  }, [selectedClass, selectedMatiere, loadStudents, loadCahier, loadGrades]);
 
   const handleSaveGrades = async () => {
     if (!selectedClass || !selectedMatiere) {
@@ -246,7 +245,6 @@ const TeacherDashboard = () => {
               students={students} grades={grades} 
               isPrimary={['primaire', 'maternelle'].includes(classes.find(c => c.nom === selectedClass)?.cycle?.toLowerCase())}
               coefficient={matieres.find(m => m.nom === selectedMatiere && m.classe === selectedClass)?.coefficient || 1}
-              evaluationType={evaluationType} setEvaluationType={setEvaluationType}
               updateGrade={(sid, f, v) => setGrades(prev => ({ ...prev, [sid]: { ...prev[sid], [f]: v } }))}
               onSave={handleSaveGrades} saving={saving}
             />
