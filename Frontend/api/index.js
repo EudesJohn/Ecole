@@ -34,7 +34,12 @@ app.use('/', router);
 // Global Error Handler
 app.use((err, req, res, _next) => {
   console.error('API Error:', err);
-  res.status(500).json({ error: 'Internal Server Error' });
+  res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+});
+
+// 404 Handler (JSON)
+app.use((req, res) => {
+  res.status(404).json({ error: `Route ${req.method} ${req.url} not found` });
 });
 
 module.exports = app;

@@ -100,7 +100,15 @@ const AdminDashboard = () => {
           body: JSON.stringify(payload)
         });
 
-        const result = await response.json();
+        const text = await response.text();
+        let result = {};
+        try {
+          result = text ? JSON.parse(text) : {};
+        } catch (e) {
+          console.error('Failed to parse response:', text);
+          throw new Error(`Erreur inattendue (${response.status}): Le serveur n'a pas renvoyé de JSON.`);
+        }
+
         if (!response.ok) throw new Error(result.error || `Erreur Serveur (${response.status})`);
         
         showNotif(`Succès ! Matricule: ${result.matricule || 'OK'}, Accès: ${result.pin || result.password || 'Généré'}`);
