@@ -24,6 +24,8 @@ export const EntityTable = ({
     )
   );
 
+  const hasActions = !!(onEdit || onDelete || onReset || onExtraAction);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -61,7 +63,7 @@ export const EntityTable = ({
                     {col.label}
                   </th>
                 ))}
-                <th className="text-right px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Actions</th>
+                {hasActions && <th className="text-right px-6 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -80,45 +82,47 @@ export const EntityTable = ({
                       </div>
                     </td>
                   ))}
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
-                      {onExtraAction && ExtraIcon && colName !== 'matieres' && (
-                        <button
-                          onClick={() => onExtraAction(item)}
-                          disabled={generatingId === item.id}
-                          className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
-                          title={extraActionLabel}
-                        >
-                          {generatingId === item.id ? <Loader2 size={16} className="animate-spin" /> : <ExtraIcon size={16} />}
-                        </button>
-                      )}
-                      {onReset && (
-                        <button
-                          onClick={() => onReset(item)}
-                          className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all border border-transparent hover:border-amber-100"
-                          title="Réinitialiser les accès"
-                        >
-                          <Key size={16} />
-                        </button>
-                      )}
-                      {onEdit && (
-                        <button
-                          onClick={() => onEdit(item)}
-                          className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
-                        >
-                          <Edit3 size={16} />
-                        </button>
-                      )}
-                      {onDelete && (
-                        <button
-                          onClick={() => onDelete(item.id)}
-                          className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
+                  {hasActions && (
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
+                        {onExtraAction && ExtraIcon && colName !== 'matieres' && (
+                          <button
+                            onClick={() => onExtraAction(item)}
+                            disabled={generatingId === item.id}
+                            className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
+                            title={extraActionLabel}
+                          >
+                            {generatingId === item.id ? <Loader2 size={16} className="animate-spin" /> : <ExtraIcon size={16} />}
+                          </button>
+                        )}
+                        {onReset && (
+                          <button
+                            onClick={() => onReset(item)}
+                            className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all border border-transparent hover:border-amber-100"
+                            title="Réinitialiser les accès"
+                          >
+                            <Key size={16} />
+                          </button>
+                        )}
+                        {onEdit && (
+                          <button
+                            onClick={() => onEdit(item)}
+                            className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
+                          >
+                            <Edit3 size={16} />
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            onClick={() => onDelete(item.id)}
+                            className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </motion.tr>
               ))}
             </tbody>

@@ -21,14 +21,19 @@ export const CahierForm = ({
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Date</label>
               <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="input-slb text-sm" />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Début</label>
-                <input type="time" value={form.h_debut} onChange={(e) => setForm({ ...form, h_debut: e.target.value })} className="input-slb text-sm" />
+            <div className="flex items-end gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+              <div className="flex-1">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                  <div className="w-1 h-1 bg-blue-400 rounded-full" /> Début
+                </label>
+                <input type="time" value={form.h_debut} onChange={(e) => setForm({ ...form, h_debut: e.target.value })} className="bg-transparent border-none appearance-none focus:ring-0 p-0 text-sm font-bold text-slate-700 w-full" />
               </div>
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Fin</label>
-                <input type="time" value={form.h_fin} onChange={(e) => setForm({ ...form, h_fin: e.target.value })} className="input-slb text-sm" />
+              <div className="h-8 w-[1px] bg-slate-200 mb-1" />
+              <div className="flex-1">
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
+                  <div className="w-1 h-1 bg-indigo-400 rounded-full" /> Fin
+                </label>
+                <input type="time" value={form.h_fin} onChange={(e) => setForm({ ...form, h_fin: e.target.value })} className="bg-transparent border-none appearance-none focus:ring-0 p-0 text-sm font-bold text-slate-700 w-full" />
               </div>
             </div>
           </div>
@@ -56,7 +61,9 @@ export const CahierForm = ({
         <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
           {entries.length === 0 ? (
             <div className="py-20 text-center text-slate-300">
-               <Clock size={40} className="mx-auto mb-4 opacity-20" />
+               <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-white shadow-sm">
+                 <Clock size={24} className="opacity-20" />
+               </div>
                <p className="text-sm font-medium">Aucun cours enregistré pour l&apos;instant.</p>
             </div>
           ) : (
