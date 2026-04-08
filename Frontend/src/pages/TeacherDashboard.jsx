@@ -23,7 +23,8 @@ const TeacherDashboard = () => {
   const [saving, setSaving] = useState(false);
   const [selectedClass, setSelectedClass] = useState('');
   const [selectedMatiere, setSelectedMatiere] = useState('');
-  const [periodLabel, setPeriodLabel] = useState(new Date().toLocaleDateString('fr-FR', { month: 'long' }));
+  const [availablePeriods, setAvailablePeriods] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState(new Date().toLocaleDateString('fr-FR', { month: 'long' }));
   const [students, setStudents] = useState([]);
   const [grades, setGrades] = useState({});
   const [attendance, setAttendance] = useState({});
@@ -60,13 +61,49 @@ const TeacherDashboard = () => {
       .select('*')
       .eq('matiere_id', mat.id)
       .eq('trimestre', parseInt(schoolConfig.current_trimestre))
-      .eq('school_year', schoolConfig.current_year)
-      .eq('evaluation_type', 'composition');
+      .eq('school_year', schoolConfig.current_year);
+    
+    // If Primary, we can filter by selectedPeriod client-side or re-fetch
+    const filtered = (data || []).filter(g => {
+      const isPrimary = ['primaire', 'maternelle'].includes(cls.cycle?.toLowerCase());
+      if (isPrimary) return g.period_label === selectedPeriod;
+      return true;
+    });
 
-    const map = {};
-    (data || []).forEach(g => { map[g.student_id] = g; });
-    setGrades(map);
-  }, [classes, matieres, schoolConfig]);
+    const gradeMap = filtered.reduce((acc, curr) => ({ ...acc, [curr.student_id]: curr }), {});
+    setGrades(gradeMap);
+  }, [classes, matieres, schoolConfig, selectedPeriod]);
+
+  // Load existing periods for class
+  useEffect(() => {
+    const fetchPeriods = async () => {
+      if (!selectedClass) return;
+      const { data } = await supabase
+        .from('grades')
+        .select('period_label')
+        .eq('school_year', schoolConfig.current_year)
+        .order('created_at', { ascending: false });
+      
+      const periods = [...new Set((data || []).map(d => d.period_label))].filter(Boolean);
+      setAvailablePeriods(periods);
+      if (periods.length > 0 && !periods.includes(selectedPeriod)) {
+        // Optionnel: auto-select the last one if current is not in list?
+        // setSelectedPeriod(periods[0]);
+      }
+    };
+    fetchPeriods();
+  }, [selectedClass, schoolConfig]);
+
+  const handleCreatePeriod = () => {
+    const name = prompt('Nom de la nouvelle composition (ex: Janvier, Février) :');
+    if (name && name.trim()) {
+      const trimmed = name.trim();
+      if (!availablePeriods.includes(trimmed)) {
+        setAvailablePeriods(prev => [trimmed, ...prev]);
+      }
+      setSelectedPeriod(trimmed);
+    }
+  };
 
   const loadCahier = useCallback(async (clsName) => {
     const cls = classes.find(c => c.nom === clsName);
@@ -126,7 +163,7 @@ const TeacherDashboard = () => {
           trimestre: parseInt(schoolConfig.current_trimestre),
           school_year: schoolConfig.current_year,
           evaluation_type: 'composition',
-          period_label: periodLabel || `Trimestre ${schoolConfig.current_trimestre}`
+          period_label: selectedPeriod || `Trimestre ${schoolConfig.current_trimestre}`
         };
       });
       const { error } = await supabase.from('grades').upsert(upserts, { onConflict: 'student_id,matiere_id,trimestre,school_year,evaluation_type,period_label' });
@@ -233,15 +270,40 @@ const TeacherDashboard = () => {
             )}
           </div>
           {['primaire', 'maternelle'].includes(classes.find(c => c.nom === selectedClass)?.cycle?.toLowerCase()) && (
-            <div className="space-y-1">
-              <input 
-                type="text" 
-                placeholder="Ex: Janvier ou Composition de Mars" 
-                className="input-slb w-full" 
-                value={periodLabel} 
-                onChange={e => setPeriodLabel(e.target.value)} 
-              />
-              <p className="text-[10px] font-black text-gold-600 uppercase tracking-widest pl-2">Nom de la Période</p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
+                <button 
+                  onClick={handleCreatePeriod}
+                  className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border-2 border-dashed border-slate-200 text-slate-400 hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-all group"
+                  title="Nouvelle composition"
+                >
+                  <Plus size={20} className="group-hover:scale-110 transition-transform" />
+                </button>
+                
+                {availablePeriods.map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setSelectedPeriod(p)}
+                    className={`flex-shrink-0 px-5 py-2 rounded-xl text-xs font-black transition-all border ${
+                      selectedPeriod === p 
+                        ? 'bg-royal-gradient text-white border-blue-600 shadow-lg shadow-blue-200 scale-105' 
+                        : 'bg-white text-slate-500 border-slate-200 hover:border-blue-200 hover:text-blue-400'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+
+                {availablePeriods.length === 0 && (
+                  <button 
+                    className="px-5 py-2 rounded-xl text-xs font-black bg-gold-50 text-gold-600 border border-gold-100"
+                    onClick={() => setSelectedPeriod(new Date().toLocaleDateString('fr-FR', { month: 'long' }))}
+                  >
+                    {selectedPeriod}
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Sélectionnez ou créez une composition (Mois)</p>
             </div>
           )}
         </section>
