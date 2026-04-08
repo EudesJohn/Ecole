@@ -178,31 +178,42 @@ const TeacherDashboard = () => {
 
   const handleSavePresence = async () => {
     if (!selectedClass || !selectedMatiere) {
-      showNotif('Sélectionnez une classe et matière.', 'error');
+      showNotif('Sélectionnez une classe et une matière.', 'error');
       return;
     }
+    const cls = classes.find(c => c.nom === selectedClass);
+    const mat = matieres.find(m => m.nom === selectedMatiere && m.classe_id === cls?.id);
+    if (!cls || !mat) return;
+
     setSaving(true);
     try {
-      const cls = classes.find(c => c.nom === selectedClass);
-      const mat = matieres.find(m => m.nom === selectedMatiere && m.classe_id === cls?.id);
-      
-      const p_records = Object.keys(attendance).map(sid => ({
+      const upserts = Object.keys(attendance).map(sid => ({
         student_id: sid,
         classe_id: cls.id,
         matiere_id: mat.id,
         date: presenceDate,
-        status: attendance[sid], // 'present', 'absent', 'retard'
+        status: typeof attendance[sid] === 'string' ? attendance[sid] : attendance[sid].status,
+        commentaire: typeof attendance[sid] === 'object' ? attendance[sid].commentaire : null,
         school_year: schoolConfig.current_year
       }));
 
-      const { error } = await supabase.from('absences').upsert(p_records, { onConflict: 'student_id,matiere_id,date' });
+      const { error } = await supabase.from('absences').upsert(upserts, { onConflict: 'student_id,date,matiere_id,school_year' });
       if (error) throw error;
-      showNotif('Présences enregistrées !');
+      showNotif('Appel enregistré !');
     } catch (err) {
       showNotif(err.message, 'error');
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleMarkAllPresent = () => {
+    const newState = { ...attendance };
+    students.forEach(s => {
+      const current = newState[s.id] || {};
+      newState[s.id] = typeof current === 'string' ? 'present' : { ...current, status: 'present' };
+    });
+    setAttendance(newState);
   };
 
   const handleSaveCahier = async () => {
@@ -362,7 +373,10 @@ const TeacherDashboard = () => {
                     <input type="date" value={presenceDate} onChange={e => setPresenceDate(e.target.value)} className="text-xs font-bold text-slate-400 bg-transparent border-none p-0 focus:ring-0" />
                   </div>
                 </div>
-                <Button variant="primary" onClick={handleSavePresence} loading={saving}>Enregistrer l&apos;appel</Button>
+                <div className="flex gap-3">
+                  <Button variant="ghost" onClick={handleMarkAllPresent} size="sm" className="text-emerald-600 hover:bg-emerald-50">Tout le monde est présent</Button>
+                  <Button variant="primary" onClick={handleSavePresence} loading={saving}>Enregistrer l&apos;appel</Button>
+                </div>
               </div>
 
               <div className="glass-card overflow-hidden">
@@ -371,33 +385,54 @@ const TeacherDashboard = () => {
                     <tr className="bg-slate-50 border-b border-slate-100">
                       <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Élèves</th>
                       <th className="text-center px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Présence</th>
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Note / Notification</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {students.map(s => (
-                      <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="px-6 py-4 font-bold text-slate-700">{s.prenom} {s.nom}</td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center gap-2">
-                            {['present', 'absent', 'retard'].map(status => (
-                              <button
-                                key={status}
-                                onClick={() => setAttendance(prev => ({ ...prev, [s.id]: status }))}
-                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${
-                                  attendance[s.id] === status
-                                    ? status === 'present' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
-                                    : status === 'absent' ? 'bg-red-500 text-white shadow-lg shadow-red-200'
-                                    : 'bg-amber-500 text-white shadow-lg shadow-amber-200'
-                                    : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                                }`}
-                              >
-                                {status === 'present' ? 'Présent' : status === 'absent' ? 'Absent' : 'Retard'}
-                              </button>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {students.map(s => {
+                      const att = typeof attendance[s.id] === 'object' ? attendance[s.id] : { status: attendance[s.id], commentaire: '' };
+                      return (
+                        <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-4 font-bold text-slate-700">{s.prenom} {s.nom}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center gap-2">
+                              {['present', 'absent', 'retard'].map(status => (
+                                <button
+                                  key={status}
+                                  onClick={() => setAttendance(prev => {
+                                    const current = prev[s.id] || {};
+                                    const commentaire = typeof current === 'object' ? current.commentaire : '';
+                                    return { ...prev, [s.id]: { status, commentaire } };
+                                  })}
+                                  className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${
+                                    att.status === status
+                                      ? status === 'present' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
+                                      : status === 'absent' ? 'bg-red-500 text-white shadow-lg shadow-red-200'
+                                      : 'bg-amber-500 text-white shadow-lg shadow-amber-200'
+                                      : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {status === 'present' ? 'Présent' : status === 'absent' ? 'Absent' : 'Retard'}
+                                </button>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <input 
+                              type="text" 
+                              placeholder="Note (ex: Travail non fait...)" 
+                              className="input-slb w-full !py-2 !text-xs"
+                              value={att.commentaire || ''}
+                              onChange={(e) => setAttendance(prev => {
+                                const current = prev[s.id] || {};
+                                const status = typeof current === 'object' ? current.status : current;
+                                return { ...prev, [s.id]: { status, commentaire: e.target.value } };
+                              })}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

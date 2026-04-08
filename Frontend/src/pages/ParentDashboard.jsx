@@ -585,11 +585,26 @@ const ParentDashboard = () => {
           </div>
           <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
             {absences.map(ab => (
-              <div key={ab.id} className="flex items-center justify-between p-3 rounded-xl border border-slate-50 hover:bg-slate-50 transition-colors">
-                <span className="text-[11px] font-black text-slate-500">{ab.date}</span>
-                <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-tighter ${ab.status === 'present' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
-                  {ab.status}
-                </span>
+              <div key={ab.id} className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-black text-slate-400 font-display flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-slate-200" />
+                    {new Date(ab.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                  <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+                    ab.status === 'present' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                    : ab.status === 'absent' ? 'bg-red-50 text-red-600 border border-red-100'
+                    : 'bg-amber-50 text-amber-600 border border-amber-100'
+                  }`}>
+                    {ab.status}
+                  </span>
+                </div>
+                {ab.commentaire && (
+                  <div className="mt-3 p-3 bg-blue-50/50 rounded-xl border-l-4 border-blue-400">
+                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1 italic">Note du professeur</p>
+                    <p className="text-[11px] font-bold text-slate-600 leading-relaxed">{ab.commentaire}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
