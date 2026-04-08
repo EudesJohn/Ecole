@@ -33,7 +33,8 @@ export const useBulletin = () => {
         .select('*, matieres(nom, coefficient)')
         .eq('student_id', student.id)
         .eq('trimestre', parseInt(schoolConfig.current_trimestre))
-        .eq('school_year', schoolConfig.current_year);
+        .eq('school_year', schoolConfig.current_year)
+        .eq('evaluation_type', 'composition');
 
       if (gradesError) throw gradesError;
       if (!studentGrades || studentGrades.length === 0) {

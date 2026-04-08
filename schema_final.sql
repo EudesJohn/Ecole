@@ -334,6 +334,7 @@ BEGIN
         WHERE s.classe_id = v_classe_id 
           AND g.trimestre = p_trimestre 
           AND g.school_year = p_school_year
+          AND g.evaluation_type = 'composition'
     ),
     aggregated_subject_averages AS (
         -- Grouping handles (Etape + Composition) / 2 for Primary
@@ -409,7 +410,10 @@ BEGIN
             ) as avg_val
         FROM grades g
         JOIN students s ON g.student_id = s.id
-        WHERE s.classe_id = v_classe_id AND g.trimestre = p_trimestre AND g.school_year = p_school_year
+        WHERE s.classe_id = v_classe_id 
+          AND g.trimestre = p_trimestre 
+          AND g.school_year = p_school_year
+          AND g.evaluation_type = 'composition'
     ),
     aggregated_subject_averages AS (
         SELECT student_id, matiere_id, AVG(avg_val) as final_avg
