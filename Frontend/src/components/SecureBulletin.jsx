@@ -269,6 +269,7 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
   
   const subjectsSuccess = safeRows.filter(r => r.moyenne >= 10).length;
   const totalSubjects = safeRows.length;
+  const validationRatio = `${subjectsSuccess} / ${totalSubjects}`;
   const appreciation = GradeCalculator.getAppreciation(moyenneGenerale);
 
 
@@ -411,28 +412,41 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
 
         {/* Summary Cards */}
         <View style={styles.summaryBox}>
-          <View style={[styles.summaryCard, { borderColor: '#1e3a8a' }]}>
-            <Text style={styles.summaryLabel}>Moyenne Générale</Text>
-            <Text style={[styles.summaryValue, { color: moyenneGenerale < 10 ? '#ef4444' : '#1e3a8a' }]}>
-              {moyenneGenerale.toFixed(2)}/20
-            </Text>
-          </View>
+          {isPrimaryData ? (
+            <View style={[styles.summaryCard, { borderColor: '#16a34a', backgroundColor: '#f0fdf4' }]}>
+              <Text style={[styles.summaryLabel, { color: '#166534' }]}>Matières Validées</Text>
+              <Text style={[styles.summaryValue, { color: '#166534', fontSize: 18 }]}>
+                {validationRatio}
+              </Text>
+            </View>
+          ) : (
+            <View style={[styles.summaryCard, { borderColor: '#1e3a8a' }]}>
+              <Text style={styles.summaryLabel}>Moyenne Générale</Text>
+              <Text style={[styles.summaryValue, { color: moyenneGenerale < 10 ? '#ef4444' : '#1e3a8a' }]}>
+                {moyenneGenerale.toFixed(2)}/20
+              </Text>
+            </View>
+          )}
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Rang</Text>
             <Text style={styles.summaryValue}>{classStats.rang}{classStats.rang == 1 ? 'er' : 'ème'}</Text>
           </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Plus forte moy.</Text>
-            <Text style={[styles.summaryValue, { color: '#16a34a', fontSize: 12 }]}>
-              {classStats?.plusForte?.toFixed(2) || '—'}
-            </Text>
-          </View>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Plus faible moy.</Text>
-            <Text style={[styles.summaryValue, { color: '#ef4444', fontSize: 12 }]}>
-              {classStats?.plusFaible?.toFixed(2) || '—'}
-            </Text>
-          </View>
+          {!isPrimaryData && (
+            <>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Plus forte moy.</Text>
+                <Text style={[styles.summaryValue, { color: '#16a34a', fontSize: 12 }]}>
+                  {classStats?.plusForte?.toFixed(2) || '—'}
+                </Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Plus faible moy.</Text>
+                <Text style={[styles.summaryValue, { color: '#ef4444', fontSize: 12 }]}>
+                  {classStats?.plusFaible?.toFixed(2) || '—'}
+                </Text>
+              </View>
+            </>
+          )}
         </View>
 
         {/* Appreciation */}

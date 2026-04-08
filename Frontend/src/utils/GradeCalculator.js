@@ -1,6 +1,6 @@
 /**
  * GradeCalculator - Unified for Secondary, Primary and Maternelle
- * Coexistence of Beninese and Standard systems
+ * Cycle-specific logic: Weighted Averages for Secondary, Validation Ratio for Primary/Maternelle.
  */
 const GradeCalculator = {
   // --- SECONDARY SYSTEM ---
@@ -19,7 +19,6 @@ const GradeCalculator = {
       ? validInterros.reduce((a, b) => a + b, 0) / validInterros.length 
       : 0;
 
-    // Formula: (((Moy_Interros + DW)/2) + D1 + D2) / 3
     const part1 = !isNaN(v_dw) ? (moyInterro + v_dw) / 2 : moyInterro;
     const part2 = !isNaN(v_d1) ? v_d1 : 0;
     const part3 = !isNaN(v_d2) ? v_d2 : 0;
@@ -30,7 +29,7 @@ const GradeCalculator = {
     return Math.round(result * 100) / 100;
   },
 
-  // --- BENINESE PRIMARY SYSTEM ---
+  // --- BENINESE PRIMARY SYSTEM (Legacy CM/CP) ---
   calculateStepGrade: (noteCM, noteCP) => {
     const cm = parseFloat(noteCM) || 0;
     const cp = parseFloat(noteCP) || 0;
@@ -40,30 +39,23 @@ const GradeCalculator = {
 
   // --- UNIFIED HELPERS ---
   getMoyenneByCycle: (g, cycle) => {
-    const evalType = g.evaluation_type || 'etape';
+    // For Primary and Maternelle, we now use a SINGLE NOTE (composition field)
     if (cycle === 'primaire' || cycle === 'maternelle') {
-      if (evalType === 'etape') return GradeCalculator.calculateStepGrade(g.note_cm, g.note_cp);
       return parseFloat(g.composition) || 0;
     }
+    // For Secondary, we use the weighted average of interros and homeworks
     return GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
   },
 
   /**
-   * Calculates the final average for a subject by aggregating all evaluations (Steps + Composition)
-   * @param {Array} grades - List of grade records for a single student and single subject
-   * @param {String} cycle - 'maternelle', 'primaire', or 'secondaire'
+   * Calculates how many subjects have a grade >= 10
    */
-  calculateFinalSubjectAverage: (grades, cycle) => {
-    if (!grades || grades.length === 0) return 0;
-
-    if (cycle === 'primaire' || cycle === 'maternelle') {
-      const compo = grades.find(g => g.evaluation_type === 'composition');
-      return compo ? parseFloat(compo.composition) || 0 : 0;
-    }
-
-    // For secondary, we usually have one record per subject/trimestre containing all 6 notes
-    const g = grades[0];
-    return GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
+  calculateValidatedCount: (subjectGrades, cycle) => {
+    if (!Array.isArray(subjectGrades)) return 0;
+    return subjectGrades.filter(g => {
+      const moy = GradeCalculator.getMoyenneByCycle(g, cycle);
+      return moy >= 10;
+    }).length;
   },
 
   calculateMoyennePondere: (moyennes, coefficients) => {
@@ -90,4 +82,3 @@ const GradeCalculator = {
 };
 
 export default GradeCalculator;
-

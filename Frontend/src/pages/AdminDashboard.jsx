@@ -51,6 +51,8 @@ const AdminDashboard = () => {
       const toUpdate = {};
       if (updatedConfig.current_trimestre) toUpdate.current_trimestre = updatedConfig.current_trimestre;
       if (updatedConfig.current_year) toUpdate.current_year = updatedConfig.current_year;
+      if (updatedConfig.primaire_compo_count) toUpdate.primaire_compo_count = updatedConfig.primaire_compo_count;
+      if (updatedConfig.maternelle_compo_count) toUpdate.maternelle_compo_count = updatedConfig.maternelle_compo_count;
 
       const updates = Object.entries(toUpdate).map(([key, value]) =>
         supabase.from('school_config').upsert({ key, value }, { onConflict: 'key' })
@@ -411,6 +413,37 @@ const AdminDashboard = () => {
                         }
                       }}
                       placeholder="ex: 2025-2026"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Compositions (Primaire)</label>
+                    <input
+                      type="number"
+                      className="input-slb w-full"
+                      value={formData.primaire_compo_count !== undefined ? formData.primaire_compo_count : (schoolConfig.primaire_compo_count || '3')}
+                      onChange={e => setFormData({ ...formData, primaire_compo_count: e.target.value })}
+                      onBlur={() => {
+                        if (formData.primaire_compo_count && formData.primaire_compo_count !== schoolConfig.primaire_compo_count) {
+                          handleConfigSave({ primaire_compo_count: formData.primaire_compo_count });
+                        }
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Compositions (Maternelle)</label>
+                    <input
+                      type="number"
+                      className="input-slb w-full"
+                      value={formData.maternelle_compo_count !== undefined ? formData.maternelle_compo_count : (schoolConfig.maternelle_compo_count || '3')}
+                      onChange={e => setFormData({ ...formData, maternelle_compo_count: e.target.value })}
+                      onBlur={() => {
+                        if (formData.maternelle_compo_count && formData.maternelle_compo_count !== schoolConfig.maternelle_compo_count) {
+                          handleConfigSave({ maternelle_compo_count: formData.maternelle_compo_count });
+                        }
+                      }}
                     />
                   </div>
                 </div>

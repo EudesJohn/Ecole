@@ -318,17 +318,38 @@ const TeacherDashboard = () => {
                     {students.map(s => {
                       const sg = grades[s.id] || {};
                       const cls = classes.find(c => c.nom === selectedClass);
+                      const isPrimary = cls?.cycle === 'primaire' || cls?.cycle === 'maternelle';
                       const hasNotes = Object.keys(sg).length > 0;
-                      const moy = GradeCalculator.getMoyenneByCycle(sg, cls?.cycle || 'secondaire');
+                      
+                      // For Primary, calculate ratio. For Secondary, calculate average.
+                      let displayMoy = "--.--";
+                      let displayApp = "Pas de notes";
+
+                      if (hasNotes) {
+                        if (isPrimary) {
+                           // This assumes 'grades' contains all subject marks for the student.
+                           // Actually, 'grades' in state is for the *selected* subject.
+                           // We need to fetch all grades for the student in the current trimestre to calculate a real ratio.
+                           // For now, let's show if the *selected* subject is validated.
+                           const moy = GradeCalculator.getMoyenneByCycle(sg, cls.cycle);
+                           displayMoy = moy >= 10 ? "1 / 1" : "0 / 1";
+                           displayApp = GradeCalculator.getAppreciation(moy);
+                        } else {
+                           const moy = GradeCalculator.calculateSubjectAverage(sg.interro1, sg.interro2, sg.interro3, sg.dw, sg.d1, sg.d2);
+                           displayMoy = moy.toFixed(2);
+                           displayApp = GradeCalculator.getAppreciation(moy);
+                        }
+                      }
+
                       return (
                         <tr key={s.id}>
                           <td className="px-6 py-4 font-bold text-slate-700">{s.prenom} {s.nom}</td>
                           <td className="px-6 py-4 text-center font-black text-blue-600">
-                            {hasNotes ? moy.toFixed(2) : <span className="text-slate-300">--.--</span>}
+                            {displayMoy}
                           </td>
                           <td className="px-6 py-4 text-right">
                              <span className="px-2 py-1 bg-slate-50 text-[10px] font-bold text-slate-400 rounded-lg uppercase">
-                               {hasNotes ? GradeCalculator.getAppreciation(moy) : "Pas de notes"}
+                               {displayApp}
                              </span>
                           </td>
                         </tr>

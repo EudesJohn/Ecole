@@ -145,7 +145,9 @@ CREATE TABLE IF NOT EXISTS school_config (
 
 INSERT INTO public.school_config (key, value) VALUES 
 ('current_trimestre', '1'),
-('current_year', '2025-2026')
+('current_year', '2025-2026'),
+('primaire_compo_count', '3'),
+('maternelle_compo_count', '3')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
 -- 3. TRIGGERS
