@@ -4,29 +4,31 @@
  */
 const GradeCalculator = {
   // --- SECONDARY SYSTEM ---
+  // Formula: (((Moyenne_Interros + DW) / 2) + D1 + D2) / 3
   calculateSubjectAverage: (interro1, interro2, interro3, dw, d1, d2) => {
-    const i1 = parseFloat(interro1);
-    const i2 = parseFloat(interro2);
-    const i3 = parseFloat(interro3);
-    const v_dw = parseFloat(dw);
-    const v_d1 = parseFloat(d1);
-    const v_d2 = parseFloat(d2);
+    const i1 = parseFloat(interro1) || 0;
+    const i2 = parseFloat(interro2) || 0;
+    const i3 = parseFloat(interro3) || 0;
+    const v_dw = parseFloat(dw) || 0;
+    const v_d1 = parseFloat(d1) || 0;
+    const v_d2 = parseFloat(d2) || 0;
 
-    const validInterros = [i1, i2, i3].filter(v => !isNaN(v));
-    if (validInterros.length === 0 && isNaN(v_dw) && isNaN(v_d1) && isNaN(v_d2)) return 0;
+    // We check if any grades are entered. If all are 0/empty, return 0.
+    const allValid = [interro1, interro2, interro3, dw, d1, d2].some(v => !isNaN(parseFloat(v)));
+    if (!allValid) return 0;
 
+    // 1. Calculate Interros Average
+    const validInterros = [interro1, interro2, interro3].filter(v => !isNaN(parseFloat(v)));
     const moyInterro = validInterros.length > 0 
-      ? validInterros.reduce((a, b) => a + b, 0) / validInterros.length 
+      ? validInterros.reduce((a, b) => a + parseFloat(b), 0) / validInterros.length 
       : 0;
 
-    const part1 = !isNaN(v_dw) ? (moyInterro + v_dw) / 2 : moyInterro;
-    const part2 = !isNaN(v_d1) ? v_d1 : 0;
-    const part3 = !isNaN(v_d2) ? v_d2 : 0;
+    // 2. Strict Secondary Formula
+    // (((Moy_Interros + DW)/2) + D1 + D2) / 3
+    const intermediate = (moyInterro + v_dw) / 2;
+    const total = (intermediate + v_d1 + v_d2) / 3;
 
-    const count = 1 + (!isNaN(v_d1) ? 1 : 0) + (!isNaN(v_d2) ? 1 : 0);
-    const result = (part1 + part2 + part3) / count;
-
-    return Math.round(result * 100) / 100;
+    return Math.round(total * 100) / 100;
   },
 
   // --- BENINESE PRIMARY SYSTEM (Legacy CM/CP) ---
@@ -39,11 +41,12 @@ const GradeCalculator = {
 
   // --- UNIFIED HELPERS ---
   getMoyenneByCycle: (g, cycle) => {
-    // For Primary and Maternelle, we now use a SINGLE NOTE (composition field)
+    if (!g) return 0;
+    // For Primary and Maternelle, we use a SINGLE NOTE (composition field)
     if (cycle === 'primaire' || cycle === 'maternelle') {
       return parseFloat(g.composition) || 0;
     }
-    // For Secondary, we use the weighted average of interros and homeworks
+    // For Secondary, we use the weighted average
     return GradeCalculator.calculateSubjectAverage(g.interro1, g.interro2, g.interro3, g.dw, g.d1, g.d2);
   },
 
