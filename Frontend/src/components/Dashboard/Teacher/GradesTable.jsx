@@ -82,14 +82,19 @@ export const GradesTable = ({
                       </td>
                     ))}
 
-                    {/* Primary Inputs */}
+                    {/* Primary Inputs: JSONB Array based */}
                     {isPrimary && [...Array(compoCount)].map((_, i) => {
-                      const fieldName = `interro${i + 1}`;
+                      const comps = Array.isArray(sg.compositions) ? [...sg.compositions] : [];
                       return (
                         <td key={i} className="px-1 py-2 text-center">
                           <input type="number" step="0.25" min="0" max="20"
-                            value={sg[fieldName] ?? ''}
-                            onChange={(e) => updateGrade(s.id, fieldName, e.target.value)}
+                            value={comps[i] ?? ''}
+                            onChange={(e) => {
+                              const newComps = [...comps];
+                              while(newComps.length <= i) newComps.push(null);
+                              newComps[i] = e.target.value === '' ? null : parseFloat(e.target.value);
+                              updateGrade(s.id, 'compositions', newComps);
+                            }}
                             className="w-16 h-9 text-center text-sm rounded-lg border border-gold-200 bg-gold-50/30 font-black text-gold-700 focus:ring-4 focus:ring-gold-100" />
                         </td>
                       );

@@ -466,19 +466,30 @@ const ParentDashboard = () => {
                   </div>
 
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
-                    {['interro1', 'interro2', 'interro3'].map((field, idx) => {
-                      const value = g[field];
-                      const isPrimary = ['primaire', 'maternelle'].includes(studentData.cycle?.toLowerCase());
-                      const label = isPrimary ? `C${idx + 1}` : `I${idx + 1}`;
-                      if (value === null || value === undefined || value === '') return null;
-                      
-                      return (
-                        <div key={field} className={`text-center p-2 rounded-xl border ${isPrimary ? 'bg-gold-50 border-gold-100' : 'bg-slate-50 border-slate-100/50'}`}>
-                          <p className={`text-[8px] font-black tracking-widest mb-1 uppercase ${isPrimary ? 'text-gold-500' : 'text-slate-400'}`}>{label}</p>
-                          <p className={`text-[11px] font-black ${isPrimary ? 'text-gold-700' : 'text-slate-700'}`}>{value}</p>
+                    {/* New JSONB Array priority */}
+                    {Array.isArray(g.compositions) && g.compositions.length > 0 ? (
+                      g.compositions.map((c, idx) => c !== null && c !== undefined && c !== '' ? (
+                        <div key={idx} className="text-center p-2 rounded-xl border bg-gold-50 border-gold-100">
+                          <p className="text-[8px] font-black tracking-widest mb-1 uppercase text-gold-500">C{idx + 1}</p>
+                          <p className="text-[11px] font-black text-gold-700">{c}</p>
                         </div>
-                      );
-                    })}
+                      ) : null)
+                    ) : (
+                      /* Legacy Fallback */
+                      ['interro1', 'interro2', 'interro3'].map((field, idx) => {
+                        const value = g[field];
+                        const isPrimary = ['primaire', 'maternelle'].includes(studentData.cycle?.toLowerCase());
+                        const label = isPrimary ? `C${idx + 1}` : `I${idx + 1}`;
+                        if (value === null || value === undefined || value === '') return null;
+                        
+                        return (
+                          <div key={field} className={`text-center p-2 rounded-xl border ${isPrimary ? 'bg-gold-50 border-gold-100' : 'bg-slate-50 border-slate-100/50'}`}>
+                            <p className={`text-[8px] font-black tracking-widest mb-1 uppercase ${isPrimary ? 'text-gold-500' : 'text-slate-400'}`}>{label}</p>
+                            <p className={`text-[11px] font-black ${isPrimary ? 'text-gold-700' : 'text-slate-700'}`}>{value}</p>
+                          </div>
+                        );
+                      })
+                    )}
                     {(studentData.cycle?.toLowerCase() === 'primaire' || studentData.cycle?.toLowerCase() === 'maternelle') ? (
                       <>
                         {(g.note_cm || g.note_cp) && (

@@ -42,12 +42,22 @@ const GradeCalculator = {
   // --- UNIFIED HELPERS ---
   getMoyenneByCycle: (g, cycle) => {
     if (!g) return 0;
-    // For Primary and Maternelle, we average the compositions (interro1, interro2, interro3)
+    // For Primary and Maternelle, we average the compositions
     if (cycle === 'primaire' || cycle === 'maternelle') {
-      const compositions = [g.interro1, g.interro2, g.interro3].filter(v => v !== null && v !== undefined && v !== '');
-      if (compositions.length > 0) {
-        return compositions.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / compositions.length;
+      // Priority 1: New JSONB storage array
+      if (Array.isArray(g.compositions) && g.compositions.length > 0) {
+        const validComps = g.compositions.filter(v => v !== null && v !== undefined && v !== '');
+        if (validComps.length > 0) {
+          return validComps.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / validComps.length;
+        }
       }
+      
+      // Priority 2: Legacy interro columns
+      const legacyComps = [g.interro1, g.interro2, g.interro3].filter(v => v !== null && v !== undefined && v !== '');
+      if (legacyComps.length > 0) {
+        return legacyComps.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / legacyComps.length;
+      }
+      
       return parseFloat(g.composition) || 0;
     }
     // For Secondary, we use the weighted average
