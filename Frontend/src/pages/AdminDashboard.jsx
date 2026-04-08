@@ -180,13 +180,22 @@ const AdminDashboard = () => {
 
   const handleDelete = async (type, id) => {
     if (!window.confirm('Confirmer la suppression ?')) return;
-    const tableMap = { 'professeurs': 'profiles', 'eleves': 'students', 'classes': 'classes', 'matieres': 'matieres' };
-    const table = tableMap[type] || type;
-    const { error } = await supabase.from(table).delete().eq('id', id);
-    if (error) showNotif(error.message, 'error');
-    else {
-      showNotif('Supprimé !');
+    
+    setSaving(true);
+    try {
+      const tableMap = { 'professeurs': 'profiles', 'eleves': 'students', 'classes': 'classes', 'matieres': 'matieres' };
+      const table = tableMap[type] || type;
+      
+      const { error } = await supabase.from(table).delete().eq('id', id);
+      if (error) throw error;
+      
+      showNotif('Supprimé avec succès !');
       refresh();
+    } catch (err) {
+      console.error('Delete error:', err);
+      showNotif(`Erreur lors de la suppression: ${err.message}`, 'error');
+    } finally {
+      setSaving(false);
     }
   };
 

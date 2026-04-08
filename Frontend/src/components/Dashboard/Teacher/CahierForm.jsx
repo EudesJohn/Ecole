@@ -6,20 +6,8 @@ export const CahierForm = ({
   setForm, 
   onSubmit, 
   entries, 
-  onEdit, 
-  onDelete, 
-  editId, 
-  saving,
-  currentUserId
+  saving 
 }) => {
-  const isEditable = (entry) => {
-    if (entry.teacher_id !== currentUserId) return false;
-    const createdAt = new Date(entry.created_at);
-    const now = new Date();
-    const diffHours = (now - createdAt) / (1000 * 60 * 60);
-    return diffHours < 24;
-  };
-
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       <div className="glass-card p-8 border-slate-100/50 shadow-glass-pro">
@@ -55,7 +43,7 @@ export const CahierForm = ({
               className="input-slb min-h-[120px] resize-none text-sm" placeholder="Points abordés, devoirs donnés..." />
           </div>
           <Button variant="primary" icon={Save} onClick={onSubmit} loading={saving} className="w-full py-4 rounded-2xl shadow-lg shadow-blue-900/10">
-            {editId ? 'Mettre à jour l&apos;entrée' : 'Enregistrer dans le cahier'}
+            Enregistrer dans le cahier
           </Button>
         </div>
       </div>
@@ -78,18 +66,6 @@ export const CahierForm = ({
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-1 bg-white text-[10px] font-black text-slate-400 rounded-lg border border-slate-100">{entry.date}</span>
                     <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{entry.matiere}</span>
-                  </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {isEditable(entry) && (
-                      <>
-                        <button onClick={() => onEdit(entry)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
-                          <Edit3 size={14} />
-                        </button>
-                        <button onClick={() => onDelete(entry.id, entry.created_at)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
-                          <Trash2 size={14} />
-                        </button>
-                      </>
-                    )}
                   </div>
                 </div>
                 <h4 className="font-black text-slate-800 text-sm mb-1">{entry.chapitre}</h4>

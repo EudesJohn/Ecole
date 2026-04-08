@@ -181,7 +181,20 @@ const TeacherDashboard = () => {
             <CahierForm 
               form={cahierForm} setForm={setCahierForm} onSubmit={handleSaveCahier}
               entries={cahierEntries} onEdit={e => { setCahierForm({ ...e, h_debut: e.heure.split(' - ')[0], h_fin: e.heure.split(' - ')[1] }); setEditCahierId(e.id); }}
-              onDelete={id => supabase.from('cahier_texte').delete().eq('id', id).then(() => loadCahier(selectedClass))}
+              onDelete={async (id) => {
+                if (!window.confirm('Supprimer cette entrée ?')) return;
+                setSaving(true);
+                try {
+                  const { error } = await supabase.from('cahier_texte').delete().eq('id', id);
+                  if (error) throw error;
+                  showNotif('Entrée supprimée !');
+                  loadCahier(selectedClass);
+                } catch (err) {
+                  showNotif(err.message, 'error');
+                } finally {
+                  setSaving(false);
+                }
+              }}
               saving={saving} editId={editCahierId}
               currentUserId={user?.id}
             />
