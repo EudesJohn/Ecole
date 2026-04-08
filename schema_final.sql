@@ -220,7 +220,10 @@ CREATE POLICY "Grades readable by parents" ON grades FOR SELECT USING (
 
 -- ABSENCES Policies
 DROP POLICY IF EXISTS "Admins/Teachers manage absences" ON absences;
-CREATE POLICY "Admins/Teachers manage absences" ON absences FOR ALL USING (check_is_admin() OR check_is_teacher());
+CREATE POLICY "Admins/Teachers view absences" ON absences FOR SELECT USING (check_is_admin() OR check_is_teacher());
+CREATE POLICY "Admins/Teachers insert absences" ON absences FOR INSERT WITH CHECK (check_is_admin() OR check_is_teacher());
+CREATE POLICY "Admins delete/update absences" ON absences FOR ALL USING (check_is_admin());
+
 DROP POLICY IF EXISTS "Parents read student absences" ON absences;
 CREATE POLICY "Parents read student absences" ON absences FOR SELECT USING (
   EXISTS (SELECT 1 FROM students WHERE id = absences.student_id AND parent_id = auth.uid())
@@ -228,9 +231,12 @@ CREATE POLICY "Parents read student absences" ON absences FOR SELECT USING (
 
 -- CAHIER DE TEXTE Policies
 DROP POLICY IF EXISTS "Admins/Teachers manage lessons" ON cahier_texte;
-CREATE POLICY "Admins/Teachers manage lessons" ON cahier_texte FOR ALL USING (check_is_admin() OR check_is_teacher());
 DROP POLICY IF EXISTS "Everyone reads lessons" ON cahier_texte;
 CREATE POLICY "Everyone reads lessons" ON cahier_texte FOR SELECT USING (true);
+CREATE POLICY "Admins/Teachers insert lessons" ON cahier_texte FOR INSERT WITH CHECK (check_is_admin() OR check_is_teacher());
+CREATE POLICY "Teacher/Admin update/delete lessons within 24h" ON cahier_texte FOR ALL USING (
+    check_is_admin() OR (teacher_id = auth.uid() AND created_at > now() - interval '24 hours')
+);
 
 -- 7. ANALYTICS & STATS (RPC)
 

@@ -183,6 +183,7 @@ const TeacherDashboard = () => {
               entries={cahierEntries} onEdit={e => { setCahierForm({ ...e, h_debut: e.heure.split(' - ')[0], h_fin: e.heure.split(' - ')[1] }); setEditCahierId(e.id); }}
               onDelete={id => supabase.from('cahier_texte').delete().eq('id', id).then(() => loadCahier(selectedClass))}
               saving={saving} editId={editCahierId}
+              currentUserId={user?.id}
             />
           )}
         </AnimatePresence>

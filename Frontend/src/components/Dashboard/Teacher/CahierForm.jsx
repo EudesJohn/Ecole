@@ -9,8 +9,17 @@ export const CahierForm = ({
   onEdit, 
   onDelete, 
   editId, 
-  saving 
+  saving,
+  currentUserId
 }) => {
+  const isEditable = (entry) => {
+    if (entry.teacher_id !== currentUserId) return false;
+    const createdAt = new Date(entry.created_at);
+    const now = new Date();
+    const diffHours = (now - createdAt) / (1000 * 60 * 60);
+    return diffHours < 24;
+  };
+
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       <div className="glass-card p-8 border-slate-100/50 shadow-glass-pro">
@@ -71,12 +80,16 @@ export const CahierForm = ({
                     <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{entry.matiere}</span>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => onEdit(entry)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
-                      <Edit3 size={14} />
-                    </button>
-                    <button onClick={() => onDelete(entry.id, entry.created_at)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
-                      <Trash2 size={14} />
-                    </button>
+                    {isEditable(entry) && (
+                      <>
+                        <button onClick={() => onEdit(entry)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                          <Edit3 size={14} />
+                        </button>
+                        <button onClick={() => onDelete(entry.id, entry.created_at)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                          <Trash2 size={14} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
                 <h4 className="font-black text-slate-800 text-sm mb-1">{entry.chapitre}</h4>
