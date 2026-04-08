@@ -77,26 +77,29 @@ const AdminDashboard = () => {
 
       // Remove UI-only or relation-based fields that aren't in the DB schema
       const unwantedFields = [
-        'id', 'classes', 'profiles', 'students', 'matieres',
+        'id', 'classes', 'profiles', 'students', 'matieres', 'matricule', 'parent_id',
         'classe', 'full_name', 'created_at', 'updated_at', 'studentsData'
       ];
       unwantedFields.forEach(f => delete payload[f]);
 
       // 2. Decide Strategy (API for Create Student/Teacher, Supabase for everything else)
-      // Les élèves sont gérés directement par Supabase maintenant (le matricule est auto-généré).
-      // Seuls les professeurs nécessitent l'API pour créer l'utilisateur Auth.
-      const isNewSensitive = !editItem && modalType === 'professeurs';
+      const isNewSensitive = !editItem && (modalType === 'professeurs' || modalType === 'eleves' || modalType === 'students');
 
       if (isNewSensitive) {
         // Use relative path if baseUrl is not provided
         let baseUrl = import.meta.env.VITE_BACKEND_URL || '';
         if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
 
-        // Mot de passe temporaire pour le professeur
-        payload.password = 'Slb' + Math.floor(1000 + Math.random() * 9000);
-        payload.role = 'teacher';
+        const endpoint = (modalType === 'eleves' || modalType === 'students') 
+          ? `${baseUrl}/api/admin/students` 
+          : `${baseUrl}/api/admin/teachers`;
 
-        const response = await fetch(`${baseUrl}/api/create-user`, {
+        if (modalType === 'professeurs') {
+          payload.password = 'Slb' + Math.floor(1000 + Math.random() * 9000);
+          payload.role = 'teacher';
+        }
+
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -116,15 +119,19 @@ const AdminDashboard = () => {
 
         if (!response.ok) throw new Error(result.error || `Erreur Serveur (${response.status})`);
 
-        // NOUVEAU: Mettre à jour le profil avec les matières et classes assignées
-        if (result.user?.id) {
-          await supabase.from('profiles').update({
-            matiere: payload.matiere || [],
-            classe_assignee: payload.classe_assignee || []
-          }).eq('id', result.user.id);
+        if (modalType === 'professeurs') {
+          // NOUVEAU: Mettre à jour le profil avec les matières et classes assignées
+          if (result.user?.id || result.teacherId) {
+            const teacherId = result.user?.id || result.teacherId;
+            await supabase.from('profiles').update({
+              matiere: payload.matiere || [],
+              classe_assignee: payload.classe_assignee || []
+            }).eq('id', teacherId);
+          }
+          showNotif(`Succès ! Professeur ajouté. Mot de passe provisoire : ${payload.password || result.password}`);
+        } else {
+          showNotif(`Succès ! Élève ajouté. Matricule: ${result.matricule}. Code PIN Parent: ${result.pin}`);
         }
-
-        showNotif(`Succès ! Professeur ajouté. Mot de passe provisoire : ${payload.password}`);
       } else {
         // Direct Supabase Update/Insert
         const tableMap = {
