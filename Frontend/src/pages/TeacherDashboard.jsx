@@ -98,10 +98,10 @@ const TeacherDashboard = () => {
       const cls = classes.find(c => c.nom === selectedClass);
       const mat = matieres.find(m => m.nom === selectedMatiere && m.classe_id === cls?.id);
       
+      const gradeFields = ['interro1', 'interro2', 'interro3', 'dw', 'd1', 'd2', 'composition', 'note_cm', 'note_cp'];
       const gradeList = Object.values(grades);
       const hasInvalidGrade = gradeList.some(g => {
-        return Object.keys(g).some(key => {
-          if (['student_id', 'matiere_id', 'trimestre', 'school_year', 'evaluation_type'].includes(key)) return false;
+        return gradeFields.some(key => {
           const val = parseFloat(g[key]);
           return !isNaN(val) && (val < 0 || val > 20);
         });
