@@ -16,6 +16,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- ==========================================
+-- SEQUENCES & FUNCTIONS (Must be defined before tables)
+-- ==========================================
+CREATE SEQUENCE IF NOT EXISTS matricule_seq START 1;
+DROP FUNCTION IF EXISTS get_next_matricule CASCADE;
+CREATE OR REPLACE FUNCTION get_next_matricule() RETURNS TEXT AS $$
+DECLARE
+    next_val INTEGER;
+    year_suffix TEXT;
+BEGIN
+    SELECT nextval('matricule_seq') INTO next_val;
+    SELECT TO_CHAR(CURRENT_DATE, 'YY') INTO year_suffix;
+    RETURN LPAD(next_val::TEXT, 4, '0') || ' SLB ' || year_suffix;
+END;
+$$ LANGUAGE plpgsql;
+
 -- 2. TABLES
 
 -- PROFILES (extends auth.users)
@@ -68,7 +84,7 @@ END $$;
 -- STUDENTS
 CREATE TABLE IF NOT EXISTS students (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  matricule TEXT UNIQUE NOT NULL,
+  matricule TEXT UNIQUE NOT NULL DEFAULT get_next_matricule(),
   prenom TEXT NOT NULL,
   nom TEXT NOT NULL,
   classe_id UUID REFERENCES classes(id) ON DELETE SET NULL,
@@ -204,21 +220,7 @@ INSERT INTO public.school_config (key, value) VALUES
 ('current_year', '2025-2026')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 
--- 3. SEQUENCES
-CREATE SEQUENCE IF NOT EXISTS matricule_seq START 1;
-DROP FUNCTION IF EXISTS get_next_matricule CASCADE;
-CREATE OR REPLACE FUNCTION get_next_matricule() RETURNS TEXT AS $$
-DECLARE
-    next_val INTEGER;
-    year_suffix TEXT;
-BEGIN
-    SELECT nextval('matricule_seq') INTO next_val;
-    SELECT TO_CHAR(CURRENT_DATE, 'YY') INTO year_suffix;
-    RETURN LPAD(next_val::TEXT, 4, '0') || ' SLB ' || year_suffix;
-END;
-$$ LANGUAGE plpgsql;
-
--- 4. TRIGGERS
+-- 3. TRIGGERS
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trig_updated_at_profiles') THEN
