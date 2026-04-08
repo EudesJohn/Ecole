@@ -22,6 +22,8 @@ const ParentDashboard = () => {
   const [absences, setAbsences] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [moyenneGenerale, setMoyenneGenerale] = useState(0);
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [totalCoeffs, setTotalCoeffs] = useState(0);
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [schoolConfig, setSchoolConfig] = useState({ current_trimestre: '1', current_year: '2025-2026' });
   const [selectedTrimestre, setSelectedTrimestre] = useState('1');
@@ -136,8 +138,14 @@ const ParentDashboard = () => {
           const mat = (mats || []).find(m => m.id === g.matiere_id);
           return mat ? parseFloat(mat.coefficient) || 1 : 1;
         });
+        const totalP = moyennes.reduce((acc, m, idx) => acc + (m * coeffs[idx]), 0);
+        const totalC = coeffs.reduce((acc, c) => acc + c, 0);
+        setTotalPoints(totalP);
+        setTotalCoeffs(totalC);
         setMoyenneGenerale(GradeCalculator.calculateMoyennePondere(moyennes, coeffs));
       } else {
+        setTotalPoints(0);
+        setTotalCoeffs(0);
         setMoyenneGenerale(0);
         // If no grades, we already have history, we can still set current stats if they exist (rank 00)
       }
@@ -309,7 +317,9 @@ const ParentDashboard = () => {
           </div>
           <div className="mt-4">
             <p className="text-4xl font-display font-black text-slate-900 leading-none">{moyenneGenerale || '00.0'}</p>
-            <p className="text-[10px] text-slate-400 mt-1 font-medium italic">Générale du trimestre</p>
+            <p className="text-[10px] text-slate-400 mt-1 font-medium italic">
+              {totalPoints.toFixed(2)} / {totalCoeffs} points
+            </p>
           </div>
         </motion.div>
 

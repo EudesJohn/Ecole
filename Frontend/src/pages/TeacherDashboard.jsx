@@ -220,10 +220,17 @@ const TeacherDashboard = () => {
             <option value="">Sélectionner une classe</option>
             {classes.map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}
           </select>
-          <select value={selectedMatiere} onChange={e => setSelectedMatiere(e.target.value)} className="input-slb">
-            <option value="">Sélectionner une matière</option>
-            {matieres.filter(m => !selectedClass || m.classe === selectedClass).map(m => <option key={m.id} value={m.nom}>{m.nom}</option>)}
-          </select>
+          <div className="space-y-1">
+            <select value={selectedMatiere} onChange={e => setSelectedMatiere(e.target.value)} className="input-slb w-full">
+              <option value="">Sélectionner une matière</option>
+              {matieres.filter(m => !selectedClass || m.classe === selectedClass).map(m => <option key={m.id} value={m.nom}>{m.nom}</option>)}
+            </select>
+            {selectedMatiere && (
+              <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest pl-2">
+                Coefficient : {matieres.find(m => m.nom === selectedMatiere && m.classe === selectedClass)?.coefficient || 1}
+              </p>
+            )}
+          </div>
         </section>
 
         <AnimatePresence mode="wait">

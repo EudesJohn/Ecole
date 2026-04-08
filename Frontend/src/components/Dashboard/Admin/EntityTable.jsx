@@ -47,7 +47,7 @@ export const EntityTable = ({
           )}
           {onAdd && (
             <Button variant="primary" icon={Plus} onClick={onAdd} className="rounded-2xl px-6">
-              Ajouter {colName === 'students' ? 'un élève' : colName === 'teachers' ? 'un prof' : 'une classe'}
+              Ajouter {colName === 'students' ? 'un élève' : colName === 'teachers' ? 'un prof' : colName === 'matieres' ? 'une matière' : 'une classe'}
             </Button>
           )}
         </div>

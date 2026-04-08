@@ -499,7 +499,10 @@ const AdminDashboard = () => {
                 <option value="">Sélectionner une classe</option>
                 {classes.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
               </select>
-              <input type="number" placeholder="Coefficient" className="input-slb" value={formData.coefficient || 1} onChange={e => setFormData({ ...formData, coefficient: parseInt(e.target.value) })} />
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Coefficient de la matière</p>
+                <input type="number" placeholder="Coefficient (ex: 2)" className="input-slb w-full" value={formData.coefficient || 1} onChange={e => setFormData({ ...formData, coefficient: parseInt(e.target.value) })} />
+              </div>
               <select className="input-slb" value={formData.category || 'ECRITE'} onChange={e => setFormData({ ...formData, category: e.target.value })}>
                 <option value="ECRITE">Écrit</option>
                 <option value="ORALE">Oral</option>
@@ -559,14 +562,27 @@ const AdminDashboard = () => {
               )}
 
               <div className="space-y-2">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Matières (séparées par des virgules)</p>
-                <input
-                  type="text"
-                  placeholder="Français, Mathématiques..."
-                  className="input-slb"
-                  value={Array.isArray(formData.matiere) ? formData.matiere.join(', ') : (formData.matiere || '')}
-                  onChange={e => setFormData({ ...formData, matiere: e.target.value.split(',').map(s => s.trim()).filter(s => s !== '') })}
-                />
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Matières Enseignées</p>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-100">
+                  {[...new Set(matieres.map(m => m.nom))].sort().map(mName => (
+                    <label key={mName} className="flex items-center gap-2 p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        checked={(formData.matiere || []).includes(mName)}
+                        onChange={e => {
+                          const current = formData.matiere || [];
+                          if (e.target.checked) {
+                            setFormData({ ...formData, matiere: [...current, mName] });
+                          } else {
+                            setFormData({ ...formData, matiere: current.filter(m => m !== mName) });
+                          }
+                        }}
+                      />
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-blue-600">{mName}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-2">
