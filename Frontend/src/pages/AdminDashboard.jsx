@@ -215,14 +215,10 @@ const AdminDashboard = () => {
         ? `${baseUrl}/api/admin/students/reset-pin`
         : `${baseUrl}/api/admin/teachers/reset-password`;
       
-      // Force refresh the session to avoid stale tokens/sessions
-      await supabase.auth.refreshSession().catch(e => console.warn("Refresh session failed:", e));
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token?.trim() || null;
       
-      console.log("Diagnostic Auth - Token présent:", !!token);
       if (!token) {
-        console.warn("Session morte détectée. Redirection...");
         showNotif("Votre session a expiré. Veuillez vous reconnecter.", 'error');
         setTimeout(() => navigate('/'), 2000);
         return;

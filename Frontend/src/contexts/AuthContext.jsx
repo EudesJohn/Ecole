@@ -10,8 +10,8 @@ export const AuthProvider = ({ children }) => {
   const [studentData, setStudentData] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
 
-  const fetchProfile = async (userId, sessionUser) => {
-    setLoading(true);
+  const fetchProfile = async (userId, sessionUser, silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
         setUser(session.user);
         const metadataRole = session.user.user_metadata?.role || 'parent';
         setRole(metadataRole);
-        fetchProfile(session.user.id, session.user);
+        fetchProfile(session.user.id, session.user, true);
       } else {
         setUser(null);
         setRole(null);
