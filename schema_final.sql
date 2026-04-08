@@ -580,7 +580,7 @@ BEGIN
     new.email, 
     COALESCE(new.raw_user_meta_data->>'prenom', ''), 
     COALESCE(new.raw_user_meta_data->>'nom', ''),
-    'parent'
+    COALESCE(new.raw_user_meta_data->>'role', 'parent')
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN new;

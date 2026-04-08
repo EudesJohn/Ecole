@@ -403,9 +403,41 @@ const AdminDashboard = () => {
               <input type="text" placeholder="Prénom" className="input-slb" value={formData.prenom || ''} onChange={e => setFormData({...formData, prenom: e.target.value})} />
               <input type="text" placeholder="Nom" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({...formData, nom: e.target.value})} />
               <input type="email" placeholder="Email (pour connexion)" className="input-slb" value={formData.email || ''} onChange={e => setFormData({...formData, email: e.target.value})} />
-              <p className="text-[10px] text-slate-400 font-bold uppercase mt-2">Matières enseignées (séparées par des virgules)</p>
-              <input type="text" placeholder="Français, Mathématiques..." className="input-slb" value={Array.isArray(formData.matiere) ? formData.matiere.join(', ') : formData.matiere || ''} 
-                onChange={e => setFormData({...formData, matiere: e.target.value.split(',').map(s => s.trim())})} />
+              
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Matières (séparées par des virgules)</p>
+                <input 
+                  type="text" 
+                  placeholder="Français, Mathématiques..." 
+                  className="input-slb" 
+                  value={Array.isArray(formData.matiere) ? formData.matiere.join(', ') : (formData.matiere || '')} 
+                  onChange={e => setFormData({...formData, matiere: e.target.value.split(',').map(s => s.trim()).filter(s => s !== '')})} 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Classes Assignées</p>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-100">
+                  {classes.map(c => (
+                    <label key={c.id} className="flex items-center gap-2 p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group">
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                        checked={(formData.classe_assignee || []).includes(c.nom)} 
+                        onChange={e => {
+                          const current = formData.classe_assignee || [];
+                          if (e.target.checked) {
+                            setFormData({...formData, classe_assignee: [...current, c.nom]});
+                          } else {
+                            setFormData({...formData, classe_assignee: current.filter(id => id !== c.nom)});
+                          }
+                        }}
+                      />
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-primary-600">{c.nom}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </>
           )}
 

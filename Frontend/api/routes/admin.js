@@ -87,7 +87,6 @@ router.get('/students', async (req, res) => {
 });
 
 // Create new teacher account.
-// Needs: email, prenom, nom, matiere, classe_assignee
 router.post('/teachers', async (req, res) => {
   try {
     const { email, prenom, nom, matiere, classe_assignee } = req.body;
@@ -97,10 +96,13 @@ router.post('/teachers', async (req, res) => {
       return res.status(400).json({ error: 'Email required' });
     }
     
-    // Si pas de password fourni (venant du Frontend), on génère en Backend
     if (!password) {
        password = generateSecurePassword();
     }
+
+    // Ensure matiere and classe_assignee are arrays for JSONB
+    const matiereArray = Array.isArray(matiere) ? matiere : (matiere ? [matiere] : []);
+    const classeArray = Array.isArray(classe_assignee) ? classe_assignee : (classe_assignee ? [classe_assignee] : []);
 
     // 1. Create user in Supabase Auth using admin privileges
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
@@ -112,19 +114,26 @@ router.post('/teachers', async (req, res) => {
 
     if (authError) throw authError;
 
-    // 2. The trigger "handle_new_user" in Postgres created the profile.
-    // Now we update the extra fields (matiere, classe_assignee, and force role).
+    // 2. Update profiles table
     const { error: profileError } = await supabase
       .from('profiles')
-      .update({ role: 'teacher', matiere, classe_assignee })
+      .update({ 
+        role: 'teacher', 
+        matiere: matiereArray, 
+        classe_assignee: classeArray 
+      })
       .eq('id', authUser.user.id);
 
-    if (profileError) throw profileError;
+    if (profileError) {
+      // Cleanup auth user if profile update fails
+      await supabase.auth.admin.deleteUser(authUser.user.id);
+      throw profileError;
+    }
 
     res.json({ success: true, teacherId: authUser.user.id, password });
   } catch (error) {
     console.error('Teacher creation error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message || 'Error during teacher creation' });
   }
 });
 
