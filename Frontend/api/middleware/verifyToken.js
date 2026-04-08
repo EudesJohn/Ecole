@@ -15,44 +15,51 @@ const verifyToken = async (req, res, next) => {
 
   try {
     // FAIL-SAFE: Direct HTTP call to Supabase Auth API
-    // This bypasses any library-level session management issues.
     const supabaseUrl = (process.env.SUPABASE_URL || '').trim();
     const supabaseAnonKey = (process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
 
-    const authCheck = await fetch(`${supabaseUrl}/auth/v1/user`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'apikey': supabaseAnonKey
-      }
-    });
+    if (!supabaseUrl) throw new Error('SUPABASE_URL is not configured on server');
+
+    let authCheck;
+    try {
+      authCheck = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'apikey': supabaseAnonKey
+        }
+      });
+    } catch (fetchErr) {
+      console.error('VerifyToken: Fetch network error:', fetchErr.message);
+      return res.status(503).json({ error: 'Identity service currently unreachable', source: 'Backend Network' });
+    }
+
+    const responseBody = await authCheck.json().catch(() => ({}));
 
     if (!authCheck.ok) {
-      const errorData = await authCheck.json().catch(() => ({}));
-      const errorMsg = errorData.msg || errorData.error || '';
-      console.error('VerifyToken: Auth API rejected token:', errorMsg);
+      const errorMsg = responseBody.msg || responseBody.error || responseBody.message || 'Identity verification failed';
+      console.error('VerifyToken: Auth API rejection:', errorMsg);
       
       let hint = 'Your session might be invalid. Please log out and log back in.';
-      if (errorMsg.includes('session_id claim')) {
-        hint = 'Your browser session is stale on Supabase servers. Please SIGNOUT and SIGNIN again to refresh it completely.';
+      if (errorMsg.toLowerCase().includes('session') || errorMsg.toLowerCase().includes('jwt')) {
+        hint = 'Your browser session is stale or expired. Please SIGNOUT and SIGNIN again.';
       }
 
       return res.status(401).json({ 
-        error: errorMsg || 'Authentication rejected by Supabase',
+        error: errorMsg,
         code: 'AUTH_API_REJECTED',
         source: 'Supabase Raw API',
         hint
       });
     }
 
-    const user = await authCheck.json();
-    req.user = user;
+    req.user = responseBody;
     
     // Fetch role from profiles table
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', user.id)
+      .eq('id', responseBody.id)
       .maybeSingle();
     
     if (profileError) {

@@ -221,10 +221,11 @@ const AdminDashboard = () => {
       const token = session?.access_token?.trim() || null;
       
       console.log("Diagnostic Auth - Token présent:", !!token);
-      if (token) {
-        console.log(`Diagnostic Auth - Longueur: ${token.length}, Début: ${token.substring(0, 15)}...`);
-      } else {
-        console.warn("Attention: Aucun jeton d'accès trouvé après rafraîchissement.");
+      if (!token) {
+        console.warn("Session morte détectée. Redirection...");
+        showNotif("Votre session a expiré. Veuillez vous reconnecter.", 'error');
+        setTimeout(() => navigate('/'), 2000);
+        return;
       }
 
       const response = await fetch(endpoint, {
@@ -240,6 +241,10 @@ const AdminDashboard = () => {
       
       if (!response.ok) {
         console.error("Erreur API Détails:", result);
+        if (result.error?.toLowerCase().includes('session') || result.error?.toLowerCase().includes('jwt')) {
+          showNotif("Session invalide. Redirection vers la page de connexion...", 'error');
+          setTimeout(() => navigate('/'), 3000);
+        }
         throw new Error(result.error || "Erreur lors de la réinitialisation");
       }
 
