@@ -116,14 +116,23 @@ const AdminDashboard = () => {
 
         const text = await response.text();
         let result = {};
+        let parseError = false;
+
         try {
           result = text ? JSON.parse(text) : {};
         } catch (e) {
-          console.error('Failed to parse response:', text);
-          throw new Error(`Erreur inattendue (${response.status}): Le serveur n'a pas renvoyé de JSON.`);
+          parseError = true;
+          console.error('Erreur de parsing JSON du serveur:', text);
         }
 
-        if (!response.ok) throw new Error(result.error || `Erreur Serveur (${response.status})`);
+        if (!response.ok) {
+          // Si on a réussi à parser et qu'on a un message précis
+          if (!parseError && result.error) throw new Error(result.error);
+          
+          // Sinon, on affiche le statut et un extrait de la réponse brute
+          const snippet = text ? (text.length > 100 ? text.substring(0, 100) + '...' : text) : 'Réponse vide';
+          throw new Error(`Erreur Serveur ${response.status}: ${snippet}`);
+        }
 
         if (modalType === 'professeurs') {
           // NOUVEAU: Mettre à jour le profil avec les matières et classes assignées
