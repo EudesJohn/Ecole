@@ -2,15 +2,20 @@ const { supabase, supabaseVerify } = require('../supabase');
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  const token = authHeader?.split('Bearer ')[1];
+  // Robust token extraction
+  let token = null;
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+    token = authHeader.substring(7).trim();
+  }
   
-  if (!token) {
-    console.error('VerifyToken: No token provided in header');
-    return res.status(401).json({ error: 'No token provided' });
+  if (!token || token === 'undefined' || token === 'null') {
+    console.error('VerifyToken: Token missing or literal string "undefined"/"null"');
+    return res.status(401).json({ error: 'No valid token provided' });
   }
 
   try {
     // Single client attempt with Service Role Key (default)
+    // We pass the cleaned token explicitly.
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
     if (error || !user) {

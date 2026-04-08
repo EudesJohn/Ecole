@@ -216,10 +216,15 @@ const AdminDashboard = () => {
         : `${baseUrl}/api/admin/teachers/reset-password`;
       
       const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
+      const rawToken = session.data.session?.access_token;
+      const token = rawToken ? rawToken.trim() : null;
       
       console.log("Diagnostic Auth - Token présent:", !!token);
-      if (!token) console.warn("Attention: Aucun jeton d'accès trouvé.");
+      if (token) {
+        console.log(`Diagnostic Auth - Longueur: ${token.length}, Début: ${token.substring(0, 15)}...`);
+      } else {
+        console.warn("Attention: Aucun jeton d'accès trouvé.");
+      }
 
       const response = await fetch(endpoint, {
         method: 'POST',
