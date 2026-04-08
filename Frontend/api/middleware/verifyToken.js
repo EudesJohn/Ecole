@@ -29,12 +29,19 @@ const verifyToken = async (req, res, next) => {
 
     if (!authCheck.ok) {
       const errorData = await authCheck.json().catch(() => ({}));
-      console.error('VerifyToken: Auth API rejected token:', errorData.msg || errorData.error);
+      const errorMsg = errorData.msg || errorData.error || '';
+      console.error('VerifyToken: Auth API rejected token:', errorMsg);
+      
+      let hint = 'Your session might be invalid. Please log out and log back in.';
+      if (errorMsg.includes('session_id claim')) {
+        hint = 'Your browser session is stale on Supabase servers. Please SIGNOUT and SIGNIN again to refresh it completely.';
+      }
+
       return res.status(401).json({ 
-        error: errorData.msg || errorData.error || 'Authentication rejected by Supabase',
+        error: errorMsg || 'Authentication rejected by Supabase',
         code: 'AUTH_API_REJECTED',
         source: 'Supabase Raw API',
-        hint: 'Your session might be invalid. Please log out and log back in.'
+        hint
       });
     }
 

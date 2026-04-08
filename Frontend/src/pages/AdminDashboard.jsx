@@ -215,15 +215,16 @@ const AdminDashboard = () => {
         ? `${baseUrl}/api/admin/students/reset-pin`
         : `${baseUrl}/api/admin/teachers/reset-password`;
       
-      const session = await supabase.auth.getSession();
-      const rawToken = session.data.session?.access_token;
-      const token = rawToken ? rawToken.trim() : null;
+      // Force refresh the session to avoid stale tokens/sessions
+      await supabase.auth.refreshSession().catch(e => console.warn("Refresh session failed:", e));
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token?.trim() || null;
       
       console.log("Diagnostic Auth - Token présent:", !!token);
       if (token) {
         console.log(`Diagnostic Auth - Longueur: ${token.length}, Début: ${token.substring(0, 15)}...`);
       } else {
-        console.warn("Attention: Aucun jeton d'accès trouvé.");
+        console.warn("Attention: Aucun jeton d'accès trouvé après rafraîchissement.");
       }
 
       const response = await fetch(endpoint, {
