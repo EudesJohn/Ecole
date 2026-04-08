@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Search, Plus, Edit3, Trash2, Download, RefreshCw, Loader2, BookMarked } from 'lucide-react';
+import { Search, Plus, Edit3, Trash2, Download, RefreshCw, Loader2, BookMarked, Key } from 'lucide-react';
 import { Button } from '../../UI/Button';
 
 export const EntityTable = ({
@@ -11,6 +11,7 @@ export const EntityTable = ({
   onAdd,
   onEdit,
   onDelete,
+  onReset,
   onExtraAction,
   extraActionIcon: ExtraIcon,
   extraActionLabel,
@@ -87,6 +88,15 @@ export const EntityTable = ({
                           title={extraActionLabel}
                         >
                           {generatingId === item.id ? <Loader2 size={16} className="animate-spin" /> : <ExtraIcon size={16} />}
+                        </button>
+                      )}
+                      {onReset && (
+                        <button
+                          onClick={() => onReset(item)}
+                          className="p-2.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-all border border-transparent hover:border-amber-100"
+                          title="Réinitialiser les accès"
+                        >
+                          <Key size={16} />
                         </button>
                       )}
                       <button

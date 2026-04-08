@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useBulletin } from '../hooks/useBulletin';
 import { useAdminData } from '../hooks/useAdminData';
 import { supabase } from '../supabase';
-import { Download, AlertCircle, CheckCircle, Plus, Trash2, Edit, Settings } from 'lucide-react';
+import { Download, AlertCircle, CheckCircle, Plus, Trash2, Edit, Settings, Key, RefreshCw } from 'lucide-react';
 import { OverviewTab } from '../components/Dashboard/Admin/OverviewTab';
 import { EntityTable } from '../components/Dashboard/Admin/EntityTable';
 
@@ -95,8 +95,10 @@ const AdminDashboard = () => {
           : `${baseUrl}/api/admin/teachers`;
 
         if (modalType === 'professeurs') {
-          payload.password = 'Slb' + Math.floor(1000 + Math.random() * 9000);
+          payload.password = formData.password || ('Slb' + Math.floor(1000 + Math.random() * 9000));
           payload.role = 'teacher';
+        } else if (modalType === 'eleves' || modalType === 'students') {
+          payload.newPin = formData.pin_code; // If manually set
         }
 
         const response = await fetch(endpoint, {
@@ -186,6 +188,45 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleResetCredentials = async (item) => {
+    const isStudent = item.matricule !== undefined;
+    const typeLabel = isStudent ? "du parent" : "du professeur";
+    if (!window.confirm(`Générer un nouveau mot de passe pour le compte ${typeLabel} ?`)) return;
+
+    setSaving(true);
+    try {
+      let baseUrl = import.meta.env.VITE_BACKEND_URL || '';
+      if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+      
+      const endpoint = isStudent 
+        ? `${baseUrl}/api/admin/students/reset-pin`
+        : `${baseUrl}/api/admin/teachers/reset-password`;
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({ id: item.id, newPassword: null, newPin: null }) // Backend generates if null
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Erreur lors de la réinitialisation");
+
+      if (isStudent) {
+        showNotif(`Nouveau code PIN Parent : ${result.pin}`);
+      } else {
+        showNotif(`Nouveau mot de passe Professeur : ${result.password}`);
+      }
+      refresh();
+    } catch (err) {
+      showNotif(err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const openModal = (type, item = null) => {
     setModalType(type);
     setEditItem(item);
@@ -225,6 +266,7 @@ const AdminDashboard = () => {
             <EntityTable
               items={students} colName="students" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
               onAdd={() => openModal('eleves')} onEdit={(item) => openModal('eleves', item)} onDelete={(id) => handleDelete('eleves', id)}
+              onReset={handleResetCredentials}
               onExtraAction={(item) => handleGenerateBulletin(item, schoolConfig, classes, matieres)} extraActionIcon={Download} extraActionLabel="Bulletin" generatingId={generatingPdf}
               columns={[
                 { key: 'matricule', label: 'Matricule' },
@@ -242,6 +284,7 @@ const AdminDashboard = () => {
             <EntityTable
               items={teachers} colName="teachers" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
               onAdd={() => openModal('professeurs')} onEdit={(item) => openModal('professeurs', item)} onDelete={(id) => handleDelete('professeurs', id)}
+              onReset={handleResetCredentials}
               columns={[
                 { key: 'full_name', label: 'Nom' },
                 { key: 'email', label: 'Email' },
@@ -417,7 +460,7 @@ const AdminDashboard = () => {
             </>
           )}
 
-          {modalType === 'eleves' && (
+          {(modalType === 'eleves' || modalType === 'students') && (
             <>
               <input type="text" placeholder="Prénom" className="input-slb" value={formData.prenom || ''} onChange={e => setFormData({ ...formData, prenom: e.target.value })} />
               <input type="text" placeholder="Nom" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
@@ -429,6 +472,20 @@ const AdminDashboard = () => {
                 <option value="M">Masculin</option>
                 <option value="F">Féminin</option>
               </select>
+              {!editItem && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Code PIN Parent (auto si vide)"
+                    className="input-slb flex-1"
+                    value={formData.pin_code || ''}
+                    onChange={e => setFormData({ ...formData, pin_code: e.target.value })}
+                  />
+                  <Button variant="ghost" onClick={() => setFormData({ ...formData, pin_code: Math.floor(1000 + Math.random() * 9000).toString() })} size="sm">
+                    <RefreshCw size={14} />
+                  </Button>
+                </div>
+              )}
             </>
           )}
 
@@ -437,6 +494,21 @@ const AdminDashboard = () => {
               <input type="text" placeholder="Prénom" className="input-slb" value={formData.prenom || ''} onChange={e => setFormData({ ...formData, prenom: e.target.value })} />
               <input type="text" placeholder="Nom" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
               <input type="email" placeholder="Email (pour connexion)" className="input-slb" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+              
+              {!editItem && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Mot de passe (auto si vide)"
+                    className="input-slb flex-1"
+                    value={formData.password || ''}
+                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  />
+                  <Button variant="ghost" onClick={() => setFormData({ ...formData, password: 'Slb' + Math.floor(1000 + Math.random() * 9000) })} size="sm">
+                    <RefreshCw size={14} />
+                  </Button>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Matières (séparées par des virgules)</p>

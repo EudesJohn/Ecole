@@ -156,5 +156,39 @@ router.post('/teachers/reset-password', async (req, res) => {
   }
 });
 
+// Reset student PIN (Parent password).
+router.post('/students/reset-pin', async (req, res) => {
+  try {
+    const { id } = req.body;
+    let { newPin } = req.body;
+
+    if (!id) return res.status(400).json({ error: 'Student ID required' });
+    if (!newPin) newPin = generateSecurePassword();
+
+    // 1. Update students table
+    const { data: student, error: studentError } = await supabase
+      .from('students')
+      .update({ pin_code: newPin })
+      .eq('id', id)
+      .select('parent_id')
+      .single();
+
+    if (studentError) throw studentError;
+
+    // 2. Update Auth password for parent
+    if (student.parent_id) {
+      const { error: authError } = await supabase.auth.admin.updateUserById(student.parent_id, {
+        password: newPin
+      });
+      if (authError) throw authError;
+    }
+
+    res.json({ success: true, pin: newPin });
+  } catch (error) {
+    console.error('PIN reset error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
 
