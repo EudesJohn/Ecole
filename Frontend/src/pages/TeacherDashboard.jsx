@@ -208,7 +208,8 @@ const TeacherDashboard = () => {
 
           {activeTab === 'notes' && (
             <GradesTable 
-              students={students} grades={grades} isPrimary={classes.find(c => c.nom === selectedClass)?.cycle !== 'secondaire'}
+              students={students} grades={grades} 
+              isPrimary={['primaire', 'maternelle'].includes(classes.find(c => c.nom === selectedClass)?.cycle?.toLowerCase())}
               evaluationType={evaluationType} setEvaluationType={setEvaluationType}
               updateGrade={(sid, f, v) => setGrades(prev => ({ ...prev, [sid]: { ...prev[sid], [f]: v } }))}
               onSave={handleSaveGrades} saving={saving}
@@ -318,7 +319,7 @@ const TeacherDashboard = () => {
                     {students.map(s => {
                       const sg = grades[s.id] || {};
                       const cls = classes.find(c => c.nom === selectedClass);
-                      const isPrimary = cls?.cycle === 'primaire' || cls?.cycle === 'maternelle';
+                      const isPrimary = ['primaire', 'maternelle'].includes(cls?.cycle?.toLowerCase());
                       const hasNotes = Object.keys(sg).length > 0;
                       
                       // For Primary, calculate ratio. For Secondary, calculate average.
