@@ -14,20 +14,31 @@ const verifyToken = async (req, res, next) => {
   }
 
   try {
-    // Single client attempt with Service Role Key (default)
-    // We pass the cleaned token explicitly.
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
-    if (error || !user) {
-      console.error('VerifyToken: Final Auth rejection:', error?.message || 'No user');
+    // FAIL-SAFE: Direct HTTP call to Supabase Auth API
+    // This bypasses any library-level session management issues.
+    const supabaseUrl = (process.env.SUPABASE_URL || '').trim();
+    const supabaseAnonKey = (process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '').trim();
+
+    const authCheck = await fetch(`${supabaseUrl}/auth/v1/user`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': supabaseAnonKey
+      }
+    });
+
+    if (!authCheck.ok) {
+      const errorData = await authCheck.json().catch(() => ({}));
+      console.error('VerifyToken: Auth API rejected token:', errorData.msg || errorData.error);
       return res.status(401).json({ 
-        error: error?.message || 'Invalid token',
-        code: error?.code || 'AUTH_REJECTED',
-        source: 'Supabase Auth Service',
-        hint: 'Your session token was rejected. Try logging out and back in.'
+        error: errorData.msg || errorData.error || 'Authentication rejected by Supabase',
+        code: 'AUTH_API_REJECTED',
+        source: 'Supabase Raw API',
+        hint: 'Your session might be invalid. Please log out and log back in.'
       });
     }
 
+    const user = await authCheck.json();
     req.user = user;
     
     // Fetch role from profiles table

@@ -239,7 +239,6 @@ const AdminDashboard = () => {
       
       if (!response.ok) {
         console.error("Erreur API Détails:", result);
-        alert(`ERREUR SERVEUR (${response.status}): ${JSON.stringify(result)}`);
         throw new Error(result.error || "Erreur lors de la réinitialisation");
       }
 
