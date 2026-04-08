@@ -43,9 +43,11 @@ export const EntityTable = ({
               Générer par défaut
             </Button>
           )}
-          <Button variant="primary" icon={Plus} onClick={onAdd} className="rounded-2xl px-6">
-            Ajouter {colName === 'students' ? 'un élève' : colName === 'teachers' ? 'un prof' : 'une classe'}
-          </Button>
+          {onAdd && (
+            <Button variant="primary" icon={Plus} onClick={onAdd} className="rounded-2xl px-6">
+              Ajouter {colName === 'students' ? 'un élève' : colName === 'teachers' ? 'un prof' : 'une classe'}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -99,18 +101,22 @@ export const EntityTable = ({
                           <Key size={16} />
                         </button>
                       )}
-                      <button
-                        onClick={() => onEdit(item)}
-                        className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                      <button
-                        onClick={() => onDelete(item.id)}
-                        className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {onEdit && (
+                        <button
+                          onClick={() => onEdit(item)}
+                          className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                      )}
+                      {onDelete && (
+                        <button
+                          onClick={() => onDelete(item.id)}
+                          className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </motion.tr>
