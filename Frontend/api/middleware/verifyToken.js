@@ -1,4 +1,4 @@
-const { supabase } = require('../supabase');
+const { supabase, supabaseVerify } = require('../supabase');
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -10,12 +10,13 @@ const verifyToken = async (req, res, next) => {
   }
 
   try {
-    // Note: getUser(token) is the standard way to verify a client-side JWT on the server
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    // CRITICAL: We use supabaseVerify (Anon Client) to validate the user JWT.
+    // This is more reliable for production JWT verification than the Service Role client.
+    const { data: { user }, error } = await supabaseVerify.auth.getUser(token);
     
     if (error || !user) {
-      console.error('VerifyToken: Supabase rejected token:', error?.message);
-      return res.status(401).json({ error: 'Invalid token' });
+      console.error('VerifyToken: Token rejected by Supabase Auth:', error?.message || 'No user found');
+      return res.status(401).json({ error: error?.message || 'Invalid token' });
     }
 
     req.user = user;

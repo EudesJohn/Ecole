@@ -523,20 +523,6 @@ const AdminDashboard = () => {
                 <option value="M">Masculin</option>
                 <option value="F">Féminin</option>
               </select>
-              {!editItem && (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Code PIN Parent (auto si vide)"
-                    className="input-slb flex-1"
-                    value={formData.pin_code || ''}
-                    onChange={e => setFormData({ ...formData, pin_code: e.target.value })}
-                  />
-                  <Button type="button" variant="ghost" onClick={() => setFormData({ ...formData, pin_code: Math.floor(1000 + Math.random() * 9000).toString() })} size="sm">
-                    <RefreshCw size={14} />
-                  </Button>
-                </div>
-              )}
             </>
           )}
 
