@@ -234,8 +234,8 @@ DROP POLICY IF EXISTS "Admins/Teachers manage lessons" ON cahier_texte;
 DROP POLICY IF EXISTS "Everyone reads lessons" ON cahier_texte;
 CREATE POLICY "Everyone reads lessons" ON cahier_texte FOR SELECT USING (true);
 CREATE POLICY "Admins/Teachers insert lessons" ON cahier_texte FOR INSERT WITH CHECK (check_is_admin() OR check_is_teacher());
-CREATE POLICY "Teacher/Admin update/delete lessons within 24h" ON cahier_texte FOR ALL USING (
-    check_is_admin() OR (teacher_id = auth.uid() AND created_at > now() - interval '24 hours')
+CREATE POLICY "Teacher/Admin update/delete lessons within 12h" ON cahier_texte FOR ALL USING (
+    check_is_admin() OR (teacher_id = auth.uid() AND created_at > now() - interval '12 hours')
 );
 
 -- 7. ANALYTICS & STATS (RPC)

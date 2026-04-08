@@ -6,14 +6,26 @@ export const CahierForm = ({
   setForm, 
   onSubmit, 
   entries, 
+  onEdit,
+  onDelete,
+  editId,
+  currentUserId,
   saving 
 }) => {
+  const isEditable = (entry) => {
+    if (entry.teacher_id !== currentUserId) return false;
+    const createdAt = new Date(entry.created_at);
+    const now = new Date();
+    const diffHours = (now - createdAt) / (1000 * 60 * 60);
+    return diffHours < 12; // 12-hour limit
+  };
+
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       <div className="glass-card p-8 border-slate-100/50 shadow-glass-pro">
         <h3 className="text-xl font-display font-black text-slate-900 mb-6 flex items-center gap-3">
           <div className="w-2 h-6 bg-blue-500 rounded-full" />
-          Nouveau contenu
+          {editId ? 'Modifier l\'entrée' : 'Nouveau contenu'}
         </h3>
         <div className="space-y-5">
           <div className="grid grid-cols-2 gap-4">
@@ -21,19 +33,23 @@ export const CahierForm = ({
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Date</label>
               <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="input-slb text-sm" />
             </div>
-            <div className="flex items-end gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
-              <div className="flex-1">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                  <div className="w-1 h-1 bg-blue-400 rounded-full" /> Début
-                </label>
-                <input type="time" value={form.h_debut} onChange={(e) => setForm({ ...form, h_debut: e.target.value })} className="bg-transparent border-none appearance-none focus:ring-0 p-0 text-sm font-bold text-slate-700 w-full" />
+            <div className="flex items-center gap-2 p-2 bg-slate-50/50 rounded-2xl border border-slate-100 h-[52px]">
+              <div className="flex-1 min-w-0">
+                <input 
+                  type="time" 
+                  value={form.h_debut} 
+                  onChange={(e) => setForm({ ...form, h_debut: e.target.value })} 
+                  className="bg-transparent border-none appearance-none focus:ring-0 p-0 text-[11px] font-black text-slate-700 w-full text-center" 
+                />
               </div>
-              <div className="h-8 w-[1px] bg-slate-200 mb-1" />
-              <div className="flex-1">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-2">
-                  <div className="w-1 h-1 bg-indigo-400 rounded-full" /> Fin
-                </label>
-                <input type="time" value={form.h_fin} onChange={(e) => setForm({ ...form, h_fin: e.target.value })} className="bg-transparent border-none appearance-none focus:ring-0 p-0 text-sm font-bold text-slate-700 w-full" />
+              <div className="text-slate-300 text-[10px] font-bold">à</div>
+              <div className="flex-1 min-w-0">
+                <input 
+                  type="time" 
+                  value={form.h_fin} 
+                  onChange={(e) => setForm({ ...form, h_fin: e.target.value })} 
+                  className="bg-transparent border-none appearance-none focus:ring-0 p-0 text-[11px] font-black text-slate-700 w-full text-center" 
+                />
               </div>
             </div>
           </div>
@@ -48,8 +64,13 @@ export const CahierForm = ({
               className="input-slb min-h-[120px] resize-none text-sm" placeholder="Points abordés, devoirs donnés..." />
           </div>
           <Button variant="primary" icon={Save} onClick={onSubmit} loading={saving} className="w-full py-4 rounded-2xl shadow-lg shadow-blue-900/10">
-            Enregistrer dans le cahier
+            {editId ? 'Mettre à jour' : 'Enregistrer dans le cahier'}
           </Button>
+          {editId && (
+            <Button variant="ghost" onClick={() => { setForm({ date: '', h_debut: '', h_fin: '', chapitre: '', resume: '' }); /* reset logic handled in dashboard */ }} className="w-full text-xs">
+              Annuler la modification
+            </Button>
+          )}
         </div>
       </div>
 
@@ -73,6 +94,18 @@ export const CahierForm = ({
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-1 bg-white text-[10px] font-black text-slate-400 rounded-lg border border-slate-100">{entry.date}</span>
                     <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{entry.matiere}</span>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {isEditable(entry) && (
+                      <>
+                        <button onClick={() => onEdit(entry)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                          <Edit3 size={14} />
+                        </button>
+                        <button onClick={() => onDelete(entry.id)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                          <Trash2 size={14} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
                 <h4 className="font-black text-slate-800 text-sm mb-1">{entry.chapitre}</h4>
