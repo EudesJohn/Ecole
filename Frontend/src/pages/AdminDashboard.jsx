@@ -82,10 +82,6 @@ const AdminDashboard = () => {
       ];
       unwantedFields.forEach(f => delete payload[f]);
 
-      // Sécurité : Supprimer explicitement le matricule du payload s'il est vide 
-      // pour forcer la base de données PostgreSQL à utiliser sa valeur par défaut auto-générée
-      if (!payload.matricule) delete payload.matricule;
-
       // 2. Decide Strategy (API for Create Student/Teacher, Supabase for everything else)
       // Les élèves sont gérés directement par Supabase maintenant (le matricule est auto-généré).
       // Seuls les professeurs nécessitent l'API pour créer l'utilisateur Auth.
@@ -119,6 +115,14 @@ const AdminDashboard = () => {
         }
 
         if (!response.ok) throw new Error(result.error || `Erreur Serveur (${response.status})`);
+
+        // NOUVEAU: Mettre à jour le profil avec les matières et classes assignées
+        if (result.user?.id) {
+          await supabase.from('profiles').update({
+            matiere: payload.matiere || [],
+            classe_assignee: payload.classe_assignee || []
+          }).eq('id', result.user.id);
+        }
 
         showNotif(`Succès ! Professeur ajouté. Mot de passe provisoire : ${payload.password}`);
       } else {
