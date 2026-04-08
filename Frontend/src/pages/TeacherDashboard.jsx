@@ -61,7 +61,7 @@ const TeacherDashboard = () => {
       .eq('matiere_id', mat.id)
       .eq('trimestre', parseInt(schoolConfig.current_trimestre))
       .eq('school_year', schoolConfig.current_year)
-      .eq('evaluation_type', cls.cycle === 'secondaire' ? 'composition' : evaluationType);
+      .eq('evaluation_type', 'composition');
 
     const map = {};
     (data || []).forEach(g => { map[g.student_id] = g; });
@@ -113,14 +113,21 @@ const TeacherDashboard = () => {
         return;
       }
 
-      const upserts = Object.keys(grades).map(sid => ({
-        ...grades[sid],
-        student_id: sid,
-        matiere_id: mat.id,
-        trimestre: parseInt(schoolConfig.current_trimestre),
-        school_year: schoolConfig.current_year,
-        evaluation_type: ['primaire', 'maternelle'].includes(cls.cycle?.toLowerCase()) ? 'composition' : (cls.cycle === 'secondaire' ? 'composition' : evaluationType)
-      }));
+      const upserts = Object.keys(grades).map(sid => {
+        const payload = { ...grades[sid] };
+        // CLEANUP: Remove system fields that might cause conflicts or RLS issues
+        const systemFields = ['id', 'created_at', 'updated_at', 'students', 'classes', 'matieres'];
+        systemFields.forEach(f => delete payload[f]);
+
+        return {
+          ...payload,
+          student_id: sid,
+          matiere_id: mat.id,
+          trimestre: parseInt(schoolConfig.current_trimestre),
+          school_year: schoolConfig.current_year,
+          evaluation_type: 'composition'
+        };
+      });
       const { error } = await supabase.from('grades').upsert(upserts, { onConflict: 'student_id,matiere_id,trimestre,school_year,evaluation_type' });
       if (error) throw error;
       showNotif('Notes enregistrées !');
