@@ -10,31 +10,23 @@ const verifyToken = async (req, res, next) => {
   }
 
   try {
-    // 1. Primary Check: Use Anon Client (supabaseVerify)
-    let authResult = await supabaseVerify.auth.getUser(token);
+    // Single client attempt with Service Role Key (default)
+    const { data: { user }, error } = await supabase.auth.getUser(token);
     
-    // 2. Fallback Check: Use Service Role Client (supabase) if primary fails
-    if (authResult.error) {
-      console.warn('VerifyToken: Primary auth failed, trying fallback...', authResult.error.message);
-      authResult = await supabase.auth.getUser(token);
-    }
-    
-    const { data: { user }, error } = authResult;
-
     if (error || !user) {
-      console.error('VerifyToken: All auth attempts failed:', error?.message || 'No user found');
+      console.error('VerifyToken: Final Auth rejection:', error?.message || 'No user');
       return res.status(401).json({ 
         error: error?.message || 'Invalid token',
-        code: error?.code || 'AUTH_FAILURE',
-        hint: 'Check if your session is still valid. Try logging out and back in.',
-        diag: `Token length: ${token.length}`
+        code: error?.code || 'AUTH_REJECTED',
+        source: 'Supabase Auth Service',
+        hint: 'Your session token was rejected. Try logging out and back in.'
       });
     }
 
     req.user = user;
     
     // Fetch role from profiles table
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)

@@ -215,17 +215,28 @@ const AdminDashboard = () => {
         ? `${baseUrl}/api/admin/students/reset-pin`
         : `${baseUrl}/api/admin/teachers/reset-password`;
       
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      
+      console.log("Diagnostic Auth - Token présent:", !!token);
+      if (!token) console.warn("Attention: Aucun jeton d'accès trouvé.");
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ id: item.id, newPassword: null, newPin: null }) // Backend generates if null
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Erreur lors de la réinitialisation");
+      
+      if (!response.ok) {
+        console.error("Erreur API Détails:", result);
+        alert(`ERREUR SERVEUR (${response.status}): ${JSON.stringify(result)}`);
+        throw new Error(result.error || "Erreur lors de la réinitialisation");
+      }
 
       if (isStudent) {
         showNotif(`Nouveau code PIN Parent : ${result.pin}`, 'success', 15000);
