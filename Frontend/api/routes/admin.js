@@ -26,15 +26,14 @@ router.post('/matricule', async (req, res) => {
 
 // Add student
 router.post('/students', async (req, res) => {
+  let createdUserId = null;
   try {
     const { nom, prenom, classe_id, date_naissance, sexe } = req.body;
     const matricule = await generateMatricule();
-    
-    // Générer Mot de passe sécurisé (8 caractères)
     const pin = generateSecurePassword();
-    const email = `${matricule.replace(/\s+/g, '').toLowerCase()}@slb.bj`; // e.g., 0001slb26@slb.bj
+    const email = `${matricule.replace(/\s+/g, '').toLowerCase()}@slb.bj`;
     
-    // Create Parent Auth user
+    // 1. Create Parent Auth user
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email,
       password: pin,
@@ -43,11 +42,14 @@ router.post('/students', async (req, res) => {
     });
 
     if (authError) throw authError;
+    createdUserId = authUser.user.id;
     
-    // Force role in profiles explicitly (if trigger didn't handle it well)
-    await supabase.from('profiles').update({ role: 'parent' }).eq('id', authUser.user.id);
+    // 2. Force role in profiles
+    const { error: profileError } = await supabase.from('profiles').update({ role: 'parent' }).eq('id', createdUserId);
+    if (profileError) throw profileError;
     
-    const { error } = await supabase
+    // 3. Insert student record
+    const { error: studentError } = await supabase
       .from('students')
       .insert([{
         matricule,
@@ -56,18 +58,18 @@ router.post('/students', async (req, res) => {
         classe_id,
         date_naissance,
         sexe,
-        parent_id: authUser.user.id,
+        parent_id: createdUserId,
         pin_code: pin
       }]);
 
-    if (error) {
-       // Rollback user if student insert fails
-       await supabase.auth.admin.deleteUser(authUser.user.id);
-       throw error;
-    }
+    if (studentError) throw studentError;
     
     res.json({ success: true, matricule, pin });
   } catch (error) {
+    console.error('Student creation failed:', error);
+    if (createdUserId) {
+      await supabase.auth.admin.deleteUser(createdUserId).catch(e => console.error('Rollback failed:', e));
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -88,23 +90,18 @@ router.get('/students', async (req, res) => {
 
 // Create new teacher account.
 router.post('/teachers', async (req, res) => {
+  let createdUserId = null;
   try {
     const { email, prenom, nom, matiere, classe_assignee } = req.body;
     let { password } = req.body;
 
-    if (!email) {
-      return res.status(400).json({ error: 'Email required' });
-    }
-    
-    if (!password) {
-       password = generateSecurePassword();
-    }
+    if (!email) return res.status(400).json({ error: 'Email required' });
+    if (!password) password = generateSecurePassword();
 
-    // Ensure matiere and classe_assignee are arrays for JSONB
     const matiereArray = Array.isArray(matiere) ? matiere : (matiere ? [matiere] : []);
     const classeArray = Array.isArray(classe_assignee) ? classe_assignee : (classe_assignee ? [classe_assignee] : []);
 
-    // 1. Create user in Supabase Auth using admin privileges
+    // 1. Create user in Supabase Auth
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
@@ -113,6 +110,7 @@ router.post('/teachers', async (req, res) => {
     });
 
     if (authError) throw authError;
+    createdUserId = authUser.user.id;
 
     // 2. Update profiles table
     const { error: profileError } = await supabase
@@ -122,17 +120,16 @@ router.post('/teachers', async (req, res) => {
         matiere: matiereArray, 
         classe_assignee: classeArray 
       })
-      .eq('id', authUser.user.id);
+      .eq('id', createdUserId);
 
-    if (profileError) {
-      // Cleanup auth user if profile update fails
-      await supabase.auth.admin.deleteUser(authUser.user.id);
-      throw profileError;
-    }
+    if (profileError) throw profileError;
 
-    res.json({ success: true, teacherId: authUser.user.id, password });
+    res.json({ success: true, teacherId: createdUserId, password });
   } catch (error) {
-    console.error('Teacher creation error:', error);
+    console.error('Teacher creation failed:', error);
+    if (createdUserId) {
+      await supabase.auth.admin.deleteUser(createdUserId).catch(e => console.error('Rollback failed:', e));
+    }
     res.status(500).json({ error: error.message || 'Error during teacher creation' });
   }
 });
