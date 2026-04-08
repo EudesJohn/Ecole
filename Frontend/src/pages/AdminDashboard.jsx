@@ -90,7 +90,9 @@ const AdminDashboard = () => {
         const route = routeMap[modalType];
         
         // Use relative path if baseUrl is not provided
-        const baseUrl = import.meta.env.VITE_BACKEND_URL || '';
+        let baseUrl = import.meta.env.VITE_BACKEND_URL || '';
+        if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+
         const response = await fetch(`${baseUrl}/api/admin/${route}`, {
           method: 'POST',
           headers: { 
