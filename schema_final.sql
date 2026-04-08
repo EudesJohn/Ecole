@@ -218,6 +218,20 @@ CREATE POLICY "Grades readable by parents" ON grades FOR SELECT USING (
   EXISTS (SELECT 1 FROM students WHERE id = grades.student_id AND parent_id = auth.uid())
 );
 
+-- ABSENCES Policies
+DROP POLICY IF EXISTS "Admins/Teachers manage absences" ON absences;
+CREATE POLICY "Admins/Teachers manage absences" ON absences FOR ALL USING (check_is_admin() OR check_is_teacher());
+DROP POLICY IF EXISTS "Parents read student absences" ON absences;
+CREATE POLICY "Parents read student absences" ON absences FOR SELECT USING (
+  EXISTS (SELECT 1 FROM students WHERE id = absences.student_id AND parent_id = auth.uid())
+);
+
+-- CAHIER DE TEXTE Policies
+DROP POLICY IF EXISTS "Admins/Teachers manage lessons" ON cahier_texte;
+CREATE POLICY "Admins/Teachers manage lessons" ON cahier_texte FOR ALL USING (check_is_admin() OR check_is_teacher());
+DROP POLICY IF EXISTS "Everyone reads lessons" ON cahier_texte;
+CREATE POLICY "Everyone reads lessons" ON cahier_texte FOR SELECT USING (true);
+
 -- 7. ANALYTICS & STATS (RPC)
 
 -- Unified subject average calculation helper (DYNAMIC DIVISOR)

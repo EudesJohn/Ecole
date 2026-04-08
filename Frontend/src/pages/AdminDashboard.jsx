@@ -225,7 +225,7 @@ const AdminDashboard = () => {
             <EntityTable
               items={students} colName="students" searchTerm={searchTerm} setSearchTerm={setSearchTerm}
               onAdd={() => openModal('eleves')} onEdit={(item) => openModal('eleves', item)} onDelete={(id) => handleDelete('eleves', id)}
-              onExtraAction={handleGenerateBulletin} extraActionIcon={Download} extraActionLabel="Bulletin" generatingId={generatingPdf}
+              onExtraAction={(item) => handleGenerateBulletin(item, schoolConfig, classes, matieres)} extraActionIcon={Download} extraActionLabel="Bulletin" generatingId={generatingPdf}
               columns={[
                 { key: 'matricule', label: 'Matricule' },
                 {
