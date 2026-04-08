@@ -30,7 +30,11 @@ export const useTeacherData = (userProfile) => {
           filteredClasses = (classesData || []).filter(c => userProfile.classe_assignee.includes(c.nom));
         }
         if (Array.isArray(userProfile.matiere) && userProfile.matiere.length > 0) {
-          filteredMatieres = allMatieres.filter(m => userProfile.matiere.includes(m.nom));
+          // Double filter: name matches AND class matches teacher's assigned classes
+          filteredMatieres = allMatieres.filter(m => 
+            userProfile.matiere.includes(m.nom) && 
+            userProfile.classe_assignee.includes(m.classe)
+          );
         }
       }
 

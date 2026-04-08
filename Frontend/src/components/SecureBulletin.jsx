@@ -251,7 +251,7 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
     };
   });
 
-  const isPrimaryData = student.cycle === 'primaire' || student.cycle === 'maternelle';
+  const isPrimaryData = ['primaire', 'maternelle'].includes(student.cycle?.toLowerCase());
 
   // Group by category for primary
   const categories = {

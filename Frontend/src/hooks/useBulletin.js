@@ -88,7 +88,8 @@ export const useBulletin = () => {
           ...student,
           classe: studentClass?.nom || 'N/A',
           cycle: studentClass?.cycle || 'primaire',
-          dateNaissance: student.date_naissance
+          dateNaissance: student.date_naissance,
+          sexe: student.sexe || '—'
         },
         gradesBySubject: targetGrades,
         matieres,
