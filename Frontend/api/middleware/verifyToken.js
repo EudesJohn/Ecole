@@ -10,16 +10,24 @@ const verifyToken = async (req, res, next) => {
   }
 
   try {
-    // CRITICAL: We use supabaseVerify (Anon Client) to validate the user JWT.
-    // This is more reliable for production JWT verification than the Service Role client.
-    const { data: { user }, error } = await supabaseVerify.auth.getUser(token);
+    // 1. Primary Check: Use Anon Client (supabaseVerify)
+    let authResult = await supabaseVerify.auth.getUser(token);
     
+    // 2. Fallback Check: Use Service Role Client (supabase) if primary fails
+    if (authResult.error) {
+      console.warn('VerifyToken: Primary auth failed, trying fallback...', authResult.error.message);
+      authResult = await supabase.auth.getUser(token);
+    }
+    
+    const { data: { user }, error } = authResult;
+
     if (error || !user) {
-      console.error('VerifyToken: Token rejected by Supabase Auth:', error?.message || 'No user found');
+      console.error('VerifyToken: All auth attempts failed:', error?.message || 'No user found');
       return res.status(401).json({ 
         error: error?.message || 'Invalid token',
-        code: error?.code,
-        hint: 'Check if your browser session is still valid. Try logging out and back in.'
+        code: error?.code || 'AUTH_FAILURE',
+        hint: 'Check if your session is still valid. Try logging out and back in.',
+        diag: `Token length: ${token.length}`
       });
     }
 
