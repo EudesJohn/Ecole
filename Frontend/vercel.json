@@ -1,6 +1,7 @@
 {
+  "trailingSlash": false,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index.js" },
-    { "source": "/(.*)", "destination": "/Frontend/dist/index.html" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
