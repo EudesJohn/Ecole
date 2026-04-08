@@ -7,9 +7,14 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useBulletin } from '../hooks/useBulletin';
 import { useTeacherData } from '../hooks/useTeacherData';
 import { supabase } from '../supabase';
-import { AlertCircle, CheckCircle, GraduationCap, Users, BookOpen } from 'lucide-react';
+import { 
+  AlertCircle, CheckCircle, GraduationCap, Users, BookOpen, 
+  ClipboardCheck, Award, FileText, Download, Loader2 
+} from 'lucide-react';
 import { GradesTable } from '../components/Dashboard/Teacher/GradesTable';
 import { CahierForm } from '../components/Dashboard/Teacher/CahierForm';
+import { EntityTable } from '../components/Dashboard/Admin/EntityTable';
+import GradeCalculator from '../utils/GradeCalculator';
 
 const TeacherDashboard = () => {
   const { user, userProfile } = useAuth();
@@ -21,6 +26,8 @@ const TeacherDashboard = () => {
   const [evaluationType, setEvaluationType] = useState('etape');
   const [students, setStudents] = useState([]);
   const [grades, setGrades] = useState({});
+  const [attendance, setAttendance] = useState({});
+  const [presenceDate, setPresenceDate] = useState(new Date().toISOString().split('T')[0]);
   const [cahierEntries, setCahierEntries] = useState([]);
   const [cahierForm, setCahierForm] = useState({ date: '', h_debut: '', h_fin: '', chapitre: '', resume: '' });
   const [editCahierId, setEditCahierId] = useState(null);
@@ -29,12 +36,10 @@ const TeacherDashboard = () => {
   const { handleGenerateBulletin, generatingPdf } = useBulletin();
 
   const showNotif = (msg, type = 'success') => {
-    // Technical error mapping for a smoother UX
     let friendlyMsg = msg;
     if (msg.includes('duplicate key') || msg.includes('23505')) {
-      friendlyMsg = "Une entrée identique existe déjà pour cette sélection (Élève/Matière/Période).";
+      friendlyMsg = "Une entrée identique existe déjà.";
     }
-    
     setNotification({ message: friendlyMsg, type });
     setTimeout(() => setNotification(null), 3000);
   };
@@ -105,9 +110,38 @@ const TeacherDashboard = () => {
     }
   };
 
+  const handleSavePresence = async () => {
+    if (!selectedClass || !selectedMatiere) {
+      showNotif('Sélectionnez une classe et matière.', 'error');
+      return;
+    }
+    setSaving(true);
+    try {
+      const cls = classes.find(c => c.nom === selectedClass);
+      const mat = matieres.find(m => m.nom === selectedMatiere && m.classe_id === cls?.id);
+      
+      const p_records = Object.keys(attendance).map(sid => ({
+        student_id: sid,
+        classe_id: cls.id,
+        matiere_id: mat.id,
+        date: presenceDate,
+        status: attendance[sid], // 'present', 'absent', 'retard'
+        school_year: schoolConfig.current_year
+      }));
+
+      const { error } = await supabase.from('absences').upsert(p_records, { onConflict: 'student_id,matiere_id,date' });
+      if (error) throw error;
+      showNotif('Présences enregistrées !');
+    } catch (err) {
+      showNotif(err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveCahier = async () => {
     if (!selectedClass || !selectedMatiere) {
-      showNotif('Veuillez sélectionner une classe et une matière avant d\'enregistrer.', 'error');
+      showNotif('Veuillez sélectionner une classe et une matière.', 'error');
       return;
     }
     setSaving(true);
@@ -150,7 +184,7 @@ const TeacherDashboard = () => {
       <main className="flex-1 p-6 md:p-10 pt-20 md:pt-10 overflow-auto">
         <header className="mb-10">
           <h1 className="text-3xl font-display font-black text-slate-900 tracking-tight">Espace Professeur</h1>
-          <p className="text-slate-400 font-medium text-sm mt-1">Saisie des notes et suivi pédagogique</p>
+          <p className="text-slate-400 font-medium text-sm mt-1">Gestion pédagogique et suivi des élèves</p>
         </header>
 
         <section className="mb-10 grid sm:grid-cols-2 gap-4">
@@ -203,6 +237,117 @@ const TeacherDashboard = () => {
               currentUserId={user?.id}
             />
           )}
+
+          {activeTab === 'appel' && (
+            <div className="space-y-6">
+              <div className="glass-card p-6 flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                    <ClipboardCheck size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-800">Feuille d&apos;appel</h3>
+                    <input type="date" value={presenceDate} onChange={e => setPresenceDate(e.target.value)} className="text-xs font-bold text-slate-400 bg-transparent border-none p-0 focus:ring-0" />
+                  </div>
+                </div>
+                <Button variant="primary" onClick={handleSavePresence} loading={saving}>Enregistrer l&apos;appel</Button>
+              </div>
+
+              <div className="glass-card overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Élèves</th>
+                      <th className="text-center px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Présence</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {students.map(s => (
+                      <tr key={s.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-4 font-bold text-slate-700">{s.prenom} {s.nom}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center gap-2">
+                            {['present', 'absent', 'retard'].map(status => (
+                              <button
+                                key={status}
+                                onClick={() => setAttendance(prev => ({ ...prev, [s.id]: status }))}
+                                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase transition-all ${
+                                  attendance[s.id] === status
+                                    ? status === 'present' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200'
+                                    : status === 'absent' ? 'bg-red-500 text-white shadow-lg shadow-red-200'
+                                    : 'bg-amber-500 text-white shadow-lg shadow-amber-200'
+                                    : 'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                                }`}
+                              >
+                                {status === 'present' ? 'Présent' : status === 'absent' ? 'Absent' : 'Retard'}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'moyennes' && (
+            <div className="space-y-6">
+              <div className="glass-card p-6 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                    <Award size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-slate-800">Moyennes de la classe</h3>
+                    <p className="text-xs text-slate-400 font-medium">{selectedClass || 'Sélectionnez une classe'}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="glass-card overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-100">
+                      <th className="text-left px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Élève</th>
+                      <th className="text-center px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Moyenne</th>
+                      <th className="text-right px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Appréciation</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {students.map(s => {
+                      const sg = grades[s.id] || {};
+                      const cls = classes.find(c => c.nom === selectedClass);
+                      const moy = GradeCalculator.getMoyenneByCycle(sg, cls?.cycle || 'secondaire');
+                      return (
+                        <tr key={s.id}>
+                          <td className="px-6 py-4 font-bold text-slate-700">{s.prenom} {s.nom}</td>
+                          <td className="px-6 py-4 text-center font-black text-blue-600">{moy.toFixed(2)}</td>
+                          <td className="px-6 py-4 text-right">
+                             <span className="px-2 py-1 bg-slate-50 text-[10px] font-bold text-slate-400 rounded-lg uppercase">{GradeCalculator.getAppreciation(moy)}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'bulletins' && (
+            <EntityTable 
+              items={students} colName="students"
+              onExtraAction={(item) => handleGenerateBulletin(item, schoolConfig, classes, matieres)}
+              extraActionIcon={Download} extraActionLabel="Bulletin" generatingId={generatingPdf}
+              columns={[
+                { key: 'matricule', label: 'Matricule' },
+                { key: 'fullname', label: 'Élève', render: s => <span className="font-bold">{s.prenom} {s.nom}</span> },
+                { key: 'classe', label: 'Classe', render: () => selectedClass }
+              ]}
+            />
+          )}
+
         </AnimatePresence>
       </main>
 
