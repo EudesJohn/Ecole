@@ -45,12 +45,11 @@ const TeacherDashboard = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const loadStudents = useCallback(async (clsName) => {
-    const cls = classes.find(c => c.nom === clsName);
-    if (!cls) return;
-    const { data } = await supabase.from('students').select('*').eq('classe_id', cls.id).order('nom');
+  const loadStudents = useCallback(async () => {
+    if (!selectedClassData) return;
+    const { data } = await supabase.from('students').select('*').eq('classe_id', selectedClassData.id).order('nom');
     setStudents(data || []);
-  }, [classes]);
+  }, [selectedClassData]);
 
   const loadGrades = useCallback(async (clsName, matName) => {
     const cls = classes.find(c => c.nom === clsName);
@@ -63,21 +62,18 @@ const TeacherDashboard = () => {
       .eq('trimestre', parseInt(schoolConfig.current_trimestre))
       .eq('school_year', schoolConfig.current_year);
     
-    // If Primary, we can filter by selectedPeriod client-side or re-fetch
     const filtered = (data || []).filter(g => {
-      const isPrimary = ['primaire', 'maternelle'].includes(cls.cycle?.toLowerCase());
       if (isPrimary) return g.period_label === selectedPeriod;
       return true;
     });
 
     const gradeMap = filtered.reduce((acc, curr) => ({ ...acc, [curr.student_id]: curr }), {});
     setGrades(gradeMap);
-  }, [classes, matieres, schoolConfig, selectedPeriod]);
+  }, [classes, matieres, schoolConfig, selectedPeriod, isPrimary]);
 
-  // Load existing periods for class
   useEffect(() => {
     const fetchPeriods = async () => {
-      if (!selectedClass) return;
+      if (!selectedClassData) return;
       const { data } = await supabase
         .from('grades')
         .select('period_label')
@@ -86,13 +82,9 @@ const TeacherDashboard = () => {
       
       const periods = [...new Set((data || []).map(d => d.period_label))].filter(Boolean);
       setAvailablePeriods(periods);
-      if (periods.length > 0 && !periods.includes(selectedPeriod)) {
-        // Optionnel: auto-select the last one if current is not in list?
-        // setSelectedPeriod(periods[0]);
-      }
     };
     fetchPeriods();
-  }, [selectedClass, schoolConfig]);
+  }, [selectedClassData, schoolConfig]);
 
   const handleCreatePeriod = () => {
     const name = prompt('Nom de la nouvelle composition (ex: Janvier, Février) :');
@@ -117,12 +109,16 @@ const TeacherDashboard = () => {
   }, [classes]);
 
   useEffect(() => {
-    if (selectedClass) {
-      loadStudents(selectedClass);
-      loadCahier(selectedClass);
-      if (selectedMatiere) loadGrades(selectedClass, selectedMatiere);
-    }
-  }, [selectedClass, selectedMatiere, loadStudents, loadCahier, loadGrades]);
+    if (selectedClass) loadStudents();
+  }, [selectedClass, loadStudents]);
+
+  useEffect(() => {
+    if (selectedClass && selectedMatiere) loadGrades(selectedClass, selectedMatiere);
+  }, [selectedClass, selectedMatiere, loadGrades]);
+
+  useEffect(() => {
+    if (selectedClass) loadCahier(selectedClass);
+  }, [selectedClass, loadCahier]);
 
   const handleSaveGrades = async () => {
     if (!selectedClass || !selectedMatiere) {
@@ -152,7 +148,6 @@ const TeacherDashboard = () => {
 
       const upserts = Object.keys(grades).map(sid => {
         const payload = { ...grades[sid] };
-        // CLEANUP: Remove system fields that might cause conflicts or RLS issues
         const systemFields = ['id', 'created_at', 'updated_at', 'students', 'classes', 'matieres'];
         systemFields.forEach(f => delete payload[f]);
 
@@ -211,7 +206,7 @@ const TeacherDashboard = () => {
     const newState = { ...attendance };
     students.forEach(s => {
       const current = newState[s.id] || {};
-      newState[s.id] = typeof current === 'string' ? 'present' : { ...current, status: 'present' };
+      newState[s.id] = typeof current === 'object' ? { ...current, status: 'present' } : { status: 'present', commentaire: '' };
     });
     setAttendance(newState);
   };
@@ -280,7 +275,7 @@ const TeacherDashboard = () => {
               </p>
             )}
           </div>
-          {['primaire', 'maternelle'].includes(classes.find(c => c.nom === selectedClass)?.cycle?.toLowerCase()) && (
+          {isPrimary && (
             <div className="space-y-3">
               <div className="flex items-center gap-3 overflow-x-auto pb-2 no-scrollbar">
                 <button 
@@ -330,11 +325,11 @@ const TeacherDashboard = () => {
           {activeTab === 'notes' && (
             <GradesTable 
               students={students} grades={grades} 
-              isPrimary={['primaire', 'maternelle'].includes(classes.find(c => c.nom === selectedClass)?.cycle?.toLowerCase())}
+              isPrimary={isPrimary}
               coefficient={matieres.find(m => m.nom === selectedMatiere && m.classe === selectedClass)?.coefficient || 1}
               updateGrade={(sid, f, v) => setGrades(prev => ({ ...prev, [sid]: { ...prev[sid], [f]: v } }))}
               onSave={handleSaveGrades} saving={saving}
-              compoCount={classes.find(c => c.nom === selectedClass)?.compo_count || 1}
+              compoCount={selectedClassData?.compo_count || 1}
             />
           )}
 
@@ -464,21 +459,12 @@ const TeacherDashboard = () => {
                   <tbody className="divide-y divide-slate-50">
                     {students.map(s => {
                       const sg = grades[s.id] || {};
-                      const cls = classes.find(c => c.nom === selectedClass);
-                      const isPrimary = ['primaire', 'maternelle'].includes(cls?.cycle?.toLowerCase());
-                      const hasNotes = Object.keys(sg).length > 0;
-                      
-                      // For Primary, calculate ratio. For Secondary, calculate average.
                       let displayMoy = "--.--";
                       let displayApp = "Pas de notes";
 
-                      if (hasNotes) {
+                      if (Object.keys(sg).length > 0) {
                         if (isPrimary) {
-                           // This assumes 'grades' contains all subject marks for the student.
-                           // Actually, 'grades' in state is for the *selected* subject.
-                           // We need to fetch all grades for the student in the current trimestre to calculate a real ratio.
-                           // For now, let's show if the *selected* subject is validated.
-                           const moy = GradeCalculator.getMoyenneByCycle(sg, cls.cycle);
+                           const moy = GradeCalculator.getMoyenneByCycle(sg, selectedClassData?.cycle);
                            displayMoy = moy >= 10 ? "1 / 1" : "0 / 1";
                            displayApp = GradeCalculator.getAppreciation(moy);
                         } else {

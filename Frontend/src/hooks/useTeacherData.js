@@ -55,5 +55,9 @@ export const useTeacherData = (userProfile) => {
     if (userProfile) loadBaseData();
   }, [userProfile, loadBaseData]);
 
-  return { ...data, loading, refresh: loadBaseData };
+  return useMemo(() => ({
+    ...data,
+    loading,
+    refresh: loadBaseData
+  }), [data, loading, loadBaseData]);
 };
