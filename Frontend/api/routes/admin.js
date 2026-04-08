@@ -28,7 +28,7 @@ router.post('/matricule', async (req, res) => {
 router.post('/students', async (req, res) => {
   let createdUserId = null;
   try {
-    const { nom, prenom, classe_id, date_naissance, sexe } = req.body;
+    const { nom, prenom, classe_id, date_naissance, sexe, telephone_parent } = req.body;
     const matricule = await generateMatricule();
     const pin = generateSecurePassword();
     const email = `${matricule.replace(/\s+/g, '').toLowerCase()}@slb.bj`;
@@ -58,6 +58,7 @@ router.post('/students', async (req, res) => {
         classe_id,
         date_naissance,
         sexe,
+        telephone_parent,
         parent_id: createdUserId,
         pin_code: pin
       }]);

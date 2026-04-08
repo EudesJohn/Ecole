@@ -305,7 +305,8 @@ const AdminDashboard = () => {
                     <div><p className="font-bold">{s.prenom} {s.nom}</p><p className="text-[10px] text-slate-400">{s.sexe === 'M' ? 'Garçon' : 'Fille'}</p></div>
                   )
                 },
-                { key: 'classe', label: 'Classe' }
+                { key: 'classe', label: 'Classe' },
+                { key: 'telephone_parent', label: 'Téléphone Parent' }
               ]}
             />
           )}
