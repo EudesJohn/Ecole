@@ -245,6 +245,7 @@ const TeacherDashboard = () => {
             <GradesTable 
               students={students} grades={grades} 
               isPrimary={['primaire', 'maternelle'].includes(classes.find(c => c.nom === selectedClass)?.cycle?.toLowerCase())}
+              coefficient={matieres.find(m => m.nom === selectedMatiere && m.classe === selectedClass)?.coefficient || 1}
               evaluationType={evaluationType} setEvaluationType={setEvaluationType}
               updateGrade={(sid, f, v) => setGrades(prev => ({ ...prev, [sid]: { ...prev[sid], [f]: v } }))}
               onSave={handleSaveGrades} saving={saving}

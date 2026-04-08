@@ -7,6 +7,7 @@ export const GradesTable = ({
   grades, 
   updateGrade, 
   isPrimary, 
+  coefficient,
   evaluationType, 
   setEvaluationType, 
   onSave, 
@@ -19,8 +20,10 @@ export const GradesTable = ({
           <h3 className="text-lg font-black text-slate-800">
             {isPrimary ? 'Saisie des Compositions' : 'Saisie des Notes'}
           </h3>
-          <p className="text-xs text-slate-400 font-medium">
+          <p className="text-xs text-slate-400 font-medium flex items-center gap-2">
             {isPrimary ? 'Cycle Primaire / Maternelle' : 'Cycle Secondaire'}
+            <span className="w-1 h-1 bg-slate-300 rounded-full" />
+            <span className="text-blue-600 font-black">Coefficient: {coefficient || 1}</span>
           </p>
         </div>
         <Button variant="primary" icon={isPrimary ? Check : Save} onClick={onSave} loading={saving}>

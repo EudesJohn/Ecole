@@ -138,12 +138,20 @@ const ParentDashboard = () => {
           const mat = (mats || []).find(m => m.id === g.matiere_id);
           return mat ? parseFloat(mat.coefficient) || 1 : 1;
         });
-        const totalP = moyennes.reduce((acc, m, idx) => acc + (m * coeffs[idx]), 0);
-        const totalC = coeffs.reduce((acc, c) => acc + c, 0);
-        setTotalPoints(totalP);
-        setTotalCoeffs(totalC);
+
+        // Calculate Totals
+        let tPoints = 0;
+        let tCoeffs = 0;
+        for (let i = 0; i < moyennes.length; i++) {
+          tPoints += moyennes[i] * coeffs[i];
+          tCoeffs += coeffs[i];
+        }
+        setTotalPoints(tPoints);
+        setTotalCoeffs(tCoeffs);
+
         setMoyenneGenerale(GradeCalculator.calculateMoyennePondere(moyennes, coeffs));
       } else {
+        setMoyenneGenerale(0);
         setTotalPoints(0);
         setTotalCoeffs(0);
         setMoyenneGenerale(0);
@@ -316,9 +324,12 @@ const ParentDashboard = () => {
             <span className="text-[10px] font-bold text-blue-600 uppercase">Moyenne</span>
           </div>
           <div className="mt-4">
-            <p className="text-4xl font-display font-black text-slate-900 leading-none">{moyenneGenerale || '00.0'}</p>
+            <div className="flex items-baseline gap-1">
+              <p className="text-4xl font-display font-black text-slate-900 leading-none">{moyenneGenerale || '00.0'}</p>
+              <span className="text-sm font-bold text-slate-300">/20</span>
+            </div>
             <p className="text-[10px] text-slate-400 mt-1 font-medium italic">
-              {totalPoints.toFixed(2)} / {totalCoeffs} points
+              Points: {totalPoints.toFixed(2)} / {totalCoeffs * 20}
             </p>
           </div>
         </motion.div>

@@ -264,6 +264,7 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
   const safeRows = rows.filter(r => r.moyenne !== null);
   const totalPoints = safeRows.reduce((acc, r) => acc + (r.moyenne * r.coeff), 0);
   const totalCoeffs = safeRows.reduce((acc, r) => acc + r.coeff, 0);
+  const maxPoints = totalCoeffs * 20;
   
   const moyenneGenerale = GradeCalculator.calculateMoyennePondere(
     safeRows.map(r => r.moyenne),
@@ -423,13 +424,20 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
               </Text>
             </View>
           ) : (
-            <View style={[styles.summaryCard, { borderColor: '#1e3a8a' }]}>
-              <Text style={styles.summaryLabel}>Moyenne Générale</Text>
-              <Text style={[styles.summaryValue, { color: moyenneGenerale < 10 ? '#ef4444' : '#1e3a8a' }]}>
-                {moyenneGenerale.toFixed(2)}/20
-              </Text>
-              <Text style={{ fontSize: 6, color: '#64748b', marginTop: 2 }}>{totalPoints.toFixed(2)} / {totalCoeffs}</Text>
-            </View>
+            <>
+              <View style={[styles.summaryCard, { borderColor: '#1e3a8a' }]}>
+                <Text style={styles.summaryLabel}>Points Totaux</Text>
+                <Text style={[styles.summaryValue, { color: '#1e3a8a', fontSize: 12 }]}>
+                  {totalPoints.toFixed(2)} / {maxPoints}
+                </Text>
+              </View>
+              <View style={[styles.summaryCard, { borderColor: '#1e3a8a' }]}>
+                <Text style={styles.summaryLabel}>Moyenne Générale</Text>
+                <Text style={[styles.summaryValue, { color: moyenneGenerale < 10 ? '#ef4444' : '#1e3a8a' }]}>
+                  {moyenneGenerale.toFixed(2)}/20
+                </Text>
+              </View>
+            </>
           )}
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Rang</Text>
