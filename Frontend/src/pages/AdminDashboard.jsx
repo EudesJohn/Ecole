@@ -28,7 +28,7 @@ const AdminDashboard = () => {
 
   const { handleGenerateBulletin, generatingPdf } = useBulletin();
 
-  const showNotif = (msg, type = 'success') => {
+  const showNotif = (msg, type = 'success', duration = 3000) => {
     // Map technical PG errors to user friendly messages
     let friendlyMsg = msg;
     if (msg.includes('duplicate key') || msg.includes('23505')) {
@@ -39,7 +39,9 @@ const AdminDashboard = () => {
     }
 
     setNotification({ message: friendlyMsg, type });
-    setTimeout(() => setNotification(null), 3000);
+    if (duration > 0) {
+      setTimeout(() => setNotification(null), duration);
+    }
   };
 
   const handleConfigSave = async (updatedConfig) => {
@@ -215,9 +217,9 @@ const AdminDashboard = () => {
       if (!response.ok) throw new Error(result.error || "Erreur lors de la réinitialisation");
 
       if (isStudent) {
-        showNotif(`Nouveau code PIN Parent : ${result.pin}`);
+        showNotif(`Nouveau code PIN Parent : ${result.pin}`, 'success', 15000);
       } else {
-        showNotif(`Nouveau mot de passe Professeur : ${result.password}`);
+        showNotif(`Nouveau mot de passe Professeur : ${result.password}`, 'success', 15000);
       }
       refresh();
     } catch (err) {
@@ -481,7 +483,7 @@ const AdminDashboard = () => {
                     value={formData.pin_code || ''}
                     onChange={e => setFormData({ ...formData, pin_code: e.target.value })}
                   />
-                  <Button variant="ghost" onClick={() => setFormData({ ...formData, pin_code: Math.floor(1000 + Math.random() * 9000).toString() })} size="sm">
+                  <Button type="button" variant="ghost" onClick={() => setFormData({ ...formData, pin_code: Math.floor(1000 + Math.random() * 9000).toString() })} size="sm">
                     <RefreshCw size={14} />
                   </Button>
                 </div>
@@ -504,7 +506,7 @@ const AdminDashboard = () => {
                     value={formData.password || ''}
                     onChange={e => setFormData({ ...formData, password: e.target.value })}
                   />
-                  <Button variant="ghost" onClick={() => setFormData({ ...formData, password: 'Slb' + Math.floor(1000 + Math.random() * 9000) })} size="sm">
+                  <Button type="button" variant="ghost" onClick={() => setFormData({ ...formData, password: 'Slb' + Math.floor(1000 + Math.random() * 9000) })} size="sm">
                     <RefreshCw size={14} />
                   </Button>
                 </div>

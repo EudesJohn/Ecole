@@ -135,21 +135,21 @@ router.post('/teachers', async (req, res) => {
 });
 
 // Reset teacher password.
-// Needs: id, newPassword
+// Needs: id, optional newPassword
 router.post('/teachers/reset-password', async (req, res) => {
   try {
-    const { id, newPassword } = req.body;
+    const { id } = req.body;
+    let { newPassword } = req.body;
 
-    if (!id || !newPassword) {
-      return res.status(400).json({ error: 'ID and new password required' });
-    }
+    if (!id) return res.status(400).json({ error: 'Teacher ID required' });
+    if (!newPassword) newPassword = generateSecurePassword();
 
     const { error } = await supabase.auth.admin.updateUserById(id, {
       password: newPassword
     });
 
     if (error) throw error;
-    res.json({ success: true, message: 'Password reset successful' });
+    res.json({ success: true, password: newPassword, message: 'Password reset successful' });
   } catch (error) {
     console.error('Password reset error:', error);
     res.status(500).json({ error: error.message });
