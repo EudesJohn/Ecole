@@ -8,10 +8,9 @@ export const GradesTable = ({
   updateGrade, 
   isPrimary, 
   coefficient,
-  evaluationType, 
-  setEvaluationType, 
   onSave, 
-  saving 
+  saving,
+  compoCount = 1
 }) => {
   return (
     <div className="space-y-6">
@@ -46,9 +45,11 @@ export const GradesTable = ({
                 ))}
 
                 {/* Primary specific columns */}
-                {isPrimary && (
-                  <th className="px-2 py-4 text-center text-[10px] font-bold text-gold-600 uppercase tracking-widest">Note</th>
-                )}
+                {isPrimary && [...Array(compoCount)].map((_, i) => (
+                  <th key={i} className="px-2 py-4 text-center text-[10px] font-bold text-gold-600 uppercase tracking-widest">
+                    C {i + 1}
+                  </th>
+                ))}
 
                 <th className="px-6 py-4 text-center text-[11px] font-bold text-gray-500 uppercase tracking-widest">
                   {isPrimary ? 'Validation' : 'Moyenne'}
@@ -82,14 +83,17 @@ export const GradesTable = ({
                     ))}
 
                     {/* Primary Inputs */}
-                    {isPrimary && (
-                      <td className="px-1 py-2 text-center">
-                        <input type="number" step="0.25" min="0" max="20"
-                          value={sg.composition ?? ''}
-                          onChange={(e) => updateGrade(s.id, 'composition', e.target.value)}
-                          className="w-24 h-9 text-center text-sm rounded-lg border border-gold-200 bg-gold-50/30 font-black text-gold-700 focus:ring-4 focus:ring-gold-100" />
-                      </td>
-                    )}
+                    {isPrimary && [...Array(compoCount)].map((_, i) => {
+                      const fieldName = `interro${i + 1}`;
+                      return (
+                        <td key={i} className="px-1 py-2 text-center">
+                          <input type="number" step="0.25" min="0" max="20"
+                            value={sg[fieldName] ?? ''}
+                            onChange={(e) => updateGrade(s.id, fieldName, e.target.value)}
+                            className="w-16 h-9 text-center text-sm rounded-lg border border-gold-200 bg-gold-50/30 font-black text-gold-700 focus:ring-4 focus:ring-gold-100" />
+                        </td>
+                      );
+                    })}
 
                     <td className="px-6 py-4 text-center">
                       {isPrimary ? (

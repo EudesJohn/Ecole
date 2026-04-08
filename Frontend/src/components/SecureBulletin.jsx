@@ -327,11 +327,14 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
         {isPrimaryData ? (
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderCell, { width: '35%', textAlign: 'left' }]}>Matières</Text>
-              <Text style={[styles.tableHeaderCell, { width: '20%' }]}>Composition</Text>
-              <Text style={[styles.tableHeaderCell, { width: '10%' }]}>Coef</Text>
-              <Text style={[styles.tableHeaderCell, { width: '15%' }]}>Moy / 20</Text>
-              <Text style={[styles.tableHeaderCell, { width: '20%' }]}>Appréciation</Text>
+              <Text style={[styles.tableHeaderCell, { width: '30%', textAlign: 'left' }]}>Matières</Text>
+              <Text style={[styles.tableHeaderCell, { width: '10%' }]}>C1</Text>
+              <Text style={[styles.tableHeaderCell, { width: '10%' }]}>C2</Text>
+              <Text style={[styles.tableHeaderCell, { width: '10%' }]}>C3</Text>
+              <Text style={[styles.tableHeaderCell, { width: '10%' }]}>Etap</Text>
+              <Text style={[styles.tableHeaderCell, { width: '5%' }]}>Coef</Text>
+              <Text style={[styles.tableHeaderCell, { width: '10%' }]}>Moy</Text>
+              <Text style={[styles.tableHeaderCell, { width: '15%' }]}>Appréciation</Text>
             </View>
             
             {Object.entries(categories).map(([cat, catRows]) => (
@@ -342,13 +345,18 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
                   </View>
                   {catRows.map((row, i) => (
                     <View key={i} style={[styles.tableRow, i % 2 === 1 && styles.tableRowAlt]}>
-                      <Text style={[styles.tableCell, { width: '35%', textAlign: 'left', fontFamily: FONT_BOLD }]}>{row.matiere}</Text>
-                      <Text style={[styles.tableCell, { width: '20%' }]}>{row.composition || '—'}</Text>
-                      <Text style={[styles.tableCell, { width: '10%' }]}>{row.coeff}</Text>
-                      <Text style={[styles.tableCellBold, { width: '15%', color: row.moyenne < 10 ? '#ef4444' : '#1e3a8a' }]}>
+                      <Text style={[styles.tableCell, { width: '30%', textAlign: 'left', fontFamily: FONT_BOLD }]}>{row.matiere}</Text>
+                      <Text style={[styles.tableCell, { width: '10%' }]}>{row.interro1 || '—'}</Text>
+                      <Text style={[styles.tableCell, { width: '10%' }]}>{row.interro2 || '—'}</Text>
+                      <Text style={[styles.tableCell, { width: '10%' }]}>{row.interro3 || '—'}</Text>
+                      <Text style={[styles.tableCell, { width: '10%', fontSize: 7 }]}>
+                        {row.note_cm || row.note_cp ? GradeCalculator.calculateStepGrade(row.note_cm, row.note_cp).toFixed(2) : '—'}
+                      </Text>
+                      <Text style={[styles.tableCell, { width: '5%' }]}>{row.coeff}</Text>
+                      <Text style={[styles.tableCellBold, { width: '10%', color: row.moyenne < 10 ? '#ef4444' : '#1e3a8a' }]}>
                         {row.moyenne.toFixed(2)}
                       </Text>
-                      <Text style={[styles.tableCell, { width: '20%', fontSize: 7 }]}>{row.appreciation}</Text>
+                      <Text style={[styles.tableCell, { width: '15%', fontSize: 6 }]}>{row.appreciation}</Text>
                     </View>
                   ))}
                 </View>

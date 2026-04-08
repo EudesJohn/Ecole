@@ -465,25 +465,36 @@ const ParentDashboard = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                    {['interro1', 'interro2', 'interro3'].map(label => (
-                      <div key={label} className="text-center p-2 bg-slate-50 rounded-xl border border-slate-100/50">
-                        <p className="text-[8px] text-slate-400 font-black tracking-widest mb-1 uppercase">{label}</p>
-                        <p className="text-[11px] font-black text-slate-700">{g[label] || '--'}</p>
-                      </div>
-                    ))}
-                    {(studentData.cycle === 'primaire' || studentData.cycle === 'maternelle') ? (
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
+                    {['interro1', 'interro2', 'interro3'].map((field, idx) => {
+                      const value = g[field];
+                      const isPrimary = ['primaire', 'maternelle'].includes(studentData.cycle?.toLowerCase());
+                      const label = isPrimary ? `C${idx + 1}` : `I${idx + 1}`;
+                      if (value === null || value === undefined || value === '') return null;
+                      
+                      return (
+                        <div key={field} className={`text-center p-2 rounded-xl border ${isPrimary ? 'bg-gold-50 border-gold-100' : 'bg-slate-50 border-slate-100/50'}`}>
+                          <p className={`text-[8px] font-black tracking-widest mb-1 uppercase ${isPrimary ? 'text-gold-500' : 'text-slate-400'}`}>{label}</p>
+                          <p className={`text-[11px] font-black ${isPrimary ? 'text-gold-700' : 'text-slate-700'}`}>{value}</p>
+                        </div>
+                      );
+                    })}
+                    {(studentData.cycle?.toLowerCase() === 'primaire' || studentData.cycle?.toLowerCase() === 'maternelle') ? (
                       <>
-                        <div className="text-center p-2 bg-blue-50 rounded-xl border border-blue-100">
-                          <p className="text-[8px] text-blue-400 font-black tracking-widest mb-1 uppercase">Étapes</p>
-                          <p className="text-[11px] font-black text-blue-700">
-                            {GradeCalculator.calculateStepGrade(g.note_cm, g.note_cp).toFixed(2)}
-                          </p>
-                        </div>
-                        <div className="text-center p-2 bg-gold-50 rounded-xl border border-gold-100">
-                          <p className="text-[8px] text-gold-500 font-black tracking-widest mb-1 uppercase">Comp</p>
-                          <p className="text-[11px] font-black text-gold-700">{g.composition || '--'}</p>
-                        </div>
+                        {(g.note_cm || g.note_cp) && (
+                          <div className="text-center p-2 bg-blue-50 rounded-xl border border-blue-100">
+                            <p className="text-[8px] text-blue-400 font-black tracking-widest mb-1 uppercase">Étapes</p>
+                            <p className="text-[11px] font-black text-blue-700">
+                              {GradeCalculator.calculateStepGrade(g.note_cm, g.note_cp).toFixed(2)}
+                            </p>
+                          </div>
+                        )}
+                        {g.composition && (
+                          <div className="text-center p-2 bg-indigo-50 rounded-xl border border-indigo-100">
+                            <p className="text-[8px] text-indigo-400 font-black tracking-widest mb-1 uppercase">Comp.</p>
+                            <p className="text-[11px] font-black text-indigo-700">{g.composition}</p>
+                          </div>
+                        )}
                       </>
                     ) : (
                       <>

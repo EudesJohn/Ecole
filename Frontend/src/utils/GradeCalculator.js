@@ -42,8 +42,12 @@ const GradeCalculator = {
   // --- UNIFIED HELPERS ---
   getMoyenneByCycle: (g, cycle) => {
     if (!g) return 0;
-    // For Primary and Maternelle, we use a SINGLE NOTE (composition field)
+    // For Primary and Maternelle, we average the compositions (interro1, interro2, interro3)
     if (cycle === 'primaire' || cycle === 'maternelle') {
+      const compositions = [g.interro1, g.interro2, g.interro3].filter(v => v !== null && v !== undefined && v !== '');
+      if (compositions.length > 0) {
+        return compositions.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / compositions.length;
+      }
       return parseFloat(g.composition) || 0;
     }
     // For Secondary, we use the weighted average

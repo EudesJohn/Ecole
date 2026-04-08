@@ -247,6 +247,7 @@ const TeacherDashboard = () => {
               coefficient={matieres.find(m => m.nom === selectedMatiere && m.classe === selectedClass)?.coefficient || 1}
               updateGrade={(sid, f, v) => setGrades(prev => ({ ...prev, [sid]: { ...prev[sid], [f]: v } }))}
               onSave={handleSaveGrades} saving={saving}
+              compoCount={classes.find(c => c.nom === selectedClass)?.compo_count || 1}
             />
           )}
 
