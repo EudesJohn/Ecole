@@ -4,7 +4,10 @@ const path = require('path');
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(
+    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 async function fixRLS() {
     console.log("Mise à jour des politiques de sécurité (RLS) pour les profils...");
@@ -16,27 +19,38 @@ async function fixRLS() {
     // Wait, if profiles don't have email, how do we find admin?
     // Let's use the supabase auth admin API to find by email.
     const { data: users, error: _listError } = await supabase.auth.admin.listUsers();
-    const adminUser = users?.users?.find(u => u.email === 'saintlambert@gmail.com');
-    if (!adminUser) { console.log('Admin user not found'); return; }
 
-    const { data: profile, error: _fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', adminUser.id)
-        .single();
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
 
-    if (profile) {
-        console.log(`Profil trouvé (ID: ${profile.id}). Forçage du rôle 'admin' propre...`);
-        const { error } = await supabase
-            .from('profiles')
-            .update({ role: 'admin' })
-            .eq('id', profile.id);
-
-        if (error) console.error("Erreur de mise à jour:", error.message);
-        else console.log("✅ Rôle 'admin' réinitialisé proprement.");
-    } else {
-        console.log("Aucun profil admin à corriger via ce script.");
+    if (!adminEmail || !adminPassword) {
+        console.error("❌ Erreur : ADMIN_EMAIL ou ADMIN_PASSWORD non définis dans le fichier .env");
+        return;
     }
+
+    const adminUser = users?.users?.find(u => u.email === adminEmail);
+    if (!adminUser) { console.log(`Utilisateur ${adminEmail} non trouvé`); return; }
+
+    console.log(`Utilisateur Auth trouvé: ${adminUser.email}`);
+
+    // 1. Mise à jour du mot de passe via variable d'environnement
+    const { error: pwdError } = await supabase.auth.admin.updateUserById(
+        adminUser.id,
+        { password: adminPassword }
+    );
+    if (pwdError) console.error("❌ Erreur lors de la mise à jour du mot de passe:", pwdError.message);
+    else console.log("✅ Mot de passe mis à jour avec succès.");
+
+    // 2. Forçage du rôle admin dans la table profiles
+    const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+            id: adminUser.id,
+            role: 'admin'
+        }, { onConflict: 'id' });
+
+    if (profileError) console.error("❌ Erreur profil:", profileError.message);
+    else console.log("✅ Rôle 'admin' assigné avec succès.");
 }
 
 fixRLS();
