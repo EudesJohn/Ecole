@@ -1,7 +1,7 @@
 # Saint Lambert (SLB) ERP Scolaire - Supabase Implementation
 Ultra-sécurisé, Mobile-first pour parents Bénin. React + Tailwind + Supabase (Auth/Database/Storage) + QR.
 
-**STATUS**: 🚀 Architecture terminée. Projet hfabmjkcsiejqidciqar configuré avec Admin et Service Role.
+**STATUS**: 🚀 Architecture terminée. Projet hfabmjkcsiejqidciqar opérationnel sur https://hfabmjkcsiejqidciqar.supabase.co.
 
 ## 1. ARCHITECTURE & AUTH ✅ Terminée
 - [x] Consolidation du Backend sur `Frontend/api` (Vercel Functions)
