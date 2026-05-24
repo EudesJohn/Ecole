@@ -32,7 +32,7 @@ Ultra-sécurisé, Mobile-first pour parents Bénin. React + Tailwind + Supabase 
 
 ## 5. POLISH & DÉPLOIEMENT
 - [ ] Animations Framer Motion pour une expérience "Premium"
-- [x] Déploiement sur Vercel (Frontend + Serverless API)
+- [ ] Déploiement sur Vercel (Finalisation du build et DNS)
 - [x] Déploiement sur Vercel (Frontend + Serverless API) - DNS à vérifier
 - [x] Synchronisation avec GitHub
 - [x] Audit Global de Stabilité (Terminé)
