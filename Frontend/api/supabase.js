@@ -3,7 +3,9 @@ const { createClient } = require('@supabase/supabase-js');
 // On Vercel, environment variables are already in process.env.
 // dotenv is only useful for local development.
 if (process.env.NODE_ENV !== 'production') {
-  require('dotenv').config();
+  const path = require('path');
+  require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+  require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 }
 
 const supabaseUrl = (process.env.SUPABASE_URL || '').trim();

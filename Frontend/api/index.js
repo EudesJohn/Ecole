@@ -52,4 +52,15 @@ app.use((req, res) => {
   });
 });
 
+// Start server locally if run directly
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`\n==================================================`);
+    console.log(`🚀 École SLB Unified Backend running locally!`);
+    console.log(`👉 API Endpoint: http://localhost:${PORT}`);
+    console.log(`==================================================\n`);
+  });
+}
+
 module.exports = app;
