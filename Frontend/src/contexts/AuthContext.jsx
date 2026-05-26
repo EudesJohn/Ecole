@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, schools!inner(id, nom, abreviation, ville, pays, logo_url)') // Join with schools table
+        .select('*, schools(id, nom, abreviation, ville, pays, logo_url)') // Join with schools table (left join)
         .eq('id', userId)
         .single();
 

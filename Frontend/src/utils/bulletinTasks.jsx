@@ -23,6 +23,7 @@ export const generateQRDataUrl = async (text) => {
 };
 
 // Helper to trigger PDF download
+// props must include: student, gradesBySubject, matieres, classStats, qrCodeDataUrl, trimestre, schoolYear, schoolInfo (optional)
 export const downloadBulletin = async (props) => {
   const blob = await pdf(<SecureBulletin {...props} />).toBlob();
   const url = URL.createObjectURL(blob);

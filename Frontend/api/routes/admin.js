@@ -17,7 +17,14 @@ router.use(verifyToken, (req, res, next) => {
 // Generate matricule
 router.post('/matricule', async (req, res) => {
   try {
-    const matricule = await generateMatricule();
+    const { data: school } = await supabase
+      .from('schools')
+      .select('abreviation')
+      .eq('id', req.schoolId)
+      .single();
+    const schoolAbbrev = school?.abreviation || 'SLB';
+
+    const matricule = await generateMatricule(req.schoolId, schoolAbbrev);
     res.json({ matricule });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -29,9 +36,17 @@ router.post('/students', async (req, res) => {
   let createdUserId = null;
   try {
     const { nom, prenom, classe_id, date_naissance, sexe, telephone_parent } = req.body;
-    const matricule = await generateMatricule();
+
+    const { data: school } = await supabase
+      .from('schools')
+      .select('abreviation')
+      .eq('id', req.schoolId)
+      .single();
+    const schoolAbbrev = school?.abreviation || 'SLB';
+
+    const matricule = await generateMatricule(req.schoolId, schoolAbbrev);
     const pin = generateSecurePassword();
-    const email = `${matricule.replace(/\s+/g, '').toLowerCase()}@slb.bj`;
+    const email = `${matricule.replace(/\s+/g, '').toLowerCase()}@${schoolAbbrev.toLowerCase()}.bj`;
     
     // 0. Vérifier si un orphelin existe déjà (email présent en Auth mais pas en SQL)
     const { data: existingProfiles } = await supabase.from('profiles').select('id').eq('email', email);
@@ -49,14 +64,17 @@ router.post('/students', async (req, res) => {
       email,
       password: pin,
       email_confirm: true,
-      user_metadata: { role: 'parent', prenom, nom }
+      user_metadata: { role: 'parent', prenom, nom, school_id: req.schoolId }
     });
 
     if (authError) throw authError;
     createdUserId = authUser.user.id;
     
     // 2. Force role in profiles
-    const { error: profileError } = await supabase.from('profiles').update({ role: 'parent' }).eq('id', createdUserId);
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({ role: 'parent', school_id: req.schoolId })
+      .eq('id', createdUserId);
     if (profileError) throw profileError;
     
     // 3. Insert student record
@@ -71,7 +89,8 @@ router.post('/students', async (req, res) => {
         sexe,
         telephone_parent,
         parent_id: createdUserId,
-        pin_code: pin
+        pin_code: pin,
+        school_id: req.schoolId
       }]);
 
     if (studentError) throw studentError;
@@ -128,7 +147,7 @@ router.post('/teachers', async (req, res) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { prenom, nom, role: 'teacher' }
+      user_metadata: { prenom, nom, role: 'teacher', school_id: req.schoolId }
     });
 
     if (authError) throw authError;
@@ -140,7 +159,8 @@ router.post('/teachers', async (req, res) => {
       .update({ 
         role: 'teacher', 
         matiere: matiereArray, 
-        classe_assignee: classeArray 
+        classe_assignee: classeArray,
+        school_id: req.schoolId
       })
       .eq('id', createdUserId);
 

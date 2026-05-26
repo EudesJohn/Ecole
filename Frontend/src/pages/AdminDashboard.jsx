@@ -10,8 +10,10 @@ import { supabase } from '../supabase';
 import { Download, AlertCircle, CheckCircle, Plus, Trash2, Edit, Settings, Key, RefreshCw } from 'lucide-react';
 import { OverviewTab } from '../components/Dashboard/Admin/OverviewTab';
 import { EntityTable } from '../components/Dashboard/Admin/EntityTable';
+import { useSchool } from '../contexts/SchoolContext';
 
 const AdminDashboard = () => {
+  const { school } = useSchool();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [notification, setNotification] = useState(null);
@@ -162,9 +164,13 @@ const AdminDashboard = () => {
         if (editItem) {
           res = await supabase.from(table).update(payload).eq('id', editItem.id);
         } else {
+          // Inject school_id for new entries
+          if (school?.id) {
+            payload.school_id = school.id;
+          }
           // Use upsert for non-sensitive management tables to avoid "Duplicate Key" errors
           if (['classes', 'matieres'].includes(table)) {
-            const conflictTarget = table === 'classes' ? 'nom' : 'nom,classe_id';
+            const conflictTarget = table === 'classes' ? 'nom,school_id' : 'nom,classe_id';
             res = await supabase.from(table).upsert([payload], { onConflict: conflictTarget });
           } else {
             // For students and teachers, we use insert but the showNotif will catch and map the duplicate key error
@@ -288,7 +294,7 @@ const AdminDashboard = () => {
         <header className="mb-10 animate-fade-in">
           <div className="flex items-center gap-3 text-primary-500 font-black text-[10px] uppercase tracking-[0.3em] mb-2 opacity-60">
             <div className="w-8 h-[1px] bg-primary-500" />
-            Saint Lambert ERP
+            {school?.nom || 'Saint Lambert'} ERP
           </div>
           <h1 className="text-4xl font-display font-black text-slate-900 tracking-tight">
             {activeTab === 'overview' ? 'Tableau de bord' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}

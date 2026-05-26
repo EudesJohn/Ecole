@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { supabase } from '../supabase';
 import { generateQRDataUrl, downloadBulletin } from '../utils/bulletinTasks';
+import { useSchool } from '../contexts/SchoolContext';
 
 export const useBulletin = () => {
   const [generatingPdf, setGeneratingPdf] = useState(null);
+  const { school } = useSchool();
 
   const handleGenerateBulletin = async (student, schoolConfig, classes, matieres, periodLabel = null) => {
     setGeneratingPdf(student.id);
@@ -84,8 +86,8 @@ export const useBulletin = () => {
         };
       });
 
-      // 4. Generate QR code
-      const qrText = `https://saintlambert.bj/verify/${student.matricule}/${schoolConfig.current_trimestre}/${schoolConfig.current_year}${periodLabel ? `?p=${encodeURIComponent(periodLabel)}` : ''}`;
+      // 4. Generate QR code using generic domain
+      const qrText = `https://erp-ecole.bj/verify/${student.matricule}/${schoolConfig.current_trimestre}/${schoolConfig.current_year}${periodLabel ? `?p=${encodeURIComponent(periodLabel)}` : ''}`;
       const qrUrl = await generateQRDataUrl(qrText);
 
       // 5. Download Bulletin
@@ -105,7 +107,8 @@ export const useBulletin = () => {
         qrCodeDataUrl: qrUrl,
         trimestre: periodLabel || `${schoolConfig.current_trimestre}${schoolConfig.current_trimestre === '1' ? 'er' : 'ème'}`,
         schoolYear: schoolConfig.current_year,
-        periodLabel: periodLabel
+        periodLabel: periodLabel,
+        schoolInfo: school
       });
 
       return true;

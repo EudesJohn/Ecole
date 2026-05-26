@@ -221,10 +221,14 @@ const styles = StyleSheet.create({
 
 
 
-const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCodeDataUrl, trimestre = '1er', schoolYear = '2025-2026' }) => {
-  
+const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCodeDataUrl, trimestre = '1er', schoolYear = '2025-2026', schoolInfo = null }) => {
+  // Dynamic school info
+  const schoolName = schoolInfo?.nom || 'ÉCOLE SAINT LAMBERT';
+  const schoolAbbrev = schoolInfo?.abreviation || 'SAINT LAMBERT';
+  const schoolVille = schoolInfo?.ville || '';
+  const schoolPays = schoolInfo?.pays || 'Bénin';
+  const schoolLocation = [schoolVille, schoolPays].filter(Boolean).join(', ');
 
-  
   // Calculate per-subject averages — Absolute type safety
   const safeGradesBySubject = Array.isArray(gradesBySubject) ? gradesBySubject : [];
   const safeMatieres = Array.isArray(matieres) ? matieres : [];
@@ -283,7 +287,7 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Watermark */}
-        <Text style={styles.watermark}>SAINT LAMBERT</Text>
+        <Text style={styles.watermark}>{schoolAbbrev}</Text>
 
         {/* Header */}
         <View style={styles.header}>
@@ -292,9 +296,9 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
             <Text style={{ fontSize: 7, color: '#64748b' }}>Minist&egrave;re de l&apos;&Eacute;ducation</Text>
           </View>
           <View style={styles.headerCenter}>
-            <Text style={styles.schoolName}>ÉCOLE SAINT LAMBERT</Text>
-            <Text style={styles.schoolSubtitle}>&Eacute;tablissement d&apos;excellence — B&eacute;nin</Text>
-            <Text style={{ fontSize: 7, color: '#94a3b8', marginTop: 1 }}>Tél: +229 XX XX XX XX · contact@saintlambert.bj</Text>
+            <Text style={styles.schoolName}>{schoolName.toUpperCase()}</Text>
+            <Text style={styles.schoolSubtitle}>{schoolLocation || 'Établissement d\'excellence — Bénin'}</Text>
+            <Text style={{ fontSize: 7, color: '#94a3b8', marginTop: 1 }}>Portail: erp-ecole.bj</Text>
             <Text style={styles.bulletinTitle}>BULLETIN DE NOTES — {trimestre} Trimestre</Text>
           </View>
           <View style={styles.headerRight}>
@@ -490,9 +494,9 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
         {/* Footer with QR */}
         <View style={styles.footer}>
           <View>
-            <Text style={styles.footerText}>Bulletin généré par le système SLB</Text>
+            <Text style={styles.footerText}>Bulletin généré par le Système ERP Scolaire</Text>
             <Text style={styles.footerText}>Réf: {student.matricule} • {trimestre} Trim. • {schoolYear}</Text>
-            <Text style={[styles.footerText, { color: '#1e3a8a', fontFamily: FONT_BOLD }]}>Vérifier sur : saintlambert.bj/verify/{student.matricule}/{trimestre.replace(/[^0-9]/g, '')}/{schoolYear}</Text>
+            <Text style={[styles.footerText, { color: '#1e3a8a', fontFamily: FONT_BOLD }]}>Vérifier sur : erp-ecole.bj/verify/{student.matricule}/{trimestre.replace(/[^0-9]/g, '')}/{schoolYear}</Text>
           </View>
           <View style={styles.qrContainer}>
             {qrCodeDataUrl && (
