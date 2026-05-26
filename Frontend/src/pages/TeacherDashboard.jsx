@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import Sidebar from '../components/UI/Sidebar';
 import { Button } from '../components/UI/Button';
@@ -35,6 +35,14 @@ const TeacherDashboard = () => {
 
   const { classes, matieres, schoolConfig, loading } = useTeacherData(userProfile);
   const { handleGenerateBulletin, generatingPdf } = useBulletin();
+
+  const selectedClassData = useMemo(() => {
+    return classes.find(c => c.nom === selectedClass);
+  }, [classes, selectedClass]);
+
+  const isPrimary = useMemo(() => {
+    return selectedClassData?.cycle === 'primaire';
+  }, [selectedClassData]);
 
   const showNotif = (msg, type = 'success') => {
     let friendlyMsg = msg;
