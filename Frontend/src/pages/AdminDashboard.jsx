@@ -11,9 +11,11 @@ import { Download, AlertCircle, CheckCircle, Plus, Trash2, Edit, Settings, Key, 
 import { OverviewTab } from '../components/Dashboard/Admin/OverviewTab';
 import { EntityTable } from '../components/Dashboard/Admin/EntityTable';
 import { useSchool } from '../contexts/SchoolContext';
+import { useAuth } from '../hooks/useAuth';
 
 const AdminDashboard = () => {
-  const { school } = useSchool();
+  const { school, schools, setSchool } = useSchool();
+  const { role } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [notification, setNotification] = useState(null);
@@ -107,12 +109,17 @@ const AdminDashboard = () => {
           payload.newPin = formData.pin_code; // If manually set
         }
 
+        const headers = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        };
+        if (school?.id) {
+          headers['x-school-id'] = school.id;
+        }
+
         const response = await fetch(endpoint, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-          },
+          headers,
           body: JSON.stringify(payload)
         });
 
@@ -239,12 +246,17 @@ const AdminDashboard = () => {
         return;
       }
 
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      };
+      if (school?.id) {
+        headers['x-school-id'] = school.id;
+      }
+
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers,
         body: JSON.stringify({ id: item.id, newPassword: null, newPin: null }) // Backend generates if null
       });
 
@@ -292,6 +304,41 @@ const AdminDashboard = () => {
 
       <main className="flex-1 p-6 md:p-10 pt-24 md:pt-10 overflow-auto">
         <header className="mb-10 animate-fade-in">
+          {/* Super Admin School Switcher */}
+          {role === 'super_admin' && schools.length > 0 && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-indigo-950 via-blue-950 to-slate-900 rounded-2xl border border-indigo-800/40 shadow-xl flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="flex items-center gap-2.5 flex-shrink-0">
+                <div className="w-8 h-8 bg-gold-400/20 rounded-lg flex items-center justify-center border border-gold-400/30">
+                  <svg className="w-4 h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[9px] font-black text-gold-400/70 uppercase tracking-[0.2em]">Mode Super Admin</p>
+                  <p className="text-[10px] text-white/50 font-medium">Vue globale de la plateforme</p>
+                </div>
+              </div>
+              <div className="flex-1 flex items-center gap-3 sm:justify-end">
+                <label className="text-[10px] font-black text-white/40 uppercase tracking-widest whitespace-nowrap">École active :</label>
+                <select
+                  value={school?.id || ''}
+                  onChange={(e) => {
+                    const selected = schools.find(s => s.id === e.target.value);
+                    if (selected) setSchool(selected);
+                  }}
+                  className="flex-1 max-w-xs bg-white/10 border border-white/20 text-white text-xs font-bold rounded-xl px-4 py-2.5 cursor-pointer backdrop-blur-sm focus:outline-none focus:border-gold-400/50 focus:ring-1 focus:ring-gold-400/30 hover:bg-white/15 transition-all"
+                >
+                  {schools.map(s => (
+                    <option key={s.id} value={s.id} className="text-slate-900 bg-white font-bold">{s.nom} ({s.abreviation})</option>
+                  ))}
+                </select>
+                <div className="flex-shrink-0 px-2.5 py-1.5 bg-emerald-500/20 border border-emerald-500/30 rounded-lg">
+                  <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">● Live</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-3 text-primary-500 font-black text-[10px] uppercase tracking-[0.3em] mb-2 opacity-60">
             <div className="w-8 h-[1px] bg-primary-500" />
             {school?.nom || 'Saint Lambert'} ERP

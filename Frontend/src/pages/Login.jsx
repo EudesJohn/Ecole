@@ -380,7 +380,7 @@ const Login = () => {
 
           {/* Create School CTA */}
           <motion.a
-            href="/"
+            href="/register"
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
             className="w-full py-4 px-6 rounded-2xl font-bold border-2 border-dashed border-gold-300 text-gold-600 bg-gold-50 hover:bg-gold-100 transition-all duration-300 flex items-center justify-center gap-2 text-sm"

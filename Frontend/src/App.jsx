@@ -51,7 +51,8 @@ function RoleRedirect() {
   if (!user) return <Navigate to="/login" replace />;
 
   switch (role) {
-    case 'admin': return <Navigate to="/admin" replace />;
+    case 'admin':
+    case 'super_admin': return <Navigate to="/admin" replace />;
     case 'teacher': return <Navigate to="/teacher" replace />;
     case 'parent': return <Navigate to="/parent" replace />;
     default: return <Navigate to="/login" replace />;
@@ -87,12 +88,13 @@ function AppContent() {
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<RoleRedirect />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<LandingPage />} />
 
           {/* Protected routes */}
           <Route path="/admin/*" element={
-            <ProtectedRoute roles={['admin']}>
+            <ProtectedRoute roles={['admin', 'super_admin']}>
               <AdminDashboard />
             </ProtectedRoute>
           } />

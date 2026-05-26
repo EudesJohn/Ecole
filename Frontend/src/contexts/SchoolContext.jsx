@@ -13,8 +13,9 @@ export const useSchool = () => {
 };
 
 export const SchoolProvider = ({ children }) => {
-  const { schoolInfo } = useAuth(); // Get school info from AuthContext
+  const { schoolInfo, role } = useAuth(); // Get school info and role from AuthContext
   const [schools, setSchools] = useState([]); // For super-admin to see all schools
+  const [activeSchool, setActiveSchool] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Fetch all schools (only for super-admin)
@@ -27,6 +28,10 @@ export const SchoolProvider = ({ children }) => {
 
       if (!error && data) {
         setSchools(data);
+        // Default active school to the first school in the list for super_admin
+        if (role === 'super_admin' && data.length > 0 && !activeSchool) {
+          setActiveSchool(data[0]);
+        }
       }
     } catch (err) {
       console.error('Error fetching schools:', err);
@@ -38,17 +43,21 @@ export const SchoolProvider = ({ children }) => {
   // Update school info (for admin to update their own school)
   const updateSchool = async (updates) => {
     try {
-      const { schoolInfo: currentSchool } = useAuth();
-      if (!currentSchool?.id) throw new Error('No school associated with user');
+      const targetSchoolId = activeSchool?.id || schoolInfo?.id;
+      if (!targetSchoolId) throw new Error('No school associated with user');
 
       const { data, error } = await supabase
         .from('schools')
         .update(updates)
-        .eq('id', currentSchool.id)
+        .eq('id', targetSchoolId)
         .select()
         .single();
 
       if (error) throw error;
+
+      if (activeSchool?.id === targetSchoolId) {
+        setActiveSchool(data);
+      }
       return data;
     } catch (err) {
       console.error('Error updating school:', err);
@@ -58,15 +67,22 @@ export const SchoolProvider = ({ children }) => {
 
   // Initialize
   useEffect(() => {
-    // If we have school info from auth, we're good
-    // Fetch all schools only if user is super-admin (we'd need to check role)
-    // For now, we'll fetch all schools in case we need it for super-admin view
-    fetchAllSchools();
-  }, [schoolInfo]);
+    if (role === 'super_admin') {
+      fetchAllSchools();
+    } else {
+      if (schoolInfo) {
+        setActiveSchool(schoolInfo);
+      } else {
+        setActiveSchool(null);
+      }
+      setLoading(false);
+    }
+  }, [schoolInfo, role]);
 
   return (
     <SchoolContext.Provider value={{
-      school: schoolInfo, // Current user's school
+      school: activeSchool, // Current active school
+      setSchool: setActiveSchool, // Switch active school
       schools, // All schools (for super-admin)
       loading,
       updateSchool

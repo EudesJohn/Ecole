@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
+import { useSchool } from '../contexts/SchoolContext';
 
 export const useAdminData = () => {
+  const { school } = useSchool();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [data, setData] = useState({
@@ -16,18 +18,22 @@ export const useAdminData = () => {
   });
 
   const fetchData = useCallback(async () => {
+    if (!school?.id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const results = await Promise.all([
-        supabase.from('classes').select('*').order('nom'),
-        supabase.from('matieres').select('*, classes(nom)').order('nom'),
-        supabase.from('students').select('*, classes(nom)').order('nom'),
-        supabase.from('profiles').select('*').eq('role', 'teacher').order('nom'),
-        supabase.from('absences').select('*, students(nom, prenom, classes(nom)), matieres(nom)').order('date', { ascending: false }),
-        supabase.from('cahier_texte').select('*, profiles(nom, prenom), matieres(nom), classes(nom)').order('date', { ascending: false }),
-        supabase.from('school_config').select('*'),
-        supabase.from('grades').select('*')
+        supabase.from('classes').select('*').eq('school_id', school.id).order('nom'),
+        supabase.from('matieres').select('*, classes(nom)').eq('school_id', school.id).order('nom'),
+        supabase.from('students').select('*, classes(nom)').eq('school_id', school.id).order('nom'),
+        supabase.from('profiles').select('*').eq('role', 'teacher').eq('school_id', school.id).order('nom'),
+        supabase.from('absences').select('*, students(nom, prenom, classes(nom)), matieres(nom)').eq('school_id', school.id).order('date', { ascending: false }),
+        supabase.from('cahier_texte').select('*, profiles(nom, prenom), matieres(nom), classes(nom)').eq('school_id', school.id).order('date', { ascending: false }),
+        supabase.from('school_config').select('*').eq('school_id', school.id),
+        supabase.from('grades').select('*').eq('school_id', school.id)
       ]);
 
       // Check results for errors
@@ -63,7 +69,7 @@ export const useAdminData = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [school?.id]);
 
   useEffect(() => {
     fetchData();
