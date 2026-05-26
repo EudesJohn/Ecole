@@ -1,11 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import dotenv from "dotenv";
-dotenv.config({ path: ".env" });
+dotenv.config({ path: "api/.env" });
 
 async function runSQL() {
-  const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
-  const sql = fs.readFileSync("../fix_grades_duplication.sql", "utf8");
+  const supabase = createClient(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  const sql = fs.readFileSync("../super_admin_migration.sql", "utf8");
 
   console.log("🚀 Executing SQL Merge...");
   

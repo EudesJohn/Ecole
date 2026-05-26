@@ -10,7 +10,7 @@ const generateSecurePassword = () => crypto.randomBytes(6).toString('hex');
 
 // Admin middleware
 router.use(verifyToken, (req, res, next) => {
-  if (req.role !== 'admin') return res.status(403).json({ error: 'Admin required' });
+  if (req.role !== 'admin' && req.role !== 'super_admin') return res.status(403).json({ error: 'Admin or Super Admin required' });
   next();
 });
 

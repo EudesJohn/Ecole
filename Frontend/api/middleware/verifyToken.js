@@ -67,6 +67,14 @@ const verifyToken = async (req, res, next) => {
     
     req.role = profile?.role || 'parent';
     req.schoolId = profile?.school_id || null;
+
+    // Support overriding schoolId via x-school-id header, body, or query for super_admin
+    if (req.role === 'super_admin') {
+      const xSchoolId = req.headers['x-school-id'] || req.body?.school_id || req.query?.school_id;
+      if (xSchoolId) {
+        req.schoolId = xSchoolId;
+      }
+    }
     next();
   } catch (error) {
     console.error('VerifyToken: Unexpected Error:', error);
