@@ -27,6 +27,7 @@ router.use('/admin', require('./routes/admin'));
 router.use('/teacher', require('./routes/teacher'));
 router.use('/parent', require('./routes/parent'));
 router.use('/health', require('./routes/health'));
+router.use('/schools', require('./routes/schools'));
 
 // Mount everything on /api (production) AND / (backup)
 // This ensures that either local dev or Vercel rewrites work correctly.

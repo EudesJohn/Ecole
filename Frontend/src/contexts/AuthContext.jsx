@@ -9,19 +9,33 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [studentData, setStudentData] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [schoolInfo, setSchoolInfo] = useState(null); // New: school information
 
   const fetchProfile = async (userId, sessionUser, silent = false) => {
     if (!silent) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('*, schools!inner(id, nom, abreviation, ville, pays, logo_url)') // Join with schools table
         .eq('id', userId)
         .single();
 
       if (!error && data) {
         setRole(data.role);
         setUserProfile(data);
+
+        // Set school info from joined data
+        if (data.schools) {
+          setSchoolInfo({
+            id: data.schools.id,
+            nom: data.schools.nom,
+            abreviation: data.schools.abreviation,
+            ville: data.schools.ville,
+            pays: data.schools.pays,
+            logo_url: data.schools.logo_url
+          });
+        }
+
         if (data.role === 'parent') {
           const { data: children } = await supabase
             .from('students')
@@ -69,7 +83,9 @@ export const AuthProvider = ({ children }) => {
       } else {
         setUser(null);
         setRole(null);
+        setStudentData(null);
         setUserProfile(null);
+        setSchoolInfo(null); // Clear school info on logout
         setLoading(false);
       }
     });
@@ -93,7 +109,30 @@ export const AuthProvider = ({ children }) => {
     }
 
     const cleanMatricule = matricule.toString().replace(/\s+/g, '').toLowerCase();
-    const email = `${cleanMatricule}@slb.bj`;
+
+    // Extract abbreviation from matricule (format: 0001ABREVYY or 0001 ABREV YY)
+    const abbrevMatch = cleanMatricule.match(/^0{0,4}\d{0,4}([a-z]{2,5})(\d{2})$/);
+    if (!abbrevMatch) {
+      throw new Error('Format de matricule invalide. Utilisez le format: 0001 ABREV 26');
+    }
+
+    const schoolAbbreviation = abbrevMatch[1].toUpperCase();
+    const yearSuffix = abbrevMatch[2];
+
+    // First, find the school by abbreviation
+    const { data: schoolData, error: schoolError } = await supabase
+      .from('schools')
+      .select('id, nom, abreviation')
+      .eq('abreviation', schoolAbbreviation)
+      .eq('status', 'active')
+      .single();
+
+    if (schoolError || !schoolData) {
+      throw new Error(`Aucune école trouvée avec l'abréviation "${schoolAbbreviation}". Vérifiez votre matricule.`);
+    }
+
+    // Construct email using school abbreviation (consistent with our system)
+    const email = `${cleanMatricule}@${schoolAbbreviation.toLowerCase()}.bj`;
 
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -114,6 +153,7 @@ export const AuthProvider = ({ children }) => {
       setRole(null);
       setStudentData(null);
       setUserProfile(null);
+      setSchoolInfo(null); // Clear school info
 
       await supabase.auth.signOut();
     } catch (err) {
@@ -124,7 +164,8 @@ export const AuthProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{
       user, role, login, loginParent, logout, loading,
-      studentData, setStudentData, userProfile
+      studentData, setStudentData, userProfile,
+      schoolInfo // Expose school info
     }}>
       {children}
     </AuthContext.Provider>

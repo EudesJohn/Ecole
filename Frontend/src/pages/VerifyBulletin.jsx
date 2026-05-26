@@ -1,4 +1,3 @@
-
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 // Firebase removed, implement custom backend fetch logic here
@@ -70,11 +69,11 @@ const VerifyBulletin = () => {
             Document Non Vérifié
           </h1>
           <p className="text-gray-500 mb-4">
-            Ce bulletin n&apos;a pas pu &ecirc;tre authentifi&eacute;. Il est possible qu&apos;il soit falsifi&eacute; ou que le lien soit invalide.
+            Ce bulletin n'a pas pu être authentifié. Il est possible qu'il soit falsifié ou que le lien soit invalide.
           </p>
           <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
             <p className="text-sm text-red-600 font-medium">
-              &nbsp; Contactez l&apos;&eacute;tablissement pour confirmer l&apos;authenticit&eacute;.
+              &nbsp; Contactez l'établissement pour confirmer l'authenticité.
             </p>
           </div>
           <p className="text-xs text-gray-400 mt-6">Réf: {matricule}</p>
@@ -95,7 +94,7 @@ const VerifyBulletin = () => {
         <div className="bg-royal-gradient p-8 text-center relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]" />
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-          
+
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
@@ -106,13 +105,13 @@ const VerifyBulletin = () => {
               <CheckCircle className="w-10 h-10 text-white" />
             </div>
           </motion.div>
-          
+
           <h1 className="text-2xl font-display font-black text-white relative z-10 tracking-tight">
             BULLETIN AUTHENTIQUE
           </h1>
           <div className="flex items-center justify-center gap-2 mt-2 relative z-10">
             <Shield className="w-3 h-3 text-gold-300" />
-            <p className="text-primary-200 text-[10px] font-bold uppercase tracking-widest">Certifié par Saint Lambert</p>
+            <p className="text-primary-200 text-[10px] font-bold uppercase tracking-widest">Certifié par l'établissement</p>
           </div>
         </div>
 
@@ -144,7 +143,7 @@ const VerifyBulletin = () => {
                 T{bulletin.trimestre} • {bulletin.schoolYear || '2025-26'}
               </p>
             </div>
-            
+
             <div className="p-5 bg-royal-gradient rounded-[2rem] text-center shadow-xl shadow-blue-900/10 col-span-2 sm:col-span-1 border border-white/10">
               <p className="text-[9px] text-blue-200 font-bold uppercase tracking-widest mb-1">Moyenne Générale</p>
               <div className="flex items-baseline justify-center gap-1">
@@ -177,9 +176,9 @@ const VerifyBulletin = () => {
           <div className="pt-6 border-top border-gray-100 flex flex-col items-center gap-2 text-center">
             <div className="flex items-center gap-2 text-[10px] text-gray-400 font-medium">
               <Shield size={12} className="text-gold-400" />
-              <span>SYSTÈME DE VÉRIFICATION SLB CERTIFIED</span>
+              <span>SYSTÈME DE VÉRIFICATION CERTIFIÉ</span>
             </div>
-            <p className="text-[8px] text-gray-300 uppercase tracking-[0.2em] font-bold">École Saint Lambert Bénin — Excellence & Tradition</p>
+            <p className="text-[8px] text-gray-300 uppercase tracking-[0.2em] font-bold">Vérifiez l'authenticité de ce document directement avec l'établissement concerné</p>
           </div>
         </div>
       </motion.div>

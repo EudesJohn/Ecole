@@ -13,6 +13,8 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [schoolAbbrev, setSchoolAbbrev] = useState(''); // For parent school abbreviation input
+  const [detectedSchool, setDetectedSchool] = useState(null); // {nom, abreviation}
   const { login, loginParent } = useAuth();
   const navigate = useNavigate();
 
@@ -47,9 +49,37 @@ const Login = () => {
     return `${part1} SLB ${part3.substring(0, 2)}`.trim();
   };
 
-  // Redirect si déjà connecté (via composant, pas navigate())
-  // COMMENTÉ POUR ÉVITER LE CONFLIT DE REDIRECTION RACE CONDITION
-  // if (user) return <Navigate to="/" replace />;
+  // Detect school from matricule for parent login
+  const detectSchoolFromMatricule = async () => {
+    if (!matricule || matricule.length < 6) {
+      setDetectedSchool(null);
+      return;
+    }
+
+    const cleanMatricule = matricule.replace(/\s+/g, '').toUpperCase();
+
+    // Extract potential abbreviation (letters between numbers)
+    const abbrevMatch = cleanMatricule.match(/^0{0,4}\d{0,4}([A-Z]{2,5})/);
+    if (!abbrevMatch) {
+      setDetectedSchool(null);
+      return;
+    }
+
+    const potentialAbbrev = abbrevMatch[1];
+
+    try {
+      const response = await fetch(`/api/schools/info/${potentialAbbrev}`);
+      if (response.ok) {
+        const schoolData = await response.json();
+        setDetectedSchool(schoolData);
+      } else {
+        setDetectedSchool(null);
+      }
+    } catch (err) {
+      console.error('Error detecting school:', err);
+      setDetectedSchool(null);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,6 +91,11 @@ const Login = () => {
         // Utiliser la redirection racine pour laisser RoleRedirect gérer selon le profil chargé
         navigate('/');
       } else {
+        // For parent login, we can use either:
+        // 1. The auto-detected school from matricule
+        // 2. The manually entered school abbreviation (if provided)
+        // 3. Fallback to SLB for backward compatibility
+
         await loginParent(matricule, pin);
         navigate('/parent');
       }
@@ -103,10 +138,10 @@ const Login = () => {
               <GraduationCap className="w-10 h-10 text-gold-300" />
             </div>
             <h1 className="text-4xl md:text-5xl font-display font-bold text-gradient-royal drop-shadow-sm">
-              Saint Lambert
+              {detectedSchool ? detectedSchool.nom : 'Saint Lambert'}
             </h1>
             <p className="text-gray-500 mt-2 text-sm font-medium tracking-wide uppercase">
-              Portail Sécurisé SLB
+              Portail Sécurisé {detectedSchool ? detectedSchool.nom : 'SLB'}
             </p>
           </motion.div>
 
@@ -192,17 +227,88 @@ const Login = () => {
                       Entrez le matricule et le code PIN parent pour accéder au suivi scolaire.
                     </p>
                   </div>
+
+                  {/* School Abbreviation Input (Optional) */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Matricule SLB</label>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Abréviation de votre école (optionnel)
+                    </label>
+                    <div className="flex items-center space-x-3">
+                      <input
+                        type="text"
+                        value={schoolAbbrev}
+                        onChange={(e) => {
+                          setSchoolAbbrev(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 5));
+                          // Auto-detect when abbreviation is entered
+                          if (e.target.value.length >= 2) {
+                            detectSchoolFromMatricule(); // We'll reuse this function but it needs the abbrev
+                          }
+                        }}
+                        className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Ex: SLB, JDV"
+                        maxLength="5"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (schoolAbbrev.length >= 2) {
+                            // Manually trigger detection
+                            const tempMatricule = `0001${schoolAbbrev}26`; // Dummy matricule for detection
+                            setMatricule(tempMatricule);
+                            detectSchoolFromMatricule();
+                          }
+                        }}
+                        className="px-4 py-3 bg-gray-100 text-sm rounded-lg hover:bg-gray-200 transition-colors"
+                        disabled={schoolAbbrev.length < 2}
+                      >
+                        Vérifier
+                      </button>
+                    </div>
+                    {schoolAbbrev && (
+                      <p className={detectedSchool ? 'text-green-600 mt-1' : 'text-red-600 mt-1'}>
+                        {detectedSchool
+                          ? `École détectée : ${detectedSchool.nom} (${detectedSchool.abreviation})`
+                          : `Aucune école trouvée avec l'abréviation "${schoolAbbrev}"`}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="p-3 bg-gold-50 rounded-xl border border-gold-200/50">
+                    <p className="text-xs text-gold-700 font-medium">
+                      Ou laissez vide pour utiliser la détection automatique depuis le matricule
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Matricule</label>
                     <input
                       type="text"
                       value={matricule}
-                      onChange={(e) => setMatricule(formatMatricule(e.target.value))}
+                      onChange={(e) => {
+                        setMatricule(formatMatricule(e.target.value));
+                        // Auto-detect school when matricule changes
+                        if (e.target.value.length >= 6) {
+                          detectSchoolFromMatricule();
+                        }
+                      }}
                       className="input-slb font-mono tracking-widest text-center text-lg italic"
                       placeholder="0001 SLB 26"
                       required
                     />
                   </div>
+
+                  {/* Detected School Info */}
+                  {detectedSchool && (
+                    <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-3 rounded-r">
+                      <p className="text-xs font-medium text-blue-800 flex items-center">
+                        <svg className="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 1118 0z" />
+                        </svg>
+                        École détectée : <strong>{detectedSchool.nom}</strong> ({detectedSchool.abreviation})
+                      </p>
+                    </div>
+                  )}
+
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Code PIN Parent</label>
                     <div className="relative">
