@@ -432,7 +432,7 @@ const ParentDashboard = () => {
                     <span className={`text-xs font-black ${isActive ? 'text-blue-700' : 'text-slate-600'}`}>Trimestre {t}</span>
                   </div>
                   <div className="text-center font-display font-bold text-slate-900 text-sm">
-                    {tData?.moyenne_generale !== undefined ? tData.moyenne_generale.toFixed(2) : '--.--'}
+                    {tData?.moyenne_generale != null ? Number(tData.moyenne_generale).toFixed(2) : '--.--'}
                   </div>
                   <div className="text-center text-[10px] font-bold text-slate-400">
                     {tData?.rang ? `${tData.rang}/${tData.effectif}` : '--/--'}
@@ -517,17 +517,17 @@ const ParentDashboard = () => {
                     {['primaire', 'maternelle'].includes(studentData.cycle?.toLowerCase()) ? (
                       /* Simplified Monthly View */
                       <>
-                        {sub.composition !== null && sub.composition !== undefined && sub.composition !== '' && (
+                        {g.composition !== null && g.composition !== undefined && g.composition !== '' && (
                           <div className="text-center p-2 bg-gold-50 border border-gold-100 rounded-xl">
                             <p className="text-[8px] font-black tracking-widest mb-1 uppercase text-gold-500">Composition</p>
-                            <p className="text-[11px] font-black text-gold-700">{sub.composition}</p>
+                            <p className="text-[11px] font-black text-gold-700">{g.composition}</p>
                           </div>
                         )}
-                        {(sub.note_cm || sub.note_cp) && (
+                        {(g.note_cm || g.note_cp) && (
                           <div className="text-center p-2 bg-blue-50 rounded-xl border border-blue-100">
                             <p className="text-[8px] text-blue-400 font-black tracking-widest mb-1 uppercase">Étapes</p>
                             <p className="text-[11px] font-black text-blue-700">
-                              {GradeCalculator.calculateStepGrade(sub.note_cm, sub.note_cp).toFixed(2)}
+                              {GradeCalculator.calculateStepGrade(g.note_cm, g.note_cp).toFixed(2)}
                             </p>
                           </div>
                         )}
@@ -536,16 +536,16 @@ const ParentDashboard = () => {
                       /* Secondary System */
                       <>
                         {['interro1', 'interro2', 'interro3'].map((field, idx) => (
-                          sub[field] !== null && sub[field] !== undefined && sub[field] !== '' && (
+                          g[field] !== null && g[field] !== undefined && g[field] !== '' && (
                             <div key={field} className="text-center p-2 bg-slate-50 border border-slate-100/50 rounded-xl">
                               <p className="text-[8px] font-black tracking-widest mb-1 uppercase text-slate-400">I{idx + 1}</p>
-                              <p className="text-[11px] font-black text-slate-700">{sub[field]}</p>
+                              <p className="text-[11px] font-black text-slate-700">{g[field]}</p>
                             </div>
                           )
                         ))}
                         <div className="text-center p-2 bg-primary-50 rounded-xl border border-primary-100">
                           <p className="text-[8px] text-primary-500 font-black tracking-widest mb-1 uppercase">DW</p>
-                          <p className="text-[11px] font-black text-primary-700">{sub.dw || '--'}</p>
+                          <p className="text-[11px] font-black text-primary-700">{g.dw || '--'}</p>
                         </div>
                       </>
                     )}
