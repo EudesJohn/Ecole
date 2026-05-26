@@ -42,15 +42,22 @@ async function fixRLS() {
     else console.log("✅ Mot de passe mis à jour avec succès.");
 
     // 2. Forçage du rôle admin dans la table profiles
+    const { data: school } = await supabase
+        .from('schools')
+        .select('id')
+        .eq('abreviation', 'SLB')
+        .single();
+
     const { error: profileError } = await supabase
         .from('profiles')
         .upsert({
             id: adminUser.id,
-            role: 'admin'
+            role: 'admin',
+            school_id: school?.id
         }, { onConflict: 'id' });
 
     if (profileError) console.error("❌ Erreur profil:", profileError.message);
-    else console.log("✅ Rôle 'admin' assigné avec succès.");
+    else console.log("✅ Rôle 'admin' et 'school_id' (SLB) assignés avec succès.");
 }
 
 fixRLS();

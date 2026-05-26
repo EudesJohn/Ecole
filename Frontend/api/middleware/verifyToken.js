@@ -55,10 +55,9 @@ const verifyToken = async (req, res, next) => {
 
     req.user = responseBody;
     
-    // Fetch role from profiles table
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, school_id')
       .eq('id', responseBody.id)
       .maybeSingle();
     
@@ -67,6 +66,7 @@ const verifyToken = async (req, res, next) => {
     }
     
     req.role = profile?.role || 'parent';
+    req.schoolId = profile?.school_id || null;
     next();
   } catch (error) {
     console.error('VerifyToken: Unexpected Error:', error);

@@ -371,10 +371,30 @@ const Login = () => {
             </motion.button>
           </form>
 
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-4">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400 font-medium">ou</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+
+          {/* Create School CTA */}
+          <motion.a
+            href="/"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-4 px-6 rounded-2xl font-bold border-2 border-dashed border-gold-300 text-gold-600 bg-gold-50 hover:bg-gold-100 transition-all duration-300 flex items-center justify-center gap-2 text-sm"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Inscrire votre école sur la plateforme
+          </motion.a>
+
           {/* Footer */}
           <p className="text-xs text-gray-400 text-center mt-6 flex items-center justify-center gap-1">
             <Shield size={12} />
-            Sécurisé par SLB QR Vérification © 2026
+            Plateforme ERP Scolaire Sécurisée © 2026
           </p>
         </div>
       </motion.div>

@@ -247,7 +247,7 @@ const ParentDashboard = () => {
         rang: statsData.general_stats.rang || null
       };
 
-      const qrCodeDataUrl = await generateQRDataUrl(`https://saintlambert.bj/verify/${encodeURIComponent(studentData.matricule)}/${selectedTrimestre}/${schoolConfig.current_year}`);
+      const qrCodeDataUrl = await generateQRDataUrl(`https://erp-ecole.bj/verify/${encodeURIComponent(studentData.matricule)}/${selectedTrimestre}/${schoolConfig.current_year}`);
 
       await downloadBulletin({
         student: { ...studentData, dateNaissance: studentData.date_naissance, cycle: studentData.cycle, sexe: studentData.sexe || '—' },
@@ -256,7 +256,8 @@ const ParentDashboard = () => {
         classStats: classStats,
         qrCodeDataUrl,
         trimestre: `${selectedTrimestre}${selectedTrimestre === '1' ? 'er' : 'ème'}`,
-        schoolYear: schoolConfig.current_year
+        schoolYear: schoolConfig.current_year,
+        schoolInfo: school
       });
     } catch (err) {
       console.error(err);
