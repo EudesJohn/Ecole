@@ -2,10 +2,12 @@ import { lazy, Suspense, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext.jsx';
+import { SchoolProvider } from './contexts/SchoolContext.jsx';
 import { useAuth } from './hooks/useAuth';
 import { Toaster } from 'react-hot-toast';
 
 // Lazy load pages for performance
+const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
 const Login = lazy(() => import('./pages/Login.jsx'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard.jsx'));
@@ -34,7 +36,7 @@ const LoadingFallback = () => (
 );
 
 function ProtectedRoute({ children, roles }) {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, schoolInfo } = useAuth();
 
   if (loading || (user && !role)) return <LoadingFallback />;
   if (!user) return <Navigate to="/login" replace />;
@@ -43,7 +45,7 @@ function ProtectedRoute({ children, roles }) {
 }
 
 function RoleRedirect() {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, schoolInfo } = useAuth();
 
   if (loading || (user && !role)) return <LoadingFallback />;
   if (!user) return <Navigate to="/login" replace />;
@@ -84,23 +86,23 @@ function AppContent() {
       )}
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
 
-          {/* Admin routes */}
+          {/* Protected routes */}
           <Route path="/admin/*" element={
             <ProtectedRoute roles={['admin']}>
               <AdminDashboard />
             </ProtectedRoute>
           } />
 
-          {/* Teacher routes */}
           <Route path="/teacher/*" element={
             <ProtectedRoute roles={['teacher']}>
               <TeacherDashboard />
             </ProtectedRoute>
           } />
 
-          {/* Parent routes */}
           <Route path="/parent/*" element={
             <ProtectedRoute roles={['parent']}>
               <ParentDashboard />
@@ -110,8 +112,8 @@ function AppContent() {
           {/* Public: QR Verification */}
           <Route path="/verify/:matricule/:trimestre/:year" element={<VerifyBulletin />} />
 
-          {/* Role-based redirect */}
-          <Route path="/" element={<RoleRedirect />} />
+          {/* Role-based redirect (for backward compatibility) */}
+          <Route path="/dashboard" element={<RoleRedirect />} />
 
           {/* Unauthorized */}
           <Route path="/unauthorized" element={
@@ -153,18 +155,20 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <AppContent />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            style: {
-              borderRadius: '12px',
-              background: '#1e293b',
-              color: '#fff',
-              fontSize: '14px',
-            },
-          }}
-        />
+        <SchoolProvider>
+          <AppContent />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                borderRadius: '12px',
+                background: '#1e293b',
+                color: '#fff',
+                fontSize: '14px',
+              },
+            }}
+          />
+        </SchoolProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

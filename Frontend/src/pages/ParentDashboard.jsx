@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 
 import { useAuth } from '../hooks/useAuth';
+import { useSchool } from '../contexts/SchoolContext';
 import BottomNav from '../components/UI/BottomNav';
 import SkeletonLoader from '../components/UI/SkeletonLoader';
 import { Button } from '../components/UI/Button';
@@ -16,6 +17,7 @@ import {
 
 const ParentDashboard = () => {
   const { studentData, logout } = useAuth();
+  const { school } = useSchool(); // Get school info from context
   const [loading, setLoading] = useState(true);
   const [grades, setGrades] = useState([]);
   const [matieres, setMatieres] = useState([]);
@@ -58,7 +60,7 @@ const ParentDashboard = () => {
         .select('period_label')
         .eq('student_id', studentData.id)
         .order('created_at', { ascending: false });
-      
+
       const periods = [...new Set((data || []).map(d => d.period_label))].filter(Boolean);
       setAvailablePeriods(periods);
       if (periods.length > 0 && !selectedPeriod) {
@@ -219,7 +221,7 @@ const ParentDashboard = () => {
 
       // 2. Préparer les notes à partir de l'état local enrichi avec les min/max issus du RPC
       const subjectStats = (statsData?.subject_stats) || [];
-      
+
       const gradesBySubject = grades.map(g => {
         const s = subjectStats.find(ss => ss.matiere_id === g.matiere_id) || {};
         return {
@@ -285,6 +287,9 @@ const ParentDashboard = () => {
   const totalAbsences = absences.filter(a => a.status === 'absent').length;
   const totalPresent = absences.filter(a => a.status === 'present').length;
 
+  // Dynamic school name from context
+  const schoolName = school?.nom || 'École Saint Lambert';
+
   return (
     <div className="min-h-screen bg-[#fcfdfe] pb-24">
       {/* Header */}
@@ -300,7 +305,7 @@ const ParentDashboard = () => {
             </div>
             <div>
               <span className="text-white/60 text-[10px] uppercase tracking-widest font-bold">Portail Parent</span>
-              <h2 className="text-white font-display font-bold leading-none">École Saint Lambert</h2>
+              <h2 className="text-white font-display font-bold leading-none">{schoolName}</h2>
             </div>
           </motion.div>
           <button onClick={logout} className="w-11 h-11 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center text-white/70 hover:bg-white/20 transition-all border border-white/10">
@@ -592,7 +597,7 @@ const ParentDashboard = () => {
                     {new Date(ab.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </span>
                   <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${
-                    ab.status === 'present' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                    ab.status === 'present' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                     : ab.status === 'absent' ? 'bg-red-50 text-red-600 border border-red-100'
                     : 'bg-amber-50 text-amber-600 border border-amber-100'
                   }`}>

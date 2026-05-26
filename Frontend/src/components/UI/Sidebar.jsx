@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
+import { useSchool } from '../../contexts/SchoolContext';
 import {
   LayoutDashboard, Users, BookOpen, GraduationCap, UserCog,
   FileText, Settings, LogOut, Menu, X, ClipboardCheck, Award
@@ -31,8 +32,16 @@ const teacherLinks = [
 const Sidebar = ({ role = 'admin', activeTab, onTabChange }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { logout, user, userProfile } = useAuth();
+  const { school } = useSchool(); // Get school info from context
   const navigate = useNavigate();
   const links = role === 'teacher' ? teacherLinks : adminLinks;
+
+  // Default school info for fallback
+  const schoolName = school?.nom || 'École Saint Lambert';
+  const schoolShortName = school?.nom?.length > 15
+    ? school?.nom.substring(0, 12) + '...'
+    : school?.nom || 'ST LAMBERT';
+  const schoolAcronym = school?.abreviation || 'SLB';
 
   const handleLogout = async () => {
     await logout();
@@ -63,7 +72,7 @@ const Sidebar = ({ role = 'admin', activeTab, onTabChange }) => {
           <div className="w-9 h-9 bg-royal-gradient rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
             <GraduationCap className="w-5 h-5 text-gold-300" />
           </div>
-          <span className="font-display font-black text-slate-900 text-sm tracking-tight">Ecole SLB</span>
+          <span className="font-display font-black text-slate-900 text-sm tracking-tight">{schoolShortName}</span>
         </div>
         <button onClick={handleLogout} className="w-12 h-12 text-slate-400 rounded-2xl flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition-all border border-transparent">
           <LogOut size={20} />
@@ -94,7 +103,7 @@ const Sidebar = ({ role = 'admin', activeTab, onTabChange }) => {
                     <GraduationCap className="w-6 h-6 text-gold-300" />
                   </div>
                   <div>
-                    <p className="font-display font-black text-slate-900 text-base leading-none">ST LAMBERT</p>
+                    <p className="font-display font-black text-slate-900 text-base leading-none">{schoolShortName}</p>
                     <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 opacity-70">{role === 'teacher' ? 'Enseignant' : 'Administrateur'}</p>
                   </div>
                 </div>
@@ -152,7 +161,7 @@ const Sidebar = ({ role = 'admin', activeTab, onTabChange }) => {
               <GraduationCap className="w-8 h-8 text-gold-300" />
             </div>
             <div>
-              <h2 className="font-display font-black text-slate-900 text-xl tracking-tight leading-none">ST LAMBERT</h2>
+              <h2 className="font-display font-black text-slate-900 text-xl tracking-tight leading-none">{schoolName}</h2>
               <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-1.5 opacity-60">School ERP Pro</p>
             </div>
           </div>
