@@ -723,8 +723,8 @@ const AdminDashboard = () => {
         </div>
       </Modal>
 
-      </>  {/* Close the fragment that started at line 340 */}
-      </main>
+      </>
+      </main>  {/* Close the fragment and main tags */}
 
       {notification && (
         <div className={`fixed bottom-4 right-4 p-4 rounded-xl shadow-lg text-white flex items-center gap-2 z-50 animate-fade-in-up ${notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
