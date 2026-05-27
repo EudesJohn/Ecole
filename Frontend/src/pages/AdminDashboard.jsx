@@ -590,9 +590,8 @@ const AdminDashboard = () => {
             </div>
           )}
         </AnimatePresence>
-      </main>
 
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={`${editItem ? 'Modifier' : 'Ajouter'} ${modalType}`}>
+        <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={`${editItem ? 'Modifier' : 'Ajouter'} ${modalType}`}>
         <div className="space-y-4 p-4">
           {modalType === 'classes' && (
             <>
@@ -639,12 +638,12 @@ const AdminDashboard = () => {
                 <option value="M">Masculin</option>
                 <option value="F">Féminin</option>
               </select>
-              <input 
-                type="tel" 
-                placeholder="Téléphone du Parent (ex: +229 90 00 00 00)" 
-                className="input-slb" 
-                value={formData.telephone_parent || ''} 
-                onChange={e => setFormData({ ...formData, telephone_parent: e.target.value })} 
+              <input
+                type="tel"
+                placeholder="Téléphone du Parent (ex: +229 90 00 00 00)"
+                className="input-slb"
+                value={formData.telephone_parent || ''}
+                onChange={e => setFormData({ ...formData, telephone_parent: e.target.value })}
               />
             </>
           )}
@@ -654,7 +653,7 @@ const AdminDashboard = () => {
               <input type="text" placeholder="Prénom" className="input-slb" value={formData.prenom || ''} onChange={e => setFormData({ ...formData, prenom: e.target.value })} />
               <input type="text" placeholder="Nom" className="input-slb" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
               <input type="email" placeholder="Email (pour connexion)" className="input-slb" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
-              
+
               {!editItem && (
                 <div className="flex gap-2">
                   <input
@@ -723,6 +722,8 @@ const AdminDashboard = () => {
           <Button variant="primary" onClick={handleSave} loading={saving} className="w-full">Enregistrer</Button>
         </div>
       </Modal>
+
+      </main>
 
       {notification && (
         <div className={`fixed bottom-4 right-4 p-4 rounded-xl shadow-lg text-white flex items-center gap-2 z-50 animate-fade-in-up ${notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
