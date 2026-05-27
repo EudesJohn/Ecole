@@ -88,19 +88,31 @@ router.delete('/schools/:id', async (req, res) => {
       'cahiers_texte',
       'bulletin_requests',
       'school_config_mt',
+      'classes',
+      'matieres',
     ];
 
     for (const table of tablesToClean) {
-      await supabase.from(table).delete().eq('school_id', id).catch(() => {});
+      const { error: cleanError } = await supabase.from(table).delete().eq('school_id', id);
+      if (cleanError) console.warn(`Cleanup warning for ${table}:`, cleanError.message);
     }
 
     // Delete students
-    await supabase.from('students').delete().eq('school_id', id).catch(() => {});
+    const { error: studentsError } = await supabase.from('students').delete().eq('school_id', id);
+    if (studentsError) console.warn('Cleanup warning for students:', studentsError.message);
+
+    // Nullify school_id on profiles (so the school can be deleted without FK issues)
+    const { error: profilesError } = await supabase
+      .from('profiles')
+      .update({ school_id: null })
+      .eq('school_id', id);
+    if (profilesError) console.warn('Cleanup warning for profiles:', profilesError.message);
 
     // Delete auth users for this school (parents + teachers + admins)
     const allUserIds = [...parentIds, ...profileIds];
     for (const userId of allUserIds) {
-      await supabase.auth.admin.deleteUser(userId).catch(() => {});
+      const { error: delErr } = await supabase.auth.admin.deleteUser(userId);
+      if (delErr) console.warn(`Failed to delete auth user ${userId}:`, delErr.message);
     }
 
     // Finally delete the school
