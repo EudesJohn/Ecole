@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useBulletin } from '../hooks/useBulletin';
 import { useAdminData } from '../hooks/useAdminData';
 import { supabase } from '../supabase';
+import { getAccessToken } from '../utils/auth';
 import { Download, AlertCircle, CheckCircle, Plus, Trash2, Edit, Settings, Key, RefreshCw, GraduationCap } from 'lucide-react';
 import { OverviewTab } from '../components/Dashboard/Admin/OverviewTab';
 import { EntityTable } from '../components/Dashboard/Admin/EntityTable';
@@ -131,7 +132,7 @@ const AdminDashboard = () => {
 
         const headers = {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+          'Authorization': `Bearer ${await getAccessToken()}`
         };
         if (school?.id) {
           headers['x-school-id'] = school.id;
@@ -257,8 +258,7 @@ const AdminDashboard = () => {
         ? `${baseUrl}/api/admin/students/reset-pin`
         : `${baseUrl}/api/admin/teachers/reset-password`;
       
-      const { data: { session } } = await supabase.auth.getSession();
-      const token = session?.access_token?.trim() || null;
+      const token = (await getAccessToken())?.trim() || null;
       
       if (!token) {
         showNotif("Votre session a expiré. Veuillez vous reconnecter.", 'error');

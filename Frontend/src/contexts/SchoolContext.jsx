@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../hooks/useAuth';
+import { getAccessToken } from '../utils/auth';
 
 const SchoolContext = createContext();
 
@@ -37,25 +38,24 @@ export const SchoolProvider = ({ children }) => {
     }
   };
 
-  // Update school info (for admin to update their own school)
+  // Update school info (for admin to update their own school) — uses backend API (service role)
   const updateSchool = async (updates) => {
     try {
-      const targetSchoolId = activeSchool?.id || schoolInfo?.id;
-      if (!targetSchoolId) throw new Error('No school associated with user');
+      const token = await getAccessToken();
+      if (!token) throw new Error('Non connecté');
 
-      const { data, error } = await supabase
-        .from('schools')
-        .update(updates)
-        .eq('id', targetSchoolId)
-        .select()
-        .single();
+      const res = await fetch('/api/schools/my-school', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(updates)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
 
-      if (error) throw error;
-
-      if (activeSchool?.id === targetSchoolId) {
-        setActiveSchool(data);
+      if (activeSchool) {
+        setActiveSchool(prev => ({ ...prev, ...updates }));
       }
-      return data;
+      return data.school;
     } catch (err) {
       console.error('Error updating school:', err);
       throw err;

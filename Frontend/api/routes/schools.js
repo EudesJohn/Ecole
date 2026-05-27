@@ -223,7 +223,7 @@ router.patch('/my-school', async (req, res) => {
     }
 
     const updates = {};
-    if (nom) updates.nom = nom.trim();
+    if (nom !== undefined) updates.nom = nom.trim();
     if (ville !== undefined) updates.ville = ville.trim();
     if (pays !== undefined) updates.pays = pays.trim();
     if (logo_url !== undefined) updates.logo_url = logo_url;

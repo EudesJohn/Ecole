@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { supabase } from '../../../supabase';
 import { Trash2, AlertTriangle, Shield, Ban, CheckCircle, Loader2, Search, X } from 'lucide-react';
+import { getAccessToken } from '../../../utils/auth';
 
-const getToken = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  return session?.access_token;
-};
+const getToken = getAccessToken;
 
 const EcolesTab = () => {
   const [schools, setSchools] = useState([]);
