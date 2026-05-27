@@ -20,8 +20,6 @@
       "dest": "/index.html"
     }
   ],
-  "nodeVersion": "18.x",
   "installCommand": "npm install",
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist"
+  "buildCommand": "npm run build"
 }
