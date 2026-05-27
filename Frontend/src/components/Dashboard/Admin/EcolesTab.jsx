@@ -53,14 +53,14 @@ const EcolesTab = () => {
     }
   };
 
-  const handleRestrict = async (schoolId, days) => {
+  const handleSchoolAction = async (schoolId, action, body) => {
     try {
       const token = await getToken();
       if (!token) throw new Error('Non connecté');
-      const res = await fetch(`/api/super-admin/schools/${schoolId}/restrict`, {
+      const res = await fetch(`/api/super-admin/schools/${schoolId}/${action}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ days, reason: 'Restreint par super admin' })
+        ...(body ? { body: JSON.stringify(body) } : {})
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -70,21 +70,8 @@ const EcolesTab = () => {
     }
   };
 
-  const handleActivate = async (schoolId) => {
-    try {
-      const token = await getToken();
-      if (!token) throw new Error('Non connecté');
-      const res = await fetch(`/api/super-admin/schools/${schoolId}/activate`, {
-        method: 'PATCH',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      fetchSchools();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+  const handleRestrict = (schoolId, days) => handleSchoolAction(schoolId, 'restrict', { days, reason: 'Restreint par super admin' });
+  const handleActivate = (schoolId) => handleSchoolAction(schoolId, 'activate', null);
 
   const filtered = schools.filter(s =>
     !search || s.nom?.toLowerCase().includes(search.toLowerCase()) ||
