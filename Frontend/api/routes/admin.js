@@ -8,8 +8,48 @@ const router = express.Router();
 // Generate 12-char CSPRNG password (6 bytes)
 const generateSecurePassword = () => crypto.randomBytes(6).toString('hex');
 
+// Password recovery via email (forgot password) — MUST be before auth middleware
+router.post('/recover-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if user exists with this email
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, email, role')
+      .eq('email', email)
+      .single();
+
+    if (profileError || !profiles) {
+      // Don't reveal whether email exists for security
+      return res.json({
+        success: true,
+        message: 'If this email exists in our system, a recovery link has been sent'
+      });
+    }
+
+    // Generate a recovery token (Supabase handles this automatically)
+    const origin = req.headers.origin || req.headers.referer || 'https://ecole.vercel.app';
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/reset-password`
+    });
+
+    if (error) throw error;
+
+    res.json({ success: true, message: 'Password recovery email sent successfully' });
+  } catch (error) {
+    console.error('Password recovery error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Admin middleware
 router.use(verifyToken, (req, res, next) => {
+  if (req.path === '/recover-password') return next();
   if (req.role !== 'admin' && req.role !== 'super_admin') return res.status(403).json({ error: 'Admin or Super Admin required' });
   next();
 });
@@ -285,44 +325,6 @@ router.post('/reset-own-password', async (req, res) => {
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (error) {
     console.error('Admin password reset error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Password recovery via email (forgot password)
-router.post('/recover-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
-    }
-
-    // Check if user exists with this email
-    const { data: profiles, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, email, role')
-      .eq('email', email)
-      .single();
-
-    if (profileError || !profiles) {
-      // Don't reveal whether email exists for security
-      return res.json({
-        success: true,
-        message: 'If this email exists in our system, a recovery link has been sent'
-      });
-    }
-
-    // Generate a recovery token (Supabase handles this automatically)
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'http://localhost:5173/reset-password' // Change this to your frontend reset page
-    });
-
-    if (error) throw error;
-
-    res.json({ success: true, message: 'Password recovery email sent successfully' });
-  } catch (error) {
-    console.error('Password recovery error:', error);
     res.status(500).json({ error: error.message });
   }
 });

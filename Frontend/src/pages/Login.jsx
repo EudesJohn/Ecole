@@ -15,6 +15,10 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [schoolAbbrev, setSchoolAbbrev] = useState(''); // For parent school abbreviation input
   const [detectedSchool, setDetectedSchool] = useState(null); // {nom, abreviation}
+  const [forgotMode, setForgotMode] = useState(false);
+  const [recoverEmail, setRecoverEmail] = useState('');
+  const [recoverSent, setRecoverSent] = useState(false);
+  const [recoverLoading, setRecoverLoading] = useState(false);
   const { login, loginParent } = useAuth();
   const navigate = useNavigate();
 
@@ -106,6 +110,26 @@ const Login = () => {
     }
   };
 
+  const handleRecover = async (e) => {
+    e.preventDefault();
+    setRecoverLoading(true);
+    setError('');
+    try {
+      const response = await fetch('/api/admin/recover-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: recoverEmail })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Erreur lors de l'envoi");
+      setRecoverSent(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRecoverLoading(false);
+    }
+  };
+
   const tabVariants = {
     hidden: { opacity: 0, y: 15 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
@@ -169,7 +193,80 @@ const Login = () => {
             </button>
           </div>
 
-          {/* Form */}
+          {/* Form - Forgot Password Mode */}
+          {forgotMode ? (
+            <form onSubmit={handleRecover} className="space-y-4">
+              <div className="p-3 bg-blue-50 rounded-xl border border-blue-200/50">
+                <p className="text-xs text-blue-700 font-medium">
+                  {recoverSent
+                    ? "Un email de r&eacute;cup&eacute;ration a &eacute;t&eacute; envoy&eacute;. V&eacute;rifiez votre bo&icirc;te de r&eacute;ception et cliquez sur le lien pour r&eacute;initialiser votre mot de passe."
+                    : "Entrez votre email administratif pour recevoir un lien de r&eacute;initialisation."}
+                </p>
+              </div>
+
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="text-red-600 text-sm text-center font-medium p-3 bg-red-50 rounded-xl border border-red-100"
+                >
+                  {error}
+                </motion.p>
+              )}
+
+              {!recoverSent ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                    <input
+                      type="email"
+                      value={recoverEmail}
+                      onChange={(e) => setRecoverEmail(e.target.value)}
+                      className="input-slb"
+                      placeholder="admin@saintlambert.bj"
+                      required
+                    />
+                  </div>
+                  <motion.button
+                    type="submit"
+                    disabled={recoverLoading}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-4 px-6 rounded-2xl font-bold shadow-xl transition-all duration-300 flex items-center justify-center gap-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {recoverLoading ? (
+                      <><Loader2 className="w-5 h-5 animate-spin" /> Envoi en cours...</>
+                    ) : 'Envoyer le lien'}
+                  </motion.button>
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => { setForgotMode(false); setRecoverSent(false); setError(''); }}
+                      className="text-xs text-gray-500 hover:text-gray-700 font-medium hover:underline"
+                    >
+                      Retour &agrave; la connexion
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => { setForgotMode(false); setRecoverSent(false); setError(''); }}
+                    className="text-sm text-primary-500 hover:text-primary-700 font-semibold hover:underline"
+                  >
+                    Retour &agrave; la connexion
+                  </button>
+                </div>
+              )}
+            </form>
+          ) : (
+          /* Form - Normal Login */
           <form onSubmit={handleSubmit} className="space-y-4">
             <AnimatePresence mode="wait">
               {mode === 'admin' ? (
@@ -212,6 +309,15 @@ const Login = () => {
                       </button>
                     </div>
                   </div>
+                  <div className="flex justify-end -mt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setForgotMode(true); setError(''); }}
+                      className="text-xs text-primary-500 hover:text-primary-700 font-semibold hover:underline transition-colors"
+                    >
+                      Mot de passe oubli&eacute; ?
+                    </button>
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div
@@ -224,14 +330,13 @@ const Login = () => {
                 >
                   <div className="p-3 bg-gold-50 rounded-xl border border-gold-200/50">
                     <p className="text-xs text-gold-700 font-medium">
-                      Entrez le matricule et le code PIN parent pour accéder au suivi scolaire.
+                      Entrez le matricule et le code PIN parent pour acc&eacute;der au suivi scolaire.
                     </p>
                   </div>
 
-                  {/* School Abbreviation Input (Optional) */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Abréviation de votre école (optionnel)
+                      Abr&eacute;viation de votre &eacute;cole (optionnel)
                     </label>
                     <div className="flex items-center space-x-3">
                       <input
@@ -239,9 +344,8 @@ const Login = () => {
                         value={schoolAbbrev}
                         onChange={(e) => {
                           setSchoolAbbrev(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 5));
-                          // Auto-detect when abbreviation is entered
                           if (e.target.value.length >= 2) {
-                            detectSchoolFromMatricule(); // We'll reuse this function but it needs the abbrev
+                            detectSchoolFromMatricule();
                           }
                         }}
                         className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -252,8 +356,7 @@ const Login = () => {
                         type="button"
                         onClick={() => {
                           if (schoolAbbrev.length >= 2) {
-                            // Manually trigger detection
-                            const tempMatricule = `0001${schoolAbbrev}26`; // Dummy matricule for detection
+                            const tempMatricule = `0001${schoolAbbrev}26`;
                             setMatricule(tempMatricule);
                             detectSchoolFromMatricule();
                           }
@@ -261,21 +364,21 @@ const Login = () => {
                         className="px-4 py-3 bg-gray-100 text-sm rounded-lg hover:bg-gray-200 transition-colors"
                         disabled={schoolAbbrev.length < 2}
                       >
-                        Vérifier
+                        V&eacute;rifier
                       </button>
                     </div>
                     {schoolAbbrev && (
                       <p className={detectedSchool ? 'text-green-600 mt-1' : 'text-red-600 mt-1'}>
                         {detectedSchool
-                          ? `École détectée : ${detectedSchool.nom} (${detectedSchool.abreviation})`
-                          : `Aucune école trouvée avec l'abréviation "${schoolAbbrev}"`}
+                          ? `&Eacute;cole d&eacute;tect&eacute;e : ${detectedSchool.nom} (${detectedSchool.abreviation})`
+                          : `Aucune &eacute;cole trouv&eacute;e avec l'abr&eacute;viation "${schoolAbbrev}"`}
                       </p>
                     )}
                   </div>
 
                   <div className="p-3 bg-gold-50 rounded-xl border border-gold-200/50">
                     <p className="text-xs text-gold-700 font-medium">
-                      Ou laissez vide pour utiliser la détection automatique depuis le matricule
+                      Ou laissez vide pour utiliser la d&eacute;tection automatique depuis le matricule
                     </p>
                   </div>
 
@@ -286,7 +389,6 @@ const Login = () => {
                       value={matricule}
                       onChange={(e) => {
                         setMatricule(formatMatricule(e.target.value));
-                        // Auto-detect school when matricule changes
                         if (e.target.value.length >= 6) {
                           detectSchoolFromMatricule();
                         }
@@ -297,14 +399,13 @@ const Login = () => {
                     />
                   </div>
 
-                  {/* Detected School Info */}
                   {detectedSchool && (
                     <div className="bg-blue-50 border-l-4 border-blue-500 p-3 mb-3 rounded-r">
                       <p className="text-xs font-medium text-blue-800 flex items-center">
                         <svg className="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 1118 0z" />
                         </svg>
-                        École détectée : <strong>{detectedSchool.nom}</strong> ({detectedSchool.abreviation})
+                        &Eacute;cole d&eacute;tect&eacute;e : <strong>{detectedSchool.nom}</strong> ({detectedSchool.abreviation})
                       </p>
                     </div>
                   )}
@@ -333,7 +434,6 @@ const Login = () => {
               )}
             </AnimatePresence>
 
-            {/* Error */}
             <AnimatePresence>
               {error && (
                 <motion.p
@@ -347,7 +447,6 @@ const Login = () => {
               )}
             </AnimatePresence>
 
-            {/* Submit */}
             <motion.button
               type="submit"
               disabled={loading}
@@ -364,12 +463,13 @@ const Login = () => {
                   Connexion...
                 </>
               ) : mode === 'admin' ? (
-                'Accéder au portail'
+                'Acc&eacute;der au portail'
               ) : (
                 'Voir mon enfant'
               )}
             </motion.button>
           </form>
+          )}
 
           {/* Divider */}
           <div className="flex items-center gap-4 my-4">
