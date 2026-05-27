@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useBulletin } from '../hooks/useBulletin';
 import { useAdminData } from '../hooks/useAdminData';
 import { supabase } from '../supabase';
-import { Download, AlertCircle, CheckCircle, Plus, Trash2, Edit, Settings, Key, RefreshCw } from 'lucide-react';
+import { Download, AlertCircle, CheckCircle, Plus, Trash2, Edit, Settings, Key, RefreshCw, GraduationCap } from 'lucide-react';
 import { OverviewTab } from '../components/Dashboard/Admin/OverviewTab';
 import { EntityTable } from '../components/Dashboard/Admin/EntityTable';
 import EcolesTab from '../components/Dashboard/Admin/EcolesTab';
@@ -69,6 +69,26 @@ const AdminDashboard = () => {
 
       showNotif('Configuration mise à jour !');
       setFormData({}); // Clear temp year edit
+      refresh();
+    } catch (err) {
+      showNotif(err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveSchoolInfo = async (updates) => {
+    setSaving(true);
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const res = await fetch('/api/schools/my-school', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(updates)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur');
+      showNotif('Informations mises à jour !');
       refresh();
     } catch (err) {
       showNotif(err.message, 'error');
@@ -507,6 +527,58 @@ const AdminDashboard = () => {
                 Configuration de l'Etablissement
               </h2>
               <div className="space-y-8">
+                {/* School Info */}
+                <div className="p-6 bg-white rounded-[2rem] border border-slate-100 shadow-sm">
+                  <h3 className="text-sm font-black text-slate-700 mb-4 flex items-center gap-2">
+                    <GraduationCap size={18} className="text-primary-500" />
+                    Informations de l'école
+                  </h3>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nom de l'école</label>
+                      <input
+                        type="text"
+                        className="input-slb w-full"
+                        defaultValue={school?.nom || ''}
+                        onChange={e => setFormData({ ...formData, school_name: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ville</label>
+                      <input
+                        type="text"
+                        className="input-slb w-full"
+                        defaultValue={school?.ville || ''}
+                        onChange={e => setFormData({ ...formData, school_ville: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pays</label>
+                      <input
+                        type="text"
+                        className="input-slb w-full"
+                        defaultValue={school?.pays || ''}
+                        onChange={e => setFormData({ ...formData, school_pays: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => {
+                        const updates = {};
+                        if (formData.school_name && formData.school_name !== school?.nom) updates.nom = formData.school_name;
+                        if (formData.school_ville !== undefined && formData.school_ville !== (school?.ville || '')) updates.ville = formData.school_ville;
+                        if (formData.school_pays !== undefined && formData.school_pays !== (school?.pays || '')) updates.pays = formData.school_pays;
+                        if (Object.keys(updates).length > 0) handleSaveSchoolInfo(updates);
+                      }}
+                      loading={saving}
+                    >
+                      Mettre à jour
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Trimestre Actuel</label>
