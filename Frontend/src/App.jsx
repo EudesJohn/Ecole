@@ -13,6 +13,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard.jsx'));
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard.jsx'));
 const ParentDashboard = lazy(() => import('./pages/ParentDashboard.jsx'));
 const VerifyBulletin = lazy(() => import('./pages/VerifyBulletin.jsx'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,6 +92,7 @@ function AppContent() {
           <Route path="/" element={<RoleRedirect />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<LandingPage />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* Protected routes */}
           <Route path="/admin/*" element={
