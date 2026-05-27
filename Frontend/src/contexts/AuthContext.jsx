@@ -100,6 +100,31 @@ export const AuthProvider = ({ children }) => {
     });
 
     if (error) throw error;
+
+    // Vérifier si l'école de l'admin n'est pas restreinte
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role, school_id')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profile && profile.school_id && profile.role !== 'super_admin') {
+      const { data: school } = await supabase
+        .from('schools')
+        .select('status, restricted_until')
+        .eq('id', profile.school_id)
+        .single();
+
+      if (school && school.status === 'restricted' && school.restricted_until) {
+        const until = new Date(school.restricted_until);
+        if (until > new Date()) {
+          await supabase.auth.signOut();
+          const dateStr = until.toLocaleDateString('fr-FR');
+          throw new Error(`Votre école a été restreinte jusqu'au ${dateStr}. Contactez l'administrateur.`);
+        }
+      }
+    }
+
     return data.user;
   };
 
