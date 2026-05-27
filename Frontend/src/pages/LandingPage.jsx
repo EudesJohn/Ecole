@@ -36,16 +36,18 @@ const LandingPage = () => {
   const handleCheckAbreviation = async () => {
     if (!formData.abreviation || formData.abreviation.length < 2) {
       setAbrevCheck(false);
-      return;
+      return false;
     }
 
     try {
       const response = await fetch(`/api/schools/check-abreviation/${formData.abreviation}`);
       const data = await response.json();
       setAbrevCheck(data.available);
+      return data.available;
     } catch (err) {
       console.error('Error checking abbreviation:', err);
       setAbrevCheck(false);
+      return false;
     }
   };
 
@@ -53,16 +55,20 @@ const LandingPage = () => {
     setStep(prev => Math.max(1, prev - 1));
   };
 
-  const handleNextStep = () => {
+  const handleNextStep = async () => {
     if (step === 1) {
-      // Validate school info before proceeding
       if (!formData.nom || !formData.abreviation || formData.abreviation.length < 2) {
         alert('Veuillez remplir le nom de l\'école et une abréviation valide (minimum 2 lettres).');
         return;
       }
 
-      // Check abbreviation availability
-      handleCheckAbreviation();
+      const available = await handleCheckAbreviation();
+      if (!available) {
+        alert('Cette abréviation est déjà utilisée. Veuillez en choisir une autre.');
+        return;
+      }
+
+      setStep(2);
     } else {
       setStep(prev => Math.min(3, prev + 1));
     }
@@ -235,7 +241,7 @@ const LandingPage = () => {
                 </>
               )}
 
-              {step >= 1 && step <= 2 && (
+              {step === 2 && (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Email de l'administrateur *</label>
