@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 const LandingPage = () => {
-  const { loginWithEmail, loading, error } = useAuth();
+  const { login, loading, error } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -109,7 +109,7 @@ const LandingPage = () => {
       }
 
       // Auto-login the newly created admin
-      await loginWithEmail(formData.adminEmail, formData.adminPassword);
+      await login(formData.adminEmail, formData.adminPassword);
       navigate('/admin');
     } catch (err) {
       console.error('Registration error:', err);
