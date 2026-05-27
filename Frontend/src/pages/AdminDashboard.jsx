@@ -77,13 +77,18 @@ const AdminDashboard = () => {
     }
   };
 
-  // Remplacer handleSaveSchoolInfo par updateSchool du contexte
   const handleSaveSchoolInfo = async (updates) => {
     setSaving(true);
     try {
       await updateSchool(updates);
       showNotif('Informations mises à jour !');
-      setFormData({});
+      setFormData(prev => {
+        const next = { ...prev };
+        delete next.school_name;
+        delete next.school_ville;
+        delete next.school_pays;
+        return next;
+      });
     } catch (err) {
       showNotif(err.message, 'error');
     } finally {
@@ -533,7 +538,7 @@ const AdminDashboard = () => {
                       <input
                         type="text"
                         className="input-slb w-full"
-                        defaultValue={school?.nom || ''}
+                        value={formData.school_name !== undefined ? formData.school_name : (school?.nom || '')}
                         onChange={e => setFormData({ ...formData, school_name: e.target.value })}
                       />
                     </div>
@@ -542,7 +547,7 @@ const AdminDashboard = () => {
                       <input
                         type="text"
                         className="input-slb w-full"
-                        defaultValue={school?.ville || ''}
+                        value={formData.school_ville !== undefined ? formData.school_ville : (school?.ville || '')}
                         onChange={e => setFormData({ ...formData, school_ville: e.target.value })}
                       />
                     </div>
@@ -551,7 +556,7 @@ const AdminDashboard = () => {
                       <input
                         type="text"
                         className="input-slb w-full"
-                        defaultValue={school?.pays || ''}
+                        value={formData.school_pays !== undefined ? formData.school_pays : (school?.pays || '')}
                         onChange={e => setFormData({ ...formData, school_pays: e.target.value })}
                       />
                     </div>
@@ -562,7 +567,7 @@ const AdminDashboard = () => {
                       size="sm"
                       onClick={() => {
                         const updates = {};
-                        if (formData.school_name && formData.school_name !== school?.nom) updates.nom = formData.school_name;
+                        if (formData.school_name !== undefined && formData.school_name !== (school?.nom || '')) updates.nom = formData.school_name;
                         if (formData.school_ville !== undefined && formData.school_ville !== (school?.ville || '')) updates.ville = formData.school_ville;
                         if (formData.school_pays !== undefined && formData.school_pays !== (school?.pays || '')) updates.pays = formData.school_pays;
                         if (Object.keys(updates).length > 0) handleSaveSchoolInfo(updates);

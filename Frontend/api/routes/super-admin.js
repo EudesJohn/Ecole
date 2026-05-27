@@ -22,23 +22,17 @@ router.get('/', async (req, res) => {
 
     if (error) throw error;
 
-    // Add student/teacher counts for each school
+    // Add student/teacher counts for each school (queries in parallel per school)
     const enriched = await Promise.all((schools || []).map(async (school) => {
-      const { count: studentCount } = await supabase
-        .from('students')
-        .select('*', { count: 'exact', head: true })
-        .eq('school_id', school.id);
-
-      const { count: teacherCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('school_id', school.id)
-        .eq('role', 'teacher');
+      const [studentResult, teacherResult] = await Promise.all([
+        supabase.from('students').select('*', { count: 'exact', head: true }).eq('school_id', school.id),
+        supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('school_id', school.id).eq('role', 'teacher')
+      ]);
 
       return {
         ...school,
-        student_count: studentCount || 0,
-        teacher_count: teacherCount || 0
+        student_count: studentResult.count || 0,
+        teacher_count: teacherResult.count || 0
       };
     }));
 
@@ -92,28 +86,28 @@ router.delete('/schools/:id', async (req, res) => {
       'matieres',
     ];
 
-    for (const table of tablesToClean) {
-      const { error: cleanError } = await supabase.from(table).delete().eq('school_id', id);
-      if (cleanError) console.warn(`Cleanup warning for ${table}:`, cleanError.message);
-    }
+    // Run all cleanup operations in parallel — they are independent (all filter on school_id)
+    const cleanupTables = tablesToClean.map(table =>
+      supabase.from(table).delete().eq('school_id', id)
+    );
 
-    // Delete students
-    const { error: studentsError } = await supabase.from('students').delete().eq('school_id', id);
-    if (studentsError) console.warn('Cleanup warning for students:', studentsError.message);
+    const results = await Promise.all([
+      ...cleanupTables,
+      supabase.from('students').delete().eq('school_id', id),
+      supabase.from('profiles').update({ school_id: null }).eq('school_id', id),
+      ...allUserIds.map(userId => supabase.auth.admin.deleteUser(userId))
+    ]);
 
-    // Nullify school_id on profiles (so the school can be deleted without FK issues)
-    const { error: profilesError } = await supabase
-      .from('profiles')
-      .update({ school_id: null })
-      .eq('school_id', id);
-    if (profilesError) console.warn('Cleanup warning for profiles:', profilesError.message);
-
-    // Delete auth users for this school (parents + teachers + admins)
-    const allUserIds = [...parentIds, ...profileIds];
-    for (const userId of allUserIds) {
-      const { error: delErr } = await supabase.auth.admin.deleteUser(userId);
-      if (delErr) console.warn(`Failed to delete auth user ${userId}:`, delErr.message);
-    }
+    // Log any cleanup warnings
+    results.forEach((result, i) => {
+      if (result.error) {
+        const label = i < tablesToClean.length ? tablesToClean[i]
+          : i === tablesToClean.length ? 'students'
+          : i === tablesToClean.length + 1 ? 'profiles'
+          : `auth user ${allUserIds[i - tablesToClean.length - 2]}`;
+        console.warn(`Cleanup warning for ${label}:`, result.error.message);
+      }
+    });
 
     // Finally delete the school
     const { error: deleteError } = await supabase
