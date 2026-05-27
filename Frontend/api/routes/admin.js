@@ -243,5 +243,89 @@ router.post('/students/reset-pin', async (req, res) => {
   }
 });
 
+// Admin password reset/recovery for their own account
+router.post('/reset-own-password', async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword) {
+      return res.status(400).json({ error: 'New password is required' });
+    }
+
+    // Get the current admin's user ID from the token
+    const adminId = req.userId;
+
+    if (!adminId) {
+      return res.status(403).json({ error: 'Admin not authenticated' });
+    }
+
+    // Verify current password if provided
+    if (currentPassword) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+
+      // Check if current password is correct by attempting to reauthenticate
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+      });
+
+      if (reauthError) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+    }
+
+    // Update the password
+    const { error } = await supabase.auth.admin.updateUserById(adminId, {
+      password: newPassword
+    });
+
+    if (error) throw error;
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Admin password reset error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Password recovery via email (forgot password)
+router.post('/recover-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    // Check if user exists with this email
+    const { data: profiles, error: profileError } = await supabase
+      .from('profiles')
+      .select('id, email, role')
+      .eq('email', email)
+      .single();
+
+    if (profileError || !profiles) {
+      // Don't reveal whether email exists for security
+      return res.json({
+        success: true,
+        message: 'If this email exists in our system, a recovery link has been sent'
+      });
+    }
+
+    // Generate a recovery token (Supabase handles this automatically)
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'http://localhost:5173/reset-password' // Change this to your frontend reset page
+    });
+
+    if (error) throw error;
+
+    res.json({ success: true, message: 'Password recovery email sent successfully' });
+  } catch (error) {
+    console.error('Password recovery error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
 

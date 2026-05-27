@@ -28,10 +28,7 @@ export const SchoolProvider = ({ children }) => {
 
       if (!error && data) {
         setSchools(data);
-        // Default active school to the first school in the list for super_admin
-        if (role === 'super_admin' && data.length > 0 && !activeSchool) {
-          setActiveSchool(data[0]);
-        }
+        // Do not set active school automatically for super_admin; let user choose
       }
     } catch (err) {
       console.error('Error fetching schools:', err);
