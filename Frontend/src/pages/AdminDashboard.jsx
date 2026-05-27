@@ -15,7 +15,7 @@ import { useSchool } from '../contexts/SchoolContext';
 import { useAuth } from '../hooks/useAuth';
 
 const AdminDashboard = () => {
-  const { school, schools, setSchool } = useSchool();
+  const { school, schools, setSchool, updateSchool } = useSchool();
   const { role } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
@@ -77,19 +77,13 @@ const AdminDashboard = () => {
     }
   };
 
+  // Remplacer handleSaveSchoolInfo par updateSchool du contexte
   const handleSaveSchoolInfo = async (updates) => {
     setSaving(true);
     try {
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const res = await fetch('/api/schools/my-school', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(updates)
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur');
+      await updateSchool(updates);
       showNotif('Informations mises à jour !');
-      refresh();
+      setFormData({});
     } catch (err) {
       showNotif(err.message, 'error');
     } finally {
