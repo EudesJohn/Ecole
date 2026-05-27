@@ -589,7 +589,6 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
-        </AnimatePresence>
 
         <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={`${editItem ? 'Modifier' : 'Ajouter'} ${modalType}`}>
         <div className="space-y-4 p-4">
@@ -723,6 +722,7 @@ const AdminDashboard = () => {
         </div>
       </Modal>
 
+      </>  {/* Close the fragment that started at line 340 */}
       </main>
 
       {notification && (
