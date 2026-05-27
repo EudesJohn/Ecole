@@ -1,0 +1,40 @@
+# Fichiers à ignorer lors du déploiement Vercel
+
+# Dossiers et fichiers de développement
+.node_modules
+
+# Fichiers d'environnement
+.env
+.env.local
+.env.development
+.env.test
+.env*.local
+
+# Fichiers de configuration locaux
+*.local
+
+# Fichiers de log et cache
+*.log
+*.cache
+
+# Fichiers temporaires
+*.tmp
+*.swp
+
+# Dossiers IDE
+.idea
+.vscode
+
+# Fichiers de build (seront regénérés)
+.dist
+
+# Autres
+.DS_Store
+*.md
+*.sql
+
+# Exclure les scripts SQL de déploiement (ils sont pour l'admin DB)
+delete_*.sql
+
+# Exclure la documentation technique (optionnel)
+*.md
