@@ -8,17 +8,25 @@ import {
   FileText, Settings, LogOut, Menu, X, ClipboardCheck, Award
 } from 'lucide-react';
 
-const adminLinks = [
-  { path: '/admin', icon: LayoutDashboard, label: 'Tableau de bord' },
-  { path: '/admin/classes', icon: BookOpen, label: 'Classes' },
-  { path: '/admin/matieres', icon: Settings, label: 'Matières' },
-  { path: '/admin/eleves', icon: GraduationCap, label: 'Élèves' },
-  { path: '/admin/professeurs', icon: UserCog, label: 'Professeurs' },
-  { path: '/admin/bulletins', icon: FileText, label: 'Bulletins' },
-  { path: '/admin/presences', icon: ClipboardCheck, label: 'Présences' },
-  { path: '/admin/cahiers', icon: BookOpen, label: 'Cahiers de texte' },
-  { path: '/admin/settings', icon: Settings, label: 'Paramètres' },
-];
+const getAdminLinks = (role) => {
+  const links = [
+    { path: '/admin', icon: LayoutDashboard, label: 'Tableau de bord' },
+    { path: '/admin/classes', icon: BookOpen, label: 'Classes' },
+    { path: '/admin/matieres', icon: Settings, label: 'Matières' },
+    { path: '/admin/eleves', icon: GraduationCap, label: 'Élèves' },
+    { path: '/admin/professeurs', icon: UserCog, label: 'Professeurs' },
+    { path: '/admin/bulletins', icon: FileText, label: 'Bulletins' },
+    { path: '/admin/presences', icon: ClipboardCheck, label: 'Présences' },
+    { path: '/admin/cahiers', icon: BookOpen, label: 'Cahiers de texte' },
+    { path: '/admin/settings', icon: Settings, label: 'Paramètres' },
+  ];
+
+  if (role === 'super_admin') {
+    links.splice(1, 0, { path: '/admin/ecoles', icon: GraduationCap, label: 'Écoles' });
+  }
+
+  return links;
+};
 
 const teacherLinks = [
   { path: '/teacher', icon: LayoutDashboard, label: 'Mes Classes' },
@@ -34,7 +42,7 @@ const Sidebar = ({ role = 'admin', activeTab, onTabChange }) => {
   const { logout, user, userProfile } = useAuth();
   const { school } = useSchool(); // Get school info from context
   const navigate = useNavigate();
-  const links = role === 'teacher' ? teacherLinks : adminLinks;
+  const links = role === 'teacher' ? teacherLinks : getAdminLinks(role);
 
   // Default school info for fallback
   const schoolName = school?.nom || 'École Saint Lambert';

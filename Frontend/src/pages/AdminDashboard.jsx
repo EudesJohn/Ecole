@@ -10,6 +10,7 @@ import { supabase } from '../supabase';
 import { Download, AlertCircle, CheckCircle, Plus, Trash2, Edit, Settings, Key, RefreshCw } from 'lucide-react';
 import { OverviewTab } from '../components/Dashboard/Admin/OverviewTab';
 import { EntityTable } from '../components/Dashboard/Admin/EntityTable';
+import EcolesTab from '../components/Dashboard/Admin/EcolesTab';
 import { useSchool } from '../contexts/SchoolContext';
 import { useAuth } from '../hooks/useAuth';
 
@@ -293,14 +294,14 @@ const AdminDashboard = () => {
 
   if (loading) return (
     <div className="flex min-h-screen bg-gray-50">
-      <Sidebar role="admin" activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar role={role} activeTab={activeTab} onTabChange={setActiveTab} />
       <div className="flex-1 p-8 pt-20 md:pt-8"><SkeletonLoader type="card" count={3} /></div>
     </div>
   );
 
   return (
     <div className="flex min-h-screen bg-[#fcfdfe]">
-      <Sidebar role="admin" activeTab={activeTab} onTabChange={setActiveTab} />
+      <Sidebar role={role} activeTab={activeTab} onTabChange={setActiveTab} />
 
       <main className="flex-1 p-6 md:p-10 pt-24 md:pt-10 overflow-auto">
         {/* Show school selection prompt for super_admin when no school selected */}
@@ -387,6 +388,10 @@ const AdminDashboard = () => {
           <AnimatePresence mode="wait">
           {activeTab === 'overview' && (
             <OverviewTab data={{ classes, students, teachers, matieres, grades: [], schoolConfig }} setActiveTab={setActiveTab} />
+          )}
+
+          {activeTab === 'ecoles' && role === 'super_admin' && (
+            <EcolesTab />
           )}
 
           {activeTab === 'eleves' && (

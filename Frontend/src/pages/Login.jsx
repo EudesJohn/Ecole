@@ -199,8 +199,8 @@ const Login = () => {
               <div className="p-3 bg-blue-50 rounded-xl border border-blue-200/50">
                 <p className="text-xs text-blue-700 font-medium">
                   {recoverSent
-                    ? "Un email de r&eacute;cup&eacute;ration a &eacute;t&eacute; envoy&eacute;. V&eacute;rifiez votre bo&icirc;te de r&eacute;ception et cliquez sur le lien pour r&eacute;initialiser votre mot de passe."
-                    : "Entrez votre email administratif pour recevoir un lien de r&eacute;initialisation."}
+                    ? "Un email de récupération a été envoyé. Vérifiez votre boîte de réception et cliquez sur le lien pour réinitialiser votre mot de passe."
+                    : "Entrez votre email administratif pour recevoir un lien de réinitialisation."}
                 </p>
               </div>
 
@@ -244,7 +244,7 @@ const Login = () => {
                       onClick={() => { setForgotMode(false); setRecoverSent(false); setError(''); }}
                       className="text-xs text-gray-500 hover:text-gray-700 font-medium hover:underline"
                     >
-                      Retour &agrave; la connexion
+                      Retour à la connexion
                     </button>
                   </div>
                 </>
@@ -260,7 +260,7 @@ const Login = () => {
                     onClick={() => { setForgotMode(false); setRecoverSent(false); setError(''); }}
                     className="text-sm text-primary-500 hover:text-primary-700 font-semibold hover:underline"
                   >
-                    Retour &agrave; la connexion
+                    Retour à la connexion
                   </button>
                 </div>
               )}
@@ -315,7 +315,7 @@ const Login = () => {
                       onClick={() => { setForgotMode(true); setError(''); }}
                       className="text-xs text-primary-500 hover:text-primary-700 font-semibold hover:underline transition-colors"
                     >
-                      Mot de passe oubli&eacute; ?
+                      Mot de passe oublié ?
                     </button>
                   </div>
                 </motion.div>
@@ -330,13 +330,13 @@ const Login = () => {
                 >
                   <div className="p-3 bg-gold-50 rounded-xl border border-gold-200/50">
                     <p className="text-xs text-gold-700 font-medium">
-                      Entrez le matricule et le code PIN parent pour acc&eacute;der au suivi scolaire.
+                      Entrez le matricule et le code PIN parent pour accéder au suivi scolaire.
                     </p>
                   </div>
 
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Abr&eacute;viation de votre &eacute;cole (optionnel)
+                      Abréviation de votre école (optionnel)
                     </label>
                     <div className="flex items-center space-x-3">
                       <input
@@ -364,21 +364,21 @@ const Login = () => {
                         className="px-4 py-3 bg-gray-100 text-sm rounded-lg hover:bg-gray-200 transition-colors"
                         disabled={schoolAbbrev.length < 2}
                       >
-                        V&eacute;rifier
+                        Vérifier
                       </button>
                     </div>
                     {schoolAbbrev && (
                       <p className={detectedSchool ? 'text-green-600 mt-1' : 'text-red-600 mt-1'}>
                         {detectedSchool
-                          ? `&Eacute;cole d&eacute;tect&eacute;e : ${detectedSchool.nom} (${detectedSchool.abreviation})`
-                          : `Aucune &eacute;cole trouv&eacute;e avec l'abr&eacute;viation "${schoolAbbrev}"`}
+                          ? `École détectée : ${detectedSchool.nom} (${detectedSchool.abreviation})`
+                          : `Aucune école trouvée avec l'abréviation "${schoolAbbrev}"`}
                       </p>
                     )}
                   </div>
 
                   <div className="p-3 bg-gold-50 rounded-xl border border-gold-200/50">
                     <p className="text-xs text-gold-700 font-medium">
-                      Ou laissez vide pour utiliser la d&eacute;tection automatique depuis le matricule
+                      Ou laissez vide pour utiliser la détection automatique depuis le matricule
                     </p>
                   </div>
 
@@ -405,7 +405,7 @@ const Login = () => {
                         <svg className="w-4 h-4 mr-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 1118 0z" />
                         </svg>
-                        &Eacute;cole d&eacute;tect&eacute;e : <strong>{detectedSchool.nom}</strong> ({detectedSchool.abreviation})
+                        École détectée : <strong>{detectedSchool.nom}</strong> ({detectedSchool.abreviation})
                       </p>
                     </div>
                   )}
@@ -463,7 +463,7 @@ const Login = () => {
                   Connexion...
                 </>
               ) : mode === 'admin' ? (
-                'Acc&eacute;der au portail'
+                'Accéder au portail'
               ) : (
                 'Voir mon enfant'
               )}
