@@ -589,6 +589,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
+        </AnimatePresence>  {/* Close AnimatePresence before the fragment */}
 
         <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={`${editItem ? 'Modifier' : 'Ajouter'} ${modalType}`}>
         <div className="space-y-4 p-4">
