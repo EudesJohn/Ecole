@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useAuth } from '../../../hooks/useAuth';
+import { supabase } from '../../../supabase';
 import { Trash2, AlertTriangle, Shield, Ban, CheckCircle, Loader2, Search, X } from 'lucide-react';
 
+const getToken = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token;
+};
+
 const EcolesTab = () => {
-  const { user } = useAuth();
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,7 +19,8 @@ const EcolesTab = () => {
     setLoading(true);
     setError('');
     try {
-      const token = (await user?.getAccessToken?.()) || user?.access_token;
+      const token = await getToken();
+      if (!token) throw new Error('Non connecté');
       const res = await fetch('/api/super-admin/', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -33,7 +38,8 @@ const EcolesTab = () => {
 
   const handleDelete = async (schoolId) => {
     try {
-      const token = (await user?.getAccessToken?.()) || user?.access_token;
+      const token = await getToken();
+      if (!token) throw new Error('Non connecté');
       const res = await fetch(`/api/super-admin/schools/${schoolId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
@@ -49,7 +55,8 @@ const EcolesTab = () => {
 
   const handleRestrict = async (schoolId, days) => {
     try {
-      const token = (await user?.getAccessToken?.()) || user?.access_token;
+      const token = await getToken();
+      if (!token) throw new Error('Non connecté');
       const res = await fetch(`/api/super-admin/schools/${schoolId}/restrict`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -65,7 +72,8 @@ const EcolesTab = () => {
 
   const handleActivate = async (schoolId) => {
     try {
-      const token = (await user?.getAccessToken?.()) || user?.access_token;
+      const token = await getToken();
+      if (!token) throw new Error('Non connecté');
       const res = await fetch(`/api/super-admin/schools/${schoolId}/activate`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
