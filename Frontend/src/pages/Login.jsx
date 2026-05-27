@@ -162,10 +162,10 @@ const Login = () => {
               <GraduationCap className="w-10 h-10 text-gold-300" />
             </div>
             <h1 className="text-4xl md:text-5xl font-display font-bold text-gradient-royal drop-shadow-sm">
-              {detectedSchool ? detectedSchool.nom : 'Saint Lambert'}
+              {detectedSchool ? detectedSchool.nom : 'Portail Scolaire'}
             </h1>
             <p className="text-gray-500 mt-2 text-sm font-medium tracking-wide uppercase">
-              Portail Sécurisé {detectedSchool ? detectedSchool.nom : 'SLB'}
+              Portail Sécurisé {detectedSchool ? detectedSchool.abreviation : 'ERP'}
             </p>
           </motion.div>
 
