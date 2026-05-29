@@ -14,10 +14,12 @@ import { EntityTable } from '../components/Dashboard/Admin/EntityTable';
 import EcolesTab from '../components/Dashboard/Admin/EcolesTab';
 import { useSchool } from '../contexts/SchoolContext';
 import { useAuth } from '../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { school, schools, setSchool, updateSchool } = useSchool();
   const { role } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [notification, setNotification] = useState(null);
@@ -678,6 +680,145 @@ const AdminDashboard = () => {
           </>
         )}
       </main>
+
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={editItem ? `Modifier` : `Ajouter`}>
+        <div className="space-y-4">
+          {modalType === 'classes' && (
+            <>
+              <input type="text" placeholder="Nom de la classe" className="input-slb w-full" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
+              <div className="grid grid-cols-2 gap-4">
+                <select className="input-slb w-full" value={formData.cycle || 'secondaire'} onChange={e => setFormData({ ...formData, cycle: e.target.value })}>
+                  <option value="maternelle">Maternelle</option>
+                  <option value="primaire">Primaire</option>
+                  <option value="secondaire">Secondaire</option>
+                </select>
+                <input type="number" placeholder="Effectif Max" className="input-slb w-full" value={formData.effectif || 35} onChange={e => setFormData({ ...formData, effectif: parseInt(e.target.value) })} />
+              </div>
+            </>
+          )}
+
+          {modalType === 'matieres' && (
+            <>
+              <input type="text" placeholder="Nom de la matière" className="input-slb w-full" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
+              <select className="input-slb w-full" value={formData.classe_id || ''} onChange={e => setFormData({ ...formData, classe_id: e.target.value })}>
+                <option value="">Sélectionner une classe</option>
+                {classes.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+              </select>
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Coefficient de la matière</p>
+                <input type="number" placeholder="Coefficient (ex: 2)" className="input-slb w-full" value={formData.coefficient || 1} onChange={e => setFormData({ ...formData, coefficient: parseInt(e.target.value) })} />
+              </div>
+              <select className="input-slb w-full" value={formData.category || 'ECRITE'} onChange={e => setFormData({ ...formData, category: e.target.value })}>
+                <option value="ECRITE">Écrit</option>
+                <option value="ORALE">Oral</option>
+                <option value="PRATIQUE">Pratique</option>
+              </select>
+            </>
+          )}
+
+          {(modalType === 'eleves' || modalType === 'students') && (
+            <>
+              <input type="text" placeholder="Prénom" className="input-slb w-full" value={formData.prenom || ''} onChange={e => setFormData({ ...formData, prenom: e.target.value })} />
+              <input type="text" placeholder="Nom" className="input-slb w-full" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
+              <select className="input-slb w-full" value={formData.classe_id || ''} onChange={e => setFormData({ ...formData, classe_id: e.target.value })}>
+                <option value="">Sélectionner une classe</option>
+                {classes.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+              </select>
+              <select className="input-slb w-full" value={formData.sexe || 'M'} onChange={e => setFormData({ ...formData, sexe: e.target.value })}>
+                <option value="M">Masculin</option>
+                <option value="F">Féminin</option>
+              </select>
+              <input
+                type="tel"
+                placeholder="Téléphone du Parent (ex: +229 90 00 00 00)"
+                className="input-slb w-full"
+                value={formData.telephone_parent || ''}
+                onChange={e => setFormData({ ...formData, telephone_parent: e.target.value })}
+              />
+            </>
+          )}
+
+          {modalType === 'professeurs' && (
+            <>
+              <input type="text" placeholder="Prénom" className="input-slb w-full" value={formData.prenom || ''} onChange={e => setFormData({ ...formData, prenom: e.target.value })} />
+              <input type="text" placeholder="Nom" className="input-slb w-full" value={formData.nom || ''} onChange={e => setFormData({ ...formData, nom: e.target.value })} />
+              <input type="email" placeholder="Email (pour connexion)" className="input-slb w-full" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+
+              {!editItem && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Mot de passe (auto si vide)"
+                    className="input-slb w-full flex-1"
+                    value={formData.password || ''}
+                    onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  />
+                  <Button type="button" variant="ghost" onClick={() => setFormData({ ...formData, password: 'Slb' + Math.floor(1000 + Math.random() * 9000) })} size="sm">
+                    <RefreshCw size={14} />
+                  </Button>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Matières Enseignées</p>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-100">
+                  {[...new Set(matieres.map(m => m.nom))].sort().map(mName => (
+                    <label key={mName} className="flex items-center gap-2 p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        checked={(formData.matiere || []).includes(mName)}
+                        onChange={e => {
+                          const current = formData.matiere || [];
+                          if (e.target.checked) {
+                            setFormData({ ...formData, matiere: [...current, mName] });
+                          } else {
+                            setFormData({ ...formData, matiere: current.filter(m => m !== mName) });
+                          }
+                        }}
+                      />
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-blue-600">{mName}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Classes Assignées</p>
+                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-100">
+                  {classes.map(c => (
+                    <label key={c.id} className="flex items-center gap-2 p-2 hover:bg-white rounded-lg transition-colors cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                        checked={(formData.classe_assignee || []).includes(c.nom)}
+                        onChange={e => {
+                          const current = formData.classe_assignee || [];
+                          if (e.target.checked) {
+                            setFormData({ ...formData, classe_assignee: [...current, c.nom] });
+                          } else {
+                            setFormData({ ...formData, classe_assignee: current.filter(id => id !== c.nom) });
+                          }
+                        }}
+                      />
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-primary-600">{c.nom}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          <Button variant="primary" onClick={handleSave} loading={saving} className="w-full">Enregistrer</Button>
+        </div>
+      </Modal>
+
+      {notification && (
+        <div className={`fixed bottom-4 right-4 p-4 rounded-xl shadow-lg text-white flex items-center gap-2 z-50 animate-fade-in-up ${notification.type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`}>
+          {notification.type === 'error' ? <AlertCircle size={20} /> : <CheckCircle size={20} />}
+          <span className="font-bold">{notification.message}</span>
+        </div>
+      )}
     </div>
   );
 };

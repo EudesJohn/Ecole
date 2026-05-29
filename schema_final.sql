@@ -299,10 +299,12 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 -- get_class_stats_for_bulletin (Aggregated logic)
 DROP FUNCTION IF EXISTS get_class_stats_for_bulletin(UUID, INT, TEXT) CASCADE;
 DROP FUNCTION IF EXISTS get_class_stats_for_bulletin(UUID, INT) CASCADE;
+DROP FUNCTION IF EXISTS get_class_stats_for_bulletin(UUID, INT, TEXT, TEXT) CASCADE;
 CREATE OR REPLACE FUNCTION get_class_stats_for_bulletin(
     p_student_id UUID,
     p_trimestre INT,
-    p_school_year TEXT
+    p_school_year TEXT,
+    p_period_label TEXT DEFAULT NULL
 )
 RETURNS TABLE (
     effectif INT,
@@ -332,9 +334,13 @@ BEGIN
         FROM grades g
         JOIN students s ON g.student_id = s.id
         WHERE s.classe_id = v_classe_id 
-          AND g.trimestre = p_trimestre 
           AND g.school_year = p_school_year
           AND g.evaluation_type = 'composition'
+          AND (
+              (p_period_label IS NOT NULL AND g.period_label = p_period_label)
+              OR 
+              (p_period_label IS NULL AND g.trimestre = p_trimestre)
+          )
     ),
     aggregated_subject_averages AS (
         -- Grouping handles (Etape + Composition) / 2 for Primary
@@ -381,10 +387,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- get_detailed_stats (Unified)
 DROP FUNCTION IF EXISTS get_detailed_stats(UUID, INT, TEXT) CASCADE;
 DROP FUNCTION IF EXISTS get_detailed_stats(UUID, INT) CASCADE;
+DROP FUNCTION IF EXISTS get_detailed_stats(UUID, INT, TEXT, TEXT) CASCADE;
 CREATE OR REPLACE FUNCTION get_detailed_stats(
     p_student_id UUID,
     p_trimestre INT,
-    p_school_year TEXT
+    p_school_year TEXT,
+    p_period_label TEXT DEFAULT NULL
 )
 RETURNS JSONB AS $$
 DECLARE
@@ -397,7 +405,7 @@ BEGIN
     FROM students s JOIN classes c ON s.classe_id = c.id 
     WHERE s.id = p_student_id;
 
-    SELECT * INTO v_general FROM get_class_stats_for_bulletin(p_student_id, p_trimestre, p_school_year);
+    SELECT * INTO v_general FROM get_class_stats_for_bulletin(p_student_id, p_trimestre, p_school_year, p_period_label);
 
     WITH raw_subject_averages AS (
         SELECT 
@@ -411,9 +419,13 @@ BEGIN
         FROM grades g
         JOIN students s ON g.student_id = s.id
         WHERE s.classe_id = v_classe_id 
-          AND g.trimestre = p_trimestre 
           AND g.school_year = p_school_year
           AND g.evaluation_type = 'composition'
+          AND (
+              (p_period_label IS NOT NULL AND g.period_label = p_period_label)
+              OR 
+              (p_period_label IS NULL AND g.trimestre = p_trimestre)
+          )
     ),
     aggregated_subject_averages AS (
         SELECT student_id, matiere_id, AVG(avg_val) as final_avg
