@@ -127,8 +127,10 @@ const AdminDashboard = () => {
       const isNewSensitive = !editItem && (modalType === 'professeurs' || modalType === 'eleves' || modalType === 'students');
 
       if (isNewSensitive) {
-        // Use relative path if baseUrl is not provided
-        let baseUrl = import.meta.env.VITE_BACKEND_URL || '';
+        // Toujours utiliser des chemins relatifs : Vercel route /api/* vers api/index.js
+        // En local, utiliser VITE_BACKEND_URL uniquement si localhost est explicitement requis
+        const isLocalhost = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+        let baseUrl = isLocalhost ? (import.meta.env.VITE_BACKEND_URL || '') : '';
         if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
 
         const endpoint = (modalType === 'eleves' || modalType === 'students') 
@@ -263,7 +265,8 @@ const AdminDashboard = () => {
 
     setSaving(true);
     try {
-      let baseUrl = import.meta.env.VITE_BACKEND_URL || '';
+      const isLocalhost2 = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+      let baseUrl = isLocalhost2 ? (import.meta.env.VITE_BACKEND_URL || '') : '';
       if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
       
       const endpoint = isStudent 
