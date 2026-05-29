@@ -154,6 +154,7 @@ const TeacherDashboard = () => {
         return;
       }
 
+      const schoolId = userProfile?.school_id;
       const upserts = Object.keys(grades).map(sid => {
         const payload = { ...grades[sid] };
         const systemFields = ['id', 'created_at', 'updated_at', 'students', 'classes', 'matieres'];
@@ -166,7 +167,8 @@ const TeacherDashboard = () => {
           trimestre: parseInt(schoolConfig.current_trimestre),
           school_year: schoolConfig.current_year,
           evaluation_type: 'composition',
-          period_label: selectedPeriod || `Trimestre ${schoolConfig.current_trimestre}`
+          period_label: selectedPeriod || `Trimestre ${schoolConfig.current_trimestre}`,
+          ...(schoolId ? { school_id: schoolId } : {})
         };
       });
       const { error } = await supabase.from('grades').upsert(upserts, { onConflict: 'student_id,matiere_id,trimestre,school_year,evaluation_type,period_label' });
@@ -190,6 +192,7 @@ const TeacherDashboard = () => {
 
     setSaving(true);
     try {
+      const schoolId = userProfile?.school_id;
       const upserts = Object.keys(attendance).map(sid => ({
         student_id: sid,
         classe_id: cls.id,
@@ -197,7 +200,8 @@ const TeacherDashboard = () => {
         date: presenceDate,
         status: typeof attendance[sid] === 'string' ? attendance[sid] : attendance[sid].status,
         commentaire: typeof attendance[sid] === 'object' ? attendance[sid].commentaire : null,
-        school_year: schoolConfig.current_year
+        school_year: schoolConfig.current_year,
+        ...(schoolId ? { school_id: schoolId } : {})
       }));
 
       const { error } = await supabase.from('absences').upsert(upserts, { onConflict: 'student_id,date,matiere_id,school_year' });
@@ -228,6 +232,7 @@ const TeacherDashboard = () => {
     try {
       const cls = classes.find(c => c.nom === selectedClass);
       const mat = matieres.find(m => m.nom === selectedMatiere && m.classe_id === cls?.id);
+      const schoolId = userProfile?.school_id;
       const payload = {
         teacher_id: user?.id,
         classe_id: cls.id,
@@ -236,7 +241,8 @@ const TeacherDashboard = () => {
         heure: `${cahierForm.h_debut} - ${cahierForm.h_fin}`,
         chapitre: cahierForm.chapitre,
         resume: cahierForm.resume,
-        school_year: schoolConfig.current_year
+        school_year: schoolConfig.current_year,
+        ...(schoolId ? { school_id: schoolId } : {})
       };
 
       const res = editCahierId 
