@@ -13,10 +13,23 @@ export const useTeacherData = (userProfile) => {
   const loadBaseData = useCallback(async () => {
     setLoading(true);
     try {
+      const schoolId = userProfile?.school_id;
+
+      // Build base queries — always scoped to the teacher's own school
+      const classesQuery = supabase.from('classes').select('*').order('nom');
+      const matieresQuery = supabase.from('matieres').select('*, classes(nom)').order('nom');
+      const configQuery = supabase.from('school_config').select('*');
+
+      if (schoolId) {
+        classesQuery.eq('school_id', schoolId);
+        matieresQuery.eq('school_id', schoolId);
+        configQuery.eq('school_id', schoolId);
+      }
+
       const [{ data: classesData }, { data: matieresData }, { data: configData }] = await Promise.all([
-        supabase.from('classes').select('*').order('nom'),
-        supabase.from('matieres').select('*, classes(nom)').order('nom'),
-        supabase.from('school_config').select('*')
+        classesQuery,
+        matieresQuery,
+        configQuery,
       ]);
 
       const configObj = (configData || []).reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {});
