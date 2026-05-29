@@ -53,6 +53,11 @@ const AdminDashboard = () => {
   const handleConfigSave = async (updatedConfig) => {
     setSaving(true);
     try {
+      if (!school?.id) {
+        showNotif('Aucune école sélectionnée.', 'error');
+        return;
+      }
+
       // Filter out temp frontend fields
       const toUpdate = {};
       if (updatedConfig.current_trimestre) toUpdate.current_trimestre = updatedConfig.current_trimestre;
@@ -60,8 +65,13 @@ const AdminDashboard = () => {
       if (updatedConfig.primaire_compo_count) toUpdate.primaire_compo_count = updatedConfig.primaire_compo_count;
       if (updatedConfig.maternelle_compo_count) toUpdate.maternelle_compo_count = updatedConfig.maternelle_compo_count;
 
+      // IMPORTANT: include school_id so each school has its own isolated config row.
+      // onConflict uses the composite key (school_id, key).
       const updates = Object.entries(toUpdate).map(([key, value]) =>
-        supabase.from('school_config').upsert({ key, value }, { onConflict: 'key' })
+        supabase.from('school_config').upsert(
+          { school_id: school.id, key, value },
+          { onConflict: 'school_id,key' }
+        )
       );
 
       const results = await Promise.all(updates);

@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
 
 
 
-const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCodeDataUrl, trimestre = '1er', schoolYear = '2025-2026', schoolInfo = null }) => {
+const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCodeDataUrl, trimestre = '1er', schoolYear = '2025-2026', schoolInfo = null, periodLabel = null }) => {
   // Dynamic school info
   const schoolName = schoolInfo?.nom || 'ÉCOLE SAINT LAMBERT';
   const schoolAbbrev = schoolInfo?.abreviation || 'SAINT LAMBERT';
@@ -229,11 +229,18 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
   const schoolPays = schoolInfo?.pays || 'Bénin';
   const schoolLocation = [schoolVille, schoolPays].filter(Boolean).join(', ');
 
+  // Build dynamic country/ministry line based on school country
+  const paysUpper = schoolPays.toUpperCase();
+  const republique = `RÉPUBLIQUE DU ${paysUpper}`;
+  const ministere = `Ministère de l'Éducation Nationale`;
+
+  // Dynamic portal domain: use school abbreviation for URL slug
+  const portalDomain = `erp-ecole.bj`;
+  const verifyBaseUrl = `https://${portalDomain}/verify`;
+
   // Calculate per-subject averages — Absolute type safety
   const safeGradesBySubject = Array.isArray(gradesBySubject) ? gradesBySubject : [];
   const safeMatieres = Array.isArray(matieres) ? matieres : [];
-
-  
 
   const rows = safeGradesBySubject.map(g => {
     const matInfo = safeMatieres.find(m => (m.nom === g.matiere || m.id === g.matiere_id)) || {};
@@ -279,8 +286,9 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
   const totalSubjects = safeRows.length;
   const validationRatio = `${subjectsSuccess} / ${totalSubjects}`;
   const appreciation = GradeCalculator.getAppreciation(moyenneGenerale);
-  const periodTitle = isPrimaryData && props.periodLabel && !props.periodLabel.toLowerCase().startsWith('trimestre')
-    ? `Composition de ${props.periodLabel}`
+  // periodLabel is now correctly destructured from props — no more "props is not defined" crash
+  const periodTitle = isPrimaryData && periodLabel && !periodLabel.toLowerCase().startsWith('trimestre')
+    ? `Composition de ${periodLabel}`
     : `${trimestre} Trimestre`;
 
   return (
@@ -292,14 +300,14 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={{ fontSize: 7, color: '#64748b' }}>RÉPUBLIQUE DU BÉNIN</Text>
-            <Text style={{ fontSize: 7, color: '#64748b' }}>Minist&egrave;re de l&apos;&Eacute;ducation</Text>
+            <Text style={{ fontSize: 7, color: '#64748b' }}>{republique}</Text>
+            <Text style={{ fontSize: 7, color: '#64748b' }}>{ministere}</Text>
           </View>
           <View style={styles.headerCenter}>
             <Text style={styles.schoolName}>{schoolName.toUpperCase()}</Text>
-            <Text style={styles.schoolSubtitle}>{schoolLocation || 'Établissement d\'excellence — Bénin'}</Text>
-            <Text style={{ fontSize: 7, color: '#94a3b8', marginTop: 1 }}>Portail: erp-ecole.bj</Text>
-            <Text style={styles.bulletinTitle}>BULLETIN DE NOTES — {trimestre} Trimestre</Text>
+            <Text style={styles.schoolSubtitle}>{schoolLocation || `Établissement d'excellence`}</Text>
+            <Text style={{ fontSize: 7, color: '#94a3b8', marginTop: 1 }}>Portail: {portalDomain}</Text>
+            <Text style={styles.bulletinTitle}>BULLETIN DE NOTES — {periodTitle}</Text>
           </View>
           <View style={styles.headerRight}>
             <Text style={{ fontSize: 7, color: '#64748b' }}>Année Scolaire</Text>
@@ -325,7 +333,7 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
             <Text style={styles.infoLabel}>Sexe / Effectif</Text>
             <Text style={styles.infoValue}>{student.sexe || '—'} / {classStats?.effectif || '—'} élèves</Text>
             <Text style={styles.infoLabel}>Période</Text>
-            <Text style={styles.infoValue}>{trimestre} Trimestre</Text>
+            <Text style={styles.infoValue}>{periodTitle}</Text>
           </View>
         </View>
 
@@ -494,9 +502,9 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
         {/* Footer with QR */}
         <View style={styles.footer}>
           <View>
-            <Text style={styles.footerText}>Bulletin généré par le Système ERP Scolaire</Text>
-            <Text style={styles.footerText}>Réf: {student.matricule} • {trimestre} Trim. • {schoolYear}</Text>
-            <Text style={[styles.footerText, { color: '#1e3a8a', fontFamily: FONT_BOLD }]}>Vérifier sur : erp-ecole.bj/verify/{student.matricule}/{trimestre.replace(/[^0-9]/g, '')}/{schoolYear}</Text>
+            <Text style={styles.footerText}>Bulletin généré par le Système ERP Scolaire — {schoolName}</Text>
+            <Text style={styles.footerText}>Réf: {student.matricule} • {periodTitle} • {schoolYear}</Text>
+            <Text style={[styles.footerText, { color: '#1e3a8a', fontFamily: FONT_BOLD }]}>Vérifier sur : {verifyBaseUrl}/{student.matricule}/{trimestre.replace(/[^0-9]/g, '')}/{schoolYear}</Text>
           </View>
           <View style={styles.qrContainer}>
             {qrCodeDataUrl && (

@@ -38,7 +38,12 @@ const ParentDashboard = () => {
   // 1. Initial Load: Fetch School Config once
   useEffect(() => {
     const fetchConfig = async () => {
-      const { data } = await supabase.from('school_config').select('*');
+      if (!studentData?.school_id) return;
+      // Filter by school_id so each school's parents see only their own config
+      const { data } = await supabase
+        .from('school_config')
+        .select('*')
+        .eq('school_id', studentData.school_id);
       if (data) {
         const configObj = data.reduce((acc, curr) => ({ ...acc, [curr.key]: curr.value }), {});
         setSchoolConfig(prev => ({ ...prev, ...configObj }));
