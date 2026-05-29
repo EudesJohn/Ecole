@@ -88,7 +88,7 @@ router.post('/register', async (req, res) => {
       // Non-fatal: le trigger handle_new_user l'a peut-être déjà créé
     }
 
-    // 5. Créer la config initiale de l'école
+    // 5. Créer la config initiale de l'école dans school_config (table lue par tous les hooks frontend)
     const defaultConfig = [
       { school_id: school.id, key: 'current_trimestre', value: '1' },
       { school_id: school.id, key: 'current_year', value: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1) },
@@ -96,7 +96,7 @@ router.post('/register', async (req, res) => {
       { school_id: school.id, key: 'maternelle_compo_count', value: '3' }
     ];
 
-    await supabase.from('school_config_mt').insert(defaultConfig).select();
+    await supabase.from('school_config').insert(defaultConfig).select();
 
     return res.status(201).json({
       success: true,

@@ -79,12 +79,15 @@ router.delete('/schools/:id', async (req, res) => {
     const tablesToClean = [
       'grades',
       'absences',
-      'cahiers_texte',
+      'cahier_texte',
       'bulletin_requests',
-      'school_config_mt',
+      'school_config',  // principal table used by all frontend hooks
       'classes',
       'matieres',
     ];
+
+    // Combine all auth user IDs to delete (parents + teachers/admins)
+    const allUserIds = [...new Set([...parentIds, ...profileIds])];
 
     // Run all cleanup operations in parallel — they are independent (all filter on school_id)
     const cleanupTables = tablesToClean.map(table =>
