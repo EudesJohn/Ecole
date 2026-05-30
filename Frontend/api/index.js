@@ -5,7 +5,22 @@ const cors = require('cors');
 const app = express();
 
 // Middleware
-app.use(cors({ origin: true }));
+const allowedOrigins = [
+  'https://ecole.vercel.app',
+  'https://erp-ecole.bj',
+  /^https?:\/\/localhost(:\d+)?$/
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, curl, etc.)
+    if (!origin) return callback(null, true);
+    const allowed = allowedOrigins.some(o =>
+      typeof o === 'string' ? origin === o : o.test(origin)
+    );
+    if (allowed) return callback(null, true);
+    callback(new Error('Origine non autorisée par CORS'));
+  }
+}));
 app.use(express.json());
 
 // Main handler for Vercel
