@@ -150,8 +150,9 @@ router.get('/students', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('students')
-      .select('*, classes(nom)');
-    
+      .select('id, matricule, nom, prenom, classe_id, sexe, date_naissance, telephone_parent, parent_id, pin_code, created_at, classes(nom)')
+      .eq('school_id', req.schoolId);
+
     if (error) throw error;
     res.json(data);
   } catch (error) {
@@ -226,6 +227,19 @@ router.post('/teachers/reset-password', async (req, res) => {
     if (!id) return res.status(400).json({ error: 'Teacher ID required' });
     if (!newPassword) newPassword = generateSecurePassword();
 
+    // Verify the teacher belongs to this admin's school
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', id)
+      .eq('role', 'teacher')
+      .eq('school_id', req.schoolId)
+      .single();
+
+    if (profileError || !profile) {
+      return res.status(403).json({ error: 'Enseignant introuvable dans votre établissement.' });
+    }
+
     const { error } = await supabase.auth.admin.updateUserById(id, {
       password: newPassword
     });
@@ -247,15 +261,17 @@ router.post('/students/reset-pin', async (req, res) => {
     if (!id) return res.status(400).json({ error: 'Student ID required' });
     if (!newPin) newPin = generateSecurePassword();
 
-    // 1. Update students table
+    // Verify the student belongs to this admin's school
     const { data: student, error: studentError } = await supabase
       .from('students')
-      .update({ pin_code: newPin })
+      .select('id, parent_id')
       .eq('id', id)
-      .select('parent_id')
+      .eq('school_id', req.schoolId)
       .single();
 
-    if (studentError) throw studentError;
+    if (studentError || !student) {
+      return res.status(403).json({ error: 'Élève introuvable dans votre établissement.' });
+    }
 
     // 1. Update Auth password for parent FIRST
     if (student.parent_id) {
@@ -268,11 +284,12 @@ router.post('/students/reset-pin', async (req, res) => {
       }
     }
 
-    // 2. Update students table (as fallback and for admin visibility)
+    // 2. Update students table
     const { error: studentUpdateError } = await supabase
       .from('students')
       .update({ pin_code: newPin })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('school_id', req.schoolId);
 
     if (studentUpdateError) throw studentUpdateError;
 
