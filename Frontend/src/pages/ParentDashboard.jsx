@@ -12,7 +12,7 @@ import { downloadBulletin, generateQRDataUrl } from '../utils/bulletinTasks';
 import { supabase } from '../supabase';
 import {
   FileText, AlertTriangle, Download, Award,
-  LogOut, GraduationCap, Loader2
+  LogOut, GraduationCap, Loader2, BookOpen
 } from 'lucide-react';
 
 const ParentDashboard = () => {
@@ -22,6 +22,7 @@ const ParentDashboard = () => {
   const [grades, setGrades] = useState([]);
   const [matieres, setMatieres] = useState([]);
   const [absences, setAbsences] = useState([]);
+  const [cahierEntries, setCahierEntries] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [moyenneGenerale, setMoyenneGenerale] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
@@ -119,8 +120,20 @@ const ParentDashboard = () => {
 
       setAbsences(absData || []);
 
-      // 4. Fetch Cahier de Texte for Current Year (logic removed if unused, but kept for future use if needed)
-      // setCahierEntries(cahierData?.map(d => ({ ...d, matiere: d.matieres?.nom })) || []);
+      // 4. Fetch Cahier de Texte for the student's class
+      const { data: cahierData } = await supabase
+        .from('cahier_texte')
+        .select('*, matieres(nom), profiles(nom, prenom)')
+        .eq('classe_id', studentData.classe_id)
+        .eq('school_year', schoolConfig.current_year)
+        .order('date', { ascending: false })
+        .limit(30);
+
+      setCahierEntries(cahierData?.map(d => ({
+        ...d,
+        matiere: d.matieres?.nom,
+        teacherName: d.profiles ? `${d.profiles.prenom} ${d.profiles.nom}` : 'Professeur'
+      })) || []);
 
       // 5. Fetch Detailed Stats for the Stats Cards AND ALL TRIMESTRES for history
       const fetchHistoryStats = async (t) => {
@@ -619,6 +632,60 @@ const ParentDashboard = () => {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Cahier de Texte */}
+      <div className="px-6 mb-8">
+        <div className="glass-card-pro p-6">
+          <h3 className="text-sm font-display font-black text-slate-800 mb-5 flex items-center gap-2">
+            <div className="w-1.5 h-4 bg-indigo-500 rounded-full" />
+            Cahier de Texte
+          </h3>
+          {cahierEntries.length === 0 ? (
+            <div className="p-8 text-center bg-slate-50/50 rounded-2xl border border-slate-100/50">
+              <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+              <p className="text-xs text-slate-400 font-medium">Aucune leçon enregistrée pour le moment.</p>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+              {cahierEntries.map((entry) => (
+                <div key={entry.id} className="p-4 rounded-2xl border border-slate-100 bg-white shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[9px] font-black uppercase tracking-wider border border-indigo-100">
+                          {entry.matiere || 'Matière'}
+                        </span>
+                        {entry.heure && (
+                          <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 1118 0z" />
+                            </svg>
+                            {entry.heure}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[13px] font-bold text-slate-800 leading-tight">
+                        {entry.chapitre}
+                      </p>
+                      {entry.resume && (
+                        <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{entry.resume}</p>
+                      )}
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-3">
+                      <p className="text-[10px] font-bold text-slate-400">
+                        {new Date(entry.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                      </p>
+                      {entry.teacherName && (
+                        <p className="text-[8px] text-slate-300 mt-0.5">{entry.teacherName}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
