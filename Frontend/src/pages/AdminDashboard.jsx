@@ -322,7 +322,7 @@ const AdminDashboard = () => {
   const openModal = (type, item = null) => {
     setModalType(type);
     setEditItem(item);
-    setFormData(item ? { ...item } : {});
+    setFormData(item ? { ...item } : { sexe: 'M' });
     setModalOpen(true);
   };
 
@@ -731,6 +731,10 @@ const AdminDashboard = () => {
                 <option value="M">Masculin</option>
                 <option value="F">Féminin</option>
               </select>
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Date de naissance</p>
+                <input type="date" className="input-slb w-full" value={formData.date_naissance || ''} onChange={e => setFormData({ ...formData, date_naissance: e.target.value })} />
+              </div>
               <input
                 type="tel"
                 placeholder="Téléphone du Parent (ex: +229 90 00 00 00)"
