@@ -268,7 +268,7 @@ const ParentDashboard = () => {
       const qrCodeDataUrl = await generateQRDataUrl(`https://erp-ecole.bj/verify/${encodeURIComponent(studentData.matricule)}/${selectedTrimestre}/${schoolConfig.current_year}`);
 
       await downloadBulletin({
-        student: { ...studentData, dateNaissance: studentData.date_naissance, cycle: studentData.cycle, sexe: studentData.sexe || '—' },
+        student: { ...studentData, classe: studentData.classeNom, dateNaissance: studentData.date_naissance, cycle: studentData.cycle, sexe: studentData.sexe || '—' },
         gradesBySubject: gradesBySubject, // Notes enrichies avec records de classe
         matieres,
         classStats: classStats,
