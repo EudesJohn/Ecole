@@ -23,56 +23,44 @@ const Login = () => {
   const navigate = useNavigate();
 
   const formatMatricule = (value) => {
-    // Nettoyer tous les caractères spéciaux, garder seulement lettres et chiffres
+    // Nettoyer : garder seulement lettres (A-Z) et chiffres
     const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
-    // Si c'est trop court, rester tel quel
+    // Moins de 5 caractères : afficher tel quel (juste les chiffres du début)
     if (clean.length <= 4) return clean;
 
-    // Si c'est entre 5 et 7, ajouter l'espace après les 4 premiers chiffres
-    if (clean.length <= 7) {
-      const part1 = clean.substring(0, 4);
-      const part2 = clean.substring(4);
-      // Forcer "SLB" si les parents commencent à taper après les 4 chiffres
-      if (part2.length > 0 && !'SLB'.startsWith(part2)) {
-        return `${part1} SLB ${part2}`;
-      }
-      return `${part1} ${part2}`;
-    }
+    // Séparer : 4 chiffres | lettres (abrév école) | chiffres (année)
+    const digits = clean.substring(0, 4);          // ex: "0001"
+    const rest   = clean.substring(4);             // ex: "SLB26" ou "JDV26"
 
-    // Format complet: 0001 SLB 26
-    const part1 = clean.substring(0, 4);
-    // Extraire la fin après "SLB" si présent dans la chaîne nettoyée
-    let part3 = '';
-    if (clean.includes('SLB')) {
-      part3 = clean.split('SLB')[1] || '';
-    } else {
-      part3 = clean.substring(4); // Fallback si SLB n'est pas tapé mais le reste oui
-    }
+    // Extraire la partie lettres (abréviation) et la partie chiffres (année)
+    const lettersMatch = rest.match(/^([A-Z]+)/);
+    const abbrev = lettersMatch ? lettersMatch[1] : '';
 
-    return `${part1} SLB ${part3.substring(0, 2)}`.trim();
+    const afterAbbrev = rest.substring(abbrev.length);
+    const yearDigits  = afterAbbrev.replace(/[^0-9]/g, '').substring(0, 2);
+
+    if (!abbrev) return `${digits} `;
+    if (!yearDigits) return `${digits} ${abbrev}`;
+    return `${digits} ${abbrev} ${yearDigits}`.trim();
   };
 
-  // Detect school from matricule for parent login
-  const detectSchoolFromMatricule = async () => {
-    if (!matricule || matricule.length < 6) {
+  // Extract school abbreviation from a matricule string
+  const extractAbbrevFromMatricule = (value) => {
+    if (!value) return null;
+    const clean = value.replace(/\s+/g, '').toUpperCase();
+    const match = clean.match(/^0{0,4}\d{0,4}([A-Z]{2,5})/);
+    return match ? match[1] : null;
+  };
+
+  // Look up a school by its abbreviation directly
+  const detectSchoolByAbbrev = async (abbrev) => {
+    if (!abbrev || abbrev.length < 2) {
       setDetectedSchool(null);
       return;
     }
-
-    const cleanMatricule = matricule.replace(/\s+/g, '').toUpperCase();
-
-    // Extract potential abbreviation (letters between numbers)
-    const abbrevMatch = cleanMatricule.match(/^0{0,4}\d{0,4}([A-Z]{2,5})/);
-    if (!abbrevMatch) {
-      setDetectedSchool(null);
-      return;
-    }
-
-    const potentialAbbrev = abbrevMatch[1];
-
     try {
-      const response = await fetch(`/api/schools/info/${potentialAbbrev}`);
+      const response = await fetch(`/api/schools/info/${abbrev}`);
       if (response.ok) {
         const schoolData = await response.json();
         setDetectedSchool(schoolData);
@@ -95,11 +83,7 @@ const Login = () => {
         // Utiliser la redirection racine pour laisser RoleRedirect gérer selon le profil chargé
         navigate('/');
       } else {
-        // For parent login, we can use either:
-        // 1. The auto-detected school from matricule
-        // 2. The manually entered school abbreviation (if provided)
-        // 3. Fallback to SLB for backward compatibility
-
+        // Parent login: extract school from matricule automatically
         await loginParent(matricule, pin);
         navigate('/parent');
       }
@@ -343,9 +327,12 @@ const Login = () => {
                         type="text"
                         value={schoolAbbrev}
                         onChange={(e) => {
-                          setSchoolAbbrev(e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 5));
-                          if (e.target.value.length >= 2) {
-                            detectSchoolFromMatricule();
+                          const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 5);
+                          setSchoolAbbrev(value);
+                          if (value.length >= 2) {
+                            detectSchoolByAbbrev(value);
+                          } else {
+                            setDetectedSchool(null);
                           }
                         }}
                         className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -356,9 +343,7 @@ const Login = () => {
                         type="button"
                         onClick={() => {
                           if (schoolAbbrev.length >= 2) {
-                            const tempMatricule = `0001${schoolAbbrev}26`;
-                            setMatricule(tempMatricule);
-                            detectSchoolFromMatricule();
+                            detectSchoolByAbbrev(schoolAbbrev);
                           }
                         }}
                         className="px-4 py-3 bg-gray-100 text-sm rounded-lg hover:bg-gray-200 transition-colors"
@@ -388,13 +373,17 @@ const Login = () => {
                       type="text"
                       value={matricule}
                       onChange={(e) => {
-                        setMatricule(formatMatricule(e.target.value));
-                        if (e.target.value.length >= 6) {
-                          detectSchoolFromMatricule();
-                        }
-                      }}
+                          const formatted = formatMatricule(e.target.value);
+                          setMatricule(formatted);
+                          const abbrev = extractAbbrevFromMatricule(formatted);
+                          if (abbrev) {
+                            detectSchoolByAbbrev(abbrev);
+                          } else {
+                            setDetectedSchool(null);
+                          }
+                        }}
                       className="input-slb font-mono tracking-widest text-center text-lg italic"
-                      placeholder="0001 SLB 26"
+                      placeholder="0001 ABC 26"
                       required
                     />
                   </div>
