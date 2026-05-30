@@ -1,17 +1,43 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../supabase');
+const rateLimit = require('../middleware/rateLimit');
+const { stripTags, sanitizeEmail, isValidEmail, sanitizeObject } = require('../middleware/sanitize');
+
+// Rate limiter strict pour l'enregistrement des écoles (prévention de spam)
+const registerRateLimit = rateLimit({
+  windowMs: 3600000, // 1 heure
+  max: 3,
+  message: 'Trop de tentatives d\'inscription. Limite: 3 par heure.'
+});
 
 /**
  * POST /api/schools/register
  * Inscription d'une nouvelle école sur la plateforme.
  * Crée l'école + un compte admin Supabase Auth automatiquement.
  */
-router.post('/register', async (req, res) => {
-  const { nom, abreviation, ville, pays, adminEmail, adminPassword, adminPrenom, adminNom } = req.body;
+router.post('/register', registerRateLimit, async (req, res) => {
+  let { nom, abreviation, ville, pays, adminEmail, adminPassword, adminPrenom, adminNom } = req.body;
+
+  // Sanitize inputs
+  const sanitized = sanitizeObject({ nom, ville, pays, adminPrenom, adminNom }, ['nom', 'ville', 'pays', 'adminPrenom', 'adminNom']);
+  nom = sanitized.nom;
+  ville = sanitized.ville;
+  pays = sanitized.pays;
+  adminPrenom = sanitized.adminPrenom;
+  adminNom = sanitized.adminNom;
+  adminEmail = sanitizeEmail(adminEmail);
 
   if (!nom || !abreviation || !adminEmail || !adminPassword) {
     return res.status(400).json({ error: 'Champs obligatoires manquants (nom, abreviation, adminEmail, adminPassword).' });
+  }
+
+  if (!isValidEmail(adminEmail)) {
+    return res.status(400).json({ error: 'Format d\'email administrateur invalide.' });
+  }
+
+  if (adminPassword.length < 8) {
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères.' });
   }
 
   const cleanAbrev = abreviation.toUpperCase().replace(/[^A-Z]/g, '').substring(0, 5);
