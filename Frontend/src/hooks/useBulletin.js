@@ -96,7 +96,7 @@ export const useBulletin = () => {
       await downloadBulletin({
         student: {
           ...student,
-          classe: studentClass?.nom || 'N/A',
+          classe: studentClass?.nom || student.classe || 'N/A',
           cycle: studentClass?.cycle || 'primaire',
           dateNaissance: student.date_naissance,
           sexe: student.sexe || '—'
