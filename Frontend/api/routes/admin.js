@@ -3,6 +3,7 @@ const { supabase } = require('../supabase');
 const generateMatricule = require('../utils/generateMatricule');
 const verifyToken = require('../middleware/verifyToken');
 const crypto = require('crypto');
+const { stripTags, sanitizeEmail, isValidEmail, sanitizeObject } = require('../middleware/sanitize');
 const router = express.Router();
 
 // Generate 12-char CSPRNG password (6 bytes)
@@ -75,7 +76,15 @@ router.post('/matricule', async (req, res) => {
 router.post('/students', async (req, res) => {
   let createdUserId = null;
   try {
-    const { nom, prenom, classe_id, date_naissance, sexe, telephone_parent } = req.body;
+    let { nom, prenom, classe_id, date_naissance, sexe, telephone_parent } = req.body;
+    const sanitized = sanitizeObject({ nom, prenom, telephone_parent }, ['nom', 'prenom', 'telephone_parent']);
+    nom = sanitized.nom;
+    prenom = sanitized.prenom;
+    telephone_parent = sanitized.telephone_parent;
+
+    if (!nom || !prenom) {
+      return res.status(400).json({ error: 'Nom et prénom requis.' });
+    }
 
     const { data: school } = await supabase
       .from('schools')
@@ -164,10 +173,16 @@ router.get('/students', async (req, res) => {
 router.post('/teachers', async (req, res) => {
   let createdUserId = null;
   try {
-    const { email, prenom, nom, matiere, classe_assignee } = req.body;
+    let { email, prenom, nom, matiere, classe_assignee } = req.body;
     let { password } = req.body;
 
-    if (!email) return res.status(400).json({ error: 'Email required' });
+    const sanitized = sanitizeObject({ prenom, nom }, ['prenom', 'nom']);
+    prenom = sanitized.prenom;
+    nom = sanitized.nom;
+    email = sanitizeEmail(email);
+
+    if (!email || !isValidEmail(email)) return res.status(400).json({ error: 'Email valide requis.' });
+    if (!prenom || !nom) return res.status(400).json({ error: 'Prénom et nom requis.' });
     if (!password) password = generateSecurePassword();
 
     // 0. Vérifier si un orphelin existe déjà
