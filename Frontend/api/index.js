@@ -37,13 +37,13 @@ router.get('/', (req, res) => {
 });
 
 // Routes
-router.use('/auth', require('./routes/auth'));
-router.use('/admin', require('./routes/admin'));
-router.use('/teacher', require('./routes/teacher'));
-router.use('/parent', require('./routes/parent'));
-router.use('/health', require('./routes/health'));
-router.use('/schools', require('./routes/schools'));
-router.use('/super-admin', require('./routes/super-admin'));
+router.use('/auth', require('../server/routes/auth'));
+router.use('/admin', require('../server/routes/admin'));
+router.use('/teacher', require('../server/routes/teacher'));
+router.use('/parent', require('../server/routes/parent'));
+router.use('/health', require('../server/routes/health'));
+router.use('/schools', require('../server/routes/schools'));
+router.use('/super-admin', require('../server/routes/super-admin'));
 
 // Mount everything on /api (production) AND / (backup)
 // This ensures that either local dev or Vercel rewrites work correctly.
