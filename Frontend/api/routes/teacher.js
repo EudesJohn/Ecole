@@ -23,11 +23,24 @@ router.post('/grades', async (req, res) => {
       return res.status(400).json({ error: 'ID élève et ID matière requis' });
     }
 
+    // Verify the student belongs to this teacher's school
+    const { data: student, error: studentError } = await supabase
+      .from('students')
+      .select('id')
+      .eq('id', student_id)
+      .eq('school_id', req.schoolId)
+      .single();
+
+    if (studentError || !student) {
+      return res.status(403).json({ error: 'Élève introuvable dans votre établissement.' });
+    }
+
     const { data, error } = await supabase
       .from('grades')
       .upsert({
         student_id,
         matiere_id,
+        school_id: req.schoolId,
         interro1: parseFloat(interro1) || null,
         interro2: parseFloat(interro2) || null,
         dw: parseFloat(dw) || null,
@@ -59,12 +72,25 @@ router.post('/absences', async (req, res) => {
   try {
     const { student_id, classe_id, matiere_id, date, status, school_year } = req.body;
 
+    // Verify the student belongs to this teacher's school
+    const { data: student, error: studentError } = await supabase
+      .from('students')
+      .select('id')
+      .eq('id', student_id)
+      .eq('school_id', req.schoolId)
+      .single();
+
+    if (studentError || !student) {
+      return res.status(403).json({ error: 'Élève introuvable dans votre établissement.' });
+    }
+
     const { data, error } = await supabase
       .from('absences')
       .upsert({
         student_id,
         classe_id,
         matiere_id,
+        school_id: req.schoolId,
         date: date || new Date().toISOString().split('T')[0],
         status: status || 'absent',
         school_year: school_year || '2025-2026'
@@ -85,6 +111,19 @@ router.post('/absences', async (req, res) => {
 router.get('/class/:classe_id', async (req, res) => {
   try {
     const { classe_id } = req.params;
+
+    // Verify the class belongs to this teacher's school
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select('id')
+      .eq('id', classe_id)
+      .eq('school_id', req.schoolId)
+      .single();
+
+    if (classError || !classData) {
+      return res.status(403).json({ error: 'Classe introuvable dans votre établissement.' });
+    }
+
     const { data, error } = await supabase
       .from('students')
       .select('*')
