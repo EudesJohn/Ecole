@@ -7,6 +7,7 @@ const app = express();
 // Middleware
 const allowedOrigins = [
   'https://ecole.vercel.app',
+  'https://ecole-eosin.vercel.app',
   'https://erp-ecole.bj',
   /^https?:\/\/localhost(:\d+)?$/
 ];
