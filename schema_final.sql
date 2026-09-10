@@ -1,6 +1,9 @@
 -- ==========================================
--- SAINT LAMBERT SCHOOL ERP - FINAL UNIFIED SCHEMA (v3)
+-- SAINT LAMBERT SCHOOL ERP - FINAL UNIFIED SCHEMA (v4)
 -- Fully consolidated, idempotent, and consistent with JS logic
+-- v4 (2026-09-10) : politiques RLS consolidées multitenant + durcissement
+--   (aligné sur rls_multi_tenant_isolation.sql, super_admin_migration.sql
+--   et hardening_phase1.sql déjà appliqués en production)
 -- ==========================================
 
 -- 1. EXTENSIONS & BASICS
@@ -37,7 +40,7 @@ $$ LANGUAGE plpgsql;
 -- PROFILES (extends auth.users)
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE,
-  role TEXT CHECK (role IN ('admin', 'teacher', 'parent')) DEFAULT 'parent',
+  role TEXT CHECK (role IN ('admin', 'teacher', 'parent', 'super_admin')) DEFAULT 'parent',
   prenom TEXT,
   nom TEXT,
   full_name TEXT GENERATED ALWAYS AS (prenom || ' ' || nom) STORED,
@@ -191,30 +194,106 @@ CREATE OR REPLACE FUNCTION check_is_teacher() RETURNS boolean AS $$
   BEGIN RETURN EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'teacher'); END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Policies
+-- Helpers multitenant (identiques à rls_multi_tenant_isolation.sql)
+CREATE OR REPLACE FUNCTION current_user_school_id() RETURNS UUID AS $$
+  BEGIN RETURN (SELECT school_id FROM profiles WHERE id = auth.uid()); END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION check_is_super_admin() RETURNS boolean AS $$
+  BEGIN RETURN EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'super_admin'); END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Colonnes school_id (idempotent — normalement déjà présentes en production)
+ALTER TABLE profiles      ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id);
+ALTER TABLE classes       ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id);
+ALTER TABLE students      ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id);
+ALTER TABLE matieres      ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id);
+ALTER TABLE school_config ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id);
+ALTER TABLE grades        ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id);
+ALTER TABLE absences      ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id);
+ALTER TABLE cahier_texte  ADD COLUMN IF NOT EXISTS school_id UUID REFERENCES schools(id);
+
+-- Durcissement FIND-002 : la colonne role n'est modifiable par AUCUN
+-- client (anon/authenticated). Les changements de rôle passent par le
+-- backend (service_role), le trigger d'inscription ou le SQL Editor.
+REVOKE UPDATE (role) ON public.profiles FROM anon, authenticated;
+
+-- Policies (v4) — TOUTES les écritures sont scopées par school_id.
+-- Les lectures publiques restantes (classes, matieres, cahier_texte,
+-- school_config) sont VOLONTAIRES et identiques à la production :
+-- ce sont des données non sensibles (noms de classes, matières,
+-- devoirs, année en cours) utilisées avant connexion.
+
+-- ---- PROFILES ----
 DROP POLICY IF EXISTS "Admins manage all" ON profiles;
-CREATE POLICY "Admins manage all" ON profiles FOR ALL USING (check_is_admin());
+CREATE POLICY "Admins manage school profiles" ON profiles FOR ALL
+USING (
+  (check_is_admin() AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+)
+WITH CHECK (
+  (check_is_admin() AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
 DROP POLICY IF EXISTS "Profiles are readable" ON profiles;
-CREATE POLICY "Profiles are readable" ON profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Profiles readable" ON profiles;
+DROP POLICY IF EXISTS "Own profile readable" ON profiles;
+CREATE POLICY "Profiles readable by authenticated users" ON profiles FOR SELECT
+USING (auth.role() = 'authenticated');
+
+-- ---- MATIERES ----
 DROP POLICY IF EXISTS "Everyone reads subjects" ON matieres;
 CREATE POLICY "Everyone reads subjects" ON matieres FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Admins manage subjects" ON matieres;
-CREATE POLICY "Admins manage subjects" ON matieres FOR ALL USING (check_is_admin());
+CREATE POLICY "Admins manage subjects" ON matieres FOR ALL
+USING (
+  (check_is_admin() AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
+
+-- ---- CLASSES ----
 DROP POLICY IF EXISTS "Everyone reads classes" ON classes;
 CREATE POLICY "Everyone reads classes" ON classes FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Admins manage classes" ON classes;
-CREATE POLICY "Admins manage classes" ON classes FOR ALL USING (check_is_admin());
+CREATE POLICY "Admins manage classes" ON classes FOR ALL
+USING (
+  (check_is_admin() AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
+
+-- ---- STUDENTS ----
 DROP POLICY IF EXISTS "Students readable by authorized" ON students;
-CREATE POLICY "Students readable by authorized" ON students FOR SELECT 
-USING (parent_id = auth.uid() OR check_is_admin() OR check_is_teacher());
+CREATE POLICY "Students readable by authorized" ON students FOR SELECT
+USING (
+  parent_id = auth.uid()
+  OR (check_is_admin() AND school_id = current_user_school_id())
+  OR (check_is_teacher() AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
 DROP POLICY IF EXISTS "Admins manage students" ON students;
-CREATE POLICY "Admins manage students" ON students FOR ALL USING (check_is_admin());
+CREATE POLICY "Admins manage students" ON students FOR ALL
+USING (
+  (check_is_admin() AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
+
+-- ---- SCHOOL CONFIG ----
 DROP POLICY IF EXISTS "Everyone reads config" ON school_config;
 CREATE POLICY "Everyone reads config" ON school_config FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Admins manage config" ON school_config;
-CREATE POLICY "Admins manage config" ON school_config FOR ALL USING (check_is_admin());
+CREATE POLICY "Admins manage config" ON school_config FOR ALL
+USING (
+  (check_is_admin() AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
+
+-- ---- GRADES ----
 DROP POLICY IF EXISTS "Grades manageable" ON grades;
-CREATE POLICY "Grades manageable" ON grades FOR ALL USING (check_is_admin() OR check_is_teacher());
+CREATE POLICY "Grades manageable" ON grades FOR ALL
+USING (
+  ((check_is_admin() OR check_is_teacher()) AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
 DROP POLICY IF EXISTS "Grades readable by parents" ON grades;
 CREATE POLICY "Grades readable by parents" ON grades FOR SELECT USING (
   EXISTS (SELECT 1 FROM students WHERE id = grades.student_id AND parent_id = auth.uid())
@@ -222,9 +301,21 @@ CREATE POLICY "Grades readable by parents" ON grades FOR SELECT USING (
 
 -- ABSENCES Policies
 DROP POLICY IF EXISTS "Admins/Teachers manage absences" ON absences;
-CREATE POLICY "Admins/Teachers view absences" ON absences FOR SELECT USING (check_is_admin() OR check_is_teacher());
-CREATE POLICY "Admins/Teachers insert absences" ON absences FOR INSERT WITH CHECK (check_is_admin() OR check_is_teacher());
-CREATE POLICY "Admins delete/update absences" ON absences FOR ALL USING (check_is_admin());
+CREATE POLICY "Admins/Teachers view absences" ON absences FOR SELECT
+USING (
+  ((check_is_admin() OR check_is_teacher()) AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
+CREATE POLICY "Admins/Teachers insert absences" ON absences FOR INSERT
+WITH CHECK (
+  ((check_is_admin() OR check_is_teacher()) AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
+CREATE POLICY "Admins delete/update absences" ON absences FOR ALL
+USING (
+  (check_is_admin() AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
 
 DROP POLICY IF EXISTS "Parents read student absences" ON absences;
 CREATE POLICY "Parents read student absences" ON absences FOR SELECT USING (
@@ -235,9 +326,15 @@ CREATE POLICY "Parents read student absences" ON absences FOR SELECT USING (
 DROP POLICY IF EXISTS "Admins/Teachers manage lessons" ON cahier_texte;
 DROP POLICY IF EXISTS "Everyone reads lessons" ON cahier_texte;
 CREATE POLICY "Everyone reads lessons" ON cahier_texte FOR SELECT USING (true);
-CREATE POLICY "Admins/Teachers insert lessons" ON cahier_texte FOR INSERT WITH CHECK (check_is_admin() OR check_is_teacher());
+CREATE POLICY "Admins/Teachers insert lessons" ON cahier_texte FOR INSERT
+WITH CHECK (
+  ((check_is_admin() OR check_is_teacher()) AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+);
 CREATE POLICY "Teacher/Admin update/delete lessons within 12h" ON cahier_texte FOR ALL USING (
-    check_is_admin() OR (teacher_id = auth.uid() AND created_at > now() - interval '12 hours')
+  (check_is_admin() AND school_id = current_user_school_id())
+  OR check_is_super_admin()
+  OR (teacher_id = auth.uid() AND created_at > now() - interval '12 hours')
 );
 
 -- 7. ANALYTICS & STATS (RPC)
@@ -498,6 +595,12 @@ BEGIN
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Durcissement (hardening_phase1.sql) : verify_bulletin réservé aux
+-- utilisateurs connectés + backend. Les visiteurs anonymes passent par
+-- /api/parent/student (backend). NE PAS rendre à anon.
+REVOKE EXECUTE ON FUNCTION verify_bulletin(TEXT, INTEGER, TEXT) FROM anon, public;
+GRANT EXECUTE ON FUNCTION verify_bulletin(TEXT, INTEGER, TEXT) TO authenticated, service_role;
 
 -- get_annual_stats (Promotion logic)
 DROP FUNCTION IF EXISTS get_annual_stats(UUID, TEXT) CASCADE;

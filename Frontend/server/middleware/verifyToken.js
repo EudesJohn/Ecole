@@ -61,12 +61,21 @@ const verifyToken = async (req, res, next) => {
       .eq('id', responseBody.id)
       .maybeSingle();
     
+    // Fail-closed (FIND-014) : si le profil est illisible ou absent,
+    // on REJETTE la requête au lieu de retomber sur un rôle par défaut.
+    // Avant : un utilisateur sans profil passait pour 'parent' — un compte
+    // orphelin ou une panne DB donnait accès aux routes parent.
     if (profileError) {
       console.error('VerifyToken: Error fetching profile:', profileError.message);
+      return res.status(503).json({ error: 'Service de profil momentanément indisponible. Réessayez.' });
+    }
+    if (!profile) {
+      console.error('VerifyToken: No profile found for user', responseBody.id);
+      return res.status(403).json({ error: 'Profil utilisateur introuvable. Contactez votre administrateur.' });
     }
     
-    req.role = profile?.role || 'parent';
-    req.schoolId = profile?.school_id || null;
+    req.role = profile.role;
+    req.schoolId = profile.school_id || null;
 
     // Support overriding schoolId via x-school-id header, body, or query for super_admin
     if (req.role === 'super_admin') {
