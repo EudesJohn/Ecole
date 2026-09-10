@@ -1,16 +1,24 @@
 const express = require('express');
-const { supabase } = require('../supabase');
+const { supabase, supabaseVerify } = require('../supabase');
 const generateMatricule = require('../utils/generateMatricule');
 const verifyToken = require('../middleware/verifyToken');
 const crypto = require('crypto');
 const { stripTags, sanitizeEmail, isValidEmail, sanitizeObject } = require('../middleware/sanitize');
+const rateLimit = require('../middleware/rateLimit');
 const router = express.Router();
+
+// Anti email-bombing : max 5 demandes de récupération / heure / IP.
+const recoverRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: 'Trop de demandes de récupération. Réessayez plus tard.'
+});
 
 // Generate 12-char CSPRNG password (6 bytes)
 const generateSecurePassword = () => crypto.randomBytes(6).toString('hex');
 
 // Password recovery via email (forgot password) — MUST be before auth middleware
-router.post('/recover-password', async (req, res) => {
+router.post('/recover-password', recoverRateLimit, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -155,11 +163,15 @@ router.post('/students', async (req, res) => {
 });
 
 // Get all students (admin)
+// Sécurité (FIND-004) : pin_code n'est PLUS renvoyé dans la liste.
+// Le PIN reste visible : à la création (POST /students) et à la
+// réinitialisation (POST /students/reset-pin). Pour redonner un PIN
+// à un parent, l'admin utilise "Réinitialiser le PIN".
 router.get('/students', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('students')
-      .select('id, matricule, nom, prenom, classe_id, sexe, date_naissance, telephone_parent, parent_id, pin_code, created_at, classes(nom)')
+      .select('id, matricule, nom, prenom, classe_id, sexe, date_naissance, telephone_parent, parent_id, created_at, classes(nom)')
       .eq('school_id', req.schoolId);
 
     if (error) throw error;
@@ -324,21 +336,21 @@ router.post('/reset-own-password', async (req, res) => {
       return res.status(400).json({ error: 'New password is required' });
     }
 
-    // Get the current admin's user ID from the token
-    const adminId = req.userId;
+    // FIX (FIND-010) : l'ID vient de req.user (posé par verifyToken),
+    // pas de req.userId qui n'a jamais existé.
+    const adminId = req.user?.id;
+    const adminEmail = req.user?.email;
 
-    if (!adminId) {
+    if (!adminId || !adminEmail) {
       return res.status(403).json({ error: 'Admin not authenticated' });
     }
 
     // Verify current password if provided
     if (currentPassword) {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) throw authError;
-
-      // Check if current password is correct by attempting to reauthenticate
-      const { error: reauthError } = await supabase.auth.signInWithPassword({
-        email: user.email,
+      // On utilise le client anon (supabaseVerify) : signInWithPassword
+      // vérifie réellement le mot de passe auprès de Supabase Auth.
+      const { error: reauthError } = await supabaseVerify.auth.signInWithPassword({
+        email: adminEmail,
         password: currentPassword
       });
 

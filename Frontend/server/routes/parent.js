@@ -1,12 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../supabase');
+const rateLimit = require('../middleware/rateLimit');
+
+// Anti-énumération : max 30 vérifications de bulletin / 5 min / IP.
+// (Limite douce : ne perturbe pas un parent qui vérifie quelques bulletins,
+//  bloque les scripts qui scannent les matricules 0001, 0002, 0003...)
+const bulletinRateLimit = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 30,
+  message: 'Trop de vérifications. Réessayez dans quelques minutes.'
+});
 
 /**
  * @route GET /api/parent/student/:matricule
  * @desc Public search for student (parents view)
  */
-router.get('/student/:matricule', async (req, res) => {
+router.get('/student/:matricule', bulletinRateLimit, async (req, res) => {
   try {
     const { matricule } = req.params;
 

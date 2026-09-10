@@ -13,21 +13,20 @@ const VerifyBulletin = () => {
   useEffect(() => {
     const verify = async () => {
       try {
-        const { supabase } = await import('../supabase');
-        // Decode matricule from the URL.
         const decodedMatricule = decodeURIComponent(matricule);
 
-        // Use an RPC function that verifies the bulletin via backend to bypass RLS safely
-        const { data: result, error } = await supabase.rpc('verify_bulletin', {
-          p_matricule: decodedMatricule,
-          p_trimestre: parseInt(trimestre),
-          p_school_year: year
-        });
+        // Passe par le backend (/api/parent/student) au lieu de l'appel
+        // direct Supabase : la fonction verify_bulletin n'est plus
+        // exécutable par des visiteurs anonymes (durcissement sécurité).
+        // Le backend renvoie exactement la même structure de données.
+        const response = await fetch(
+          `/api/parent/student/${encodeURIComponent(decodedMatricule)}?trimestre=${encodeURIComponent(trimestre)}&school_year=${encodeURIComponent(year)}`
+        );
 
-        if (error || !result) {
-          console.error(error);
+        if (!response.ok) {
           setError(true);
         } else {
+          const result = await response.json();
           setBulletin(result);
         }
       } catch (err) {
