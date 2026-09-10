@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const verifyToken = require('../middleware/verifyToken');
 const { supabase } = require('../supabase');
+const safeError = require('../utils/safeError');
 
 // Middleware to ensure user is a teacher
 router.use(verifyToken, (req, res, next) => {
@@ -59,8 +60,7 @@ router.post('/grades', async (req, res) => {
     if (error) throw error;
     res.json({ success: true, data });
   } catch (error) {
-    console.error('Grade Error:', error.message);
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'teacher/grades');
   }
 });
 
@@ -100,7 +100,7 @@ router.post('/absences', async (req, res) => {
     if (error) throw error;
     res.json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'teacher');
   }
 });
 
@@ -133,7 +133,7 @@ router.get('/class/:classe_id', async (req, res) => {
     if (error) throw error;
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'teacher');
   }
 });
 

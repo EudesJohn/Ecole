@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { supabase } = require('../supabase');
 const rateLimit = require('../middleware/rateLimit');
+const safeError = require('../utils/safeError');
 
 // Anti-énumération : max 30 vérifications de bulletin / 5 min / IP.
 // (Limite douce : ne perturbe pas un parent qui vérifie quelques bulletins,
@@ -42,8 +43,7 @@ router.get('/student/:matricule', bulletinRateLimit, async (req, res) => {
     res.json(verificationData);
 
   } catch (error) {
-    console.error('Parent Lookup Error:', error.message);
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'parent/lookup');
   }
 });
 

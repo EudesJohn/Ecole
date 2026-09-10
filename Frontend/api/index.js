@@ -4,13 +4,29 @@ const cors = require('cors');
 
 const app = express();
 
+// Confiance dans le proxy Vercel (IP réelles pour le rate limiting)
+app.set('trust proxy', true);
+
+// Security headers (FIND-012) — appliqués à toutes les réponses API
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  next();
+});
+
 // Middleware
 const allowedOrigins = [
   'https://ecole.vercel.app',
   'https://ecole-eosin.vercel.app',
-  'https://erp-ecole.bj',
-  /^https?:\/\/localhost(:\d+)?$/
+  'https://erp-ecole.bj'
 ];
+
+// localhost autorisé UNIQUEMENT en développement (FIND-013)
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push(/^https?:\/\/localhost(:\d+)?$/);
+}
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (server-to-server, curl, etc.)
@@ -51,13 +67,11 @@ router.use('/super-admin', require('../server/routes/super-admin'));
 app.use('/api', router);
 app.use('/', router); 
 
-// Global Error Handler
+// Global Error Handler — message générique, détails dans les logs serveur uniquement
 app.use((err, req, res, _next) => {
   console.error('API Error:', err);
   res.status(err.status || 500).json({ 
-    error: err.message || 'Internal Server Error',
-    path: req.url,
-    method: req.method
+    error: 'Une erreur interne est survenue. Veuillez réessayer.'
   });
 });
 

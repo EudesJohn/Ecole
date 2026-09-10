@@ -5,6 +5,7 @@ const verifyToken = require('../middleware/verifyToken');
 const crypto = require('crypto');
 const { stripTags, sanitizeEmail, isValidEmail, sanitizeObject } = require('../middleware/sanitize');
 const rateLimit = require('../middleware/rateLimit');
+const safeError = require('../utils/safeError');
 const router = express.Router();
 
 // Anti email-bombing : max 5 demandes de récupération / heure / IP.
@@ -51,8 +52,7 @@ router.post('/recover-password', recoverRateLimit, async (req, res) => {
 
     res.json({ success: true, message: 'Password recovery email sent successfully' });
   } catch (error) {
-    console.error('Password recovery error:', error);
-    res.status(500).json({ error: error.message });
+safeError(res, error, 'admin/recover');
   }
 });
 
@@ -76,7 +76,7 @@ router.post('/matricule', async (req, res) => {
     const matricule = await generateMatricule(req.schoolId, schoolAbbrev);
     res.json({ matricule });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'admin/matricule');
   }
 });
 
@@ -158,7 +158,7 @@ router.post('/students', async (req, res) => {
     if (createdUserId) {
       await supabase.auth.admin.deleteUser(createdUserId).catch(e => console.error('Rollback failed:', e));
     }
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'admin/students');
   }
 });
 
@@ -177,7 +177,7 @@ router.get('/students', async (req, res) => {
     if (error) throw error;
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'admin/students-list');
   }
 });
 
@@ -240,7 +240,7 @@ router.post('/teachers', async (req, res) => {
     if (createdUserId) {
       await supabase.auth.admin.deleteUser(createdUserId).catch(e => console.error('Rollback failed:', e));
     }
-    res.status(500).json({ error: error.message || 'Error during teacher creation' });
+    safeError(res, error, 'admin/teachers');
   }
 });
 
@@ -275,7 +275,7 @@ router.post('/teachers/reset-password', async (req, res) => {
     res.json({ success: true, password: newPassword, message: 'Password reset successful' });
   } catch (error) {
     console.error('Password reset error:', error);
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'admin/teacher-reset');
   }
 });
 
@@ -323,7 +323,7 @@ router.post('/students/reset-pin', async (req, res) => {
     res.json({ success: true, pin: newPin });
   } catch (error) {
     console.error('PIN reset error:', error);
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'admin/pin-reset');
   }
 });
 
@@ -369,7 +369,7 @@ router.post('/reset-own-password', async (req, res) => {
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (error) {
     console.error('Admin password reset error:', error);
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'admin/own-reset');
   }
 });
 

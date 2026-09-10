@@ -1,6 +1,7 @@
 const express = require('express');
 const { supabase } = require('../supabase');
 const verifyToken = require('../middleware/verifyToken');
+const safeError = require('../utils/safeError');
 const router = express.Router();
 
 // All super-admin routes require auth + super_admin role
@@ -39,7 +40,7 @@ router.get('/', async (req, res) => {
     res.json(enriched);
   } catch (error) {
     console.error('Super admin list schools error:', error);
-    res.status(500).json({ error: error.message });
+    safeError(res, error, 'super-admin/list');
   }
 });
 
@@ -125,8 +126,7 @@ router.delete('/schools/:id', async (req, res) => {
       message: `École "${school.nom}" supprimée avec succès`
     });
   } catch (error) {
-    console.error('Super admin delete school error:', error);
-    res.status(500).json({ error: error.message });
+safeError(res, error, 'super-admin/delete');
   }
 });
 
@@ -163,8 +163,7 @@ router.patch('/schools/:id/restrict', async (req, res) => {
       school: data
     });
   } catch (error) {
-    console.error('Super admin restrict school error:', error);
-    res.status(500).json({ error: error.message });
+safeError(res, error, 'super-admin/restrict');
   }
 });
 
@@ -193,8 +192,7 @@ router.patch('/schools/:id/activate', async (req, res) => {
       school: data
     });
   } catch (error) {
-    console.error('Super admin activate school error:', error);
-    res.status(500).json({ error: error.message });
+safeError(res, error, 'super-admin/activate');
   }
 });
 

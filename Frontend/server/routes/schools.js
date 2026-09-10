@@ -3,6 +3,7 @@ const router = express.Router();
 const { supabase } = require('../supabase');
 const rateLimit = require('../middleware/rateLimit');
 const { stripTags, sanitizeEmail, isValidEmail, sanitizeObject } = require('../middleware/sanitize');
+const safeError = require('../utils/safeError');
 
 // Rate limiter strict pour l'enregistrement des écoles (prévention de spam)
 const registerRateLimit = rateLimit({
@@ -135,8 +136,7 @@ router.post('/register', registerRateLimit, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('School registration error:', err);
-    return res.status(500).json({ error: err.message || 'Erreur lors de la création de l\'école.' });
+safeError(res, err, 'schools/register');
   }
 });
 
@@ -186,7 +186,7 @@ router.get('/info/:abreviation', async (req, res) => {
     }
     return res.json(data);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    safeError(res, err, 'schools/info');
   }
 });
 
@@ -220,7 +220,7 @@ router.get('/my-school', async (req, res) => {
     if (schoolError) throw schoolError;
     return res.json(school);
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    safeError(res, err, 'schools/my-school-get');
   }
 });
 
@@ -264,7 +264,7 @@ router.patch('/my-school', async (req, res) => {
     if (updateError) throw updateError;
     return res.json({ success: true, school: updated });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    safeError(res, err, 'schools/my-school-patch');
   }
 });
 
