@@ -34,7 +34,7 @@ CREATE POLICY "Public can read schools" ON schools FOR SELECT USING (true);
 -- ==============================
 
 INSERT INTO schools (nom, abreviation, ville, pays, admin_email, status)
-VALUES ('École Saint Lambert', 'SLB', 'Cotonou', 'Bénin', 'admin@supprime-pour-securite.bj', 'active')
+VALUES ('École Saint Lambert', 'SLB', 'Cotonou', 'Bénin', 'admin@votre-ecole.bj', 'active')
 ON CONFLICT (abreviation) DO NOTHING;
 
 -- ==============================

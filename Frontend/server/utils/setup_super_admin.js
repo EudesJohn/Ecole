@@ -12,8 +12,18 @@ const supabase = createClient(
 async function setupSuperAdmin() {
     console.log("🚀 Provisioning Supreme Super Admin User...");
 
-    const email = 'admin@supprime-pour-securite.bj';
-    const password = 'REDACTED';
+    // Credentials are read from environment variables (see Frontend/.env, gitignored).
+    // Never hardcode them here — this file is committed to git.
+    const email = (process.env.SUPER_ADMIN_EMAIL || '').trim();
+    const password = process.env.SUPER_ADMIN_PASSWORD || '';
+
+    if (!email || !password) {
+        console.error(
+            '❌ Missing SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD environment variables.\n' +
+            '   Add them to Frontend/.env (gitignored) and re-run this script.'
+        );
+        process.exit(1);
+    }
 
     try {
         const { data: usersData, error: listError } = await supabase.auth.admin.listUsers();

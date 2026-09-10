@@ -8,7 +8,7 @@ Ultra-sécurisé, Mobile-first pour parents Bénin. React + Tailwind + Supabase 
 - [x] Refonte de l'authentification avec Supabase Auth
 - [x] Gestion des rôles (Admin, Prof, Parent) via metadata et table `profiles`
 - [x] Système de Matricule séquentiel (0001 SLB 26) géré par SQL
-- [x] Injection directe Admin (admin@supprime-pour-securite.bj / REDACTED)
+- [x] Injection directe Admin (identifiants dans Frontend/.env — voir SUPER_ADMIN_EMAIL / SUPER_ADMIN_PASSWORD)
 - [x] Configuration des clés Service Role
 
 ## 2. BASE DE DONNÉES (SQL) ✅ Terminé
