@@ -1,0 +1,49 @@
+name: Supabase Keep-Alive (anti-veille)
+
+# Évite la mise en veille du projet Supabase (plan gratuit) en envoyant
+# une requête régulière à l'API REST. Planifié tous les 3 jours
+# (Supabase suspend après 7 jours d'inactivité) + déclenchement manuel.
+
+on:
+  schedule:
+    # Tous les 3 jours à 08:17 UTC (évite les heures de pointe des crons)
+    - cron: '17 8 */3 * *'
+  workflow_dispatch: # permet un lancement manuel depuis l'onglet Actions
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          echo "Heartbeat Supabase — $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 30 \
+            "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: $SUPABASE_KEY")
+
+          echo "Réponse API: HTTP $HTTP_CODE"
+
+          if [ "$HTTP_CODE" = "200" ]; then
+            echo "✅ Supabase réveille-toi : activité enregistrée."
+          elif [ "$HTTP_CODE" = "401" ] || [ "$HTTP_CODE" = "403" ]; then
+            echo "❌ Clé API invalide — vérifie le secret SUPABASE_KEY."
+            exit 1
+          else
+            echo "⚠️ Réponse inattendue ($HTTP_CODE) — nouvelle tentative dans 60s..."
+            sleep 60
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+              --max-time 30 \
+              "$SUPABASE_URL/rest/v1/profiles?select=id&limit=1" \
+              -H "apikey: $SUPABASE_KEY")
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ 2e tentative réussie."
+            else
+              echo "❌ Échec après 2 tentatives (HTTP $HTTP_CODE)."
+              exit 1
+            fi
+          fi
