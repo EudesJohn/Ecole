@@ -44,7 +44,17 @@ router.post('/recover-password', recoverRateLimit, async (req, res) => {
     }
 
     // Generate a recovery token (Supabase handles this automatically)
-    const origin = req.headers.origin || req.headers.referer || 'https://ecole.vercel.app';
+    // Phase 4 (faille 2.2) : le redirect du reset est borné à une whitelist
+    // d'origines — le header Origin est contrôlé par le client, on ne lui
+    // fait jamais confiance. Origine inconnue/absente → domaine officiel.
+    const ALLOWED_RESET_ORIGINS = new Set([
+      'https://ecole-eosin.vercel.app',
+      'https://erp-ecole.bj',
+      'https://ecole.vercel.app'
+    ]);
+    const origin = ALLOWED_RESET_ORIGINS.has(req.headers.origin)
+      ? req.headers.origin
+      : 'https://ecole-eosin.vercel.app';
     const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${origin}/reset-password`
     });

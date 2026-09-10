@@ -85,12 +85,11 @@ app.use((err, req, res, _next) => {
   });
 });
 
-// 404 Handler (JSON)
+// 404 Handler (JSON) — Phase 4 (faille 2.5) : hints de debug et écho du
+// path supprimés (ils facilitaient la cartographie de l'API par un attaquant).
 app.use((req, res) => {
   res.status(404).json({ 
-    error: `Route ${req.method} ${req.url} not found`,
-    path: req.path,
-    hint: 'Ensure your fetch URL matches the API structure. If you see /api/api, check your Express and Vercel routing.'
+    error: `Route ${req.method} ${req.url} not found`
   });
 });
 
