@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { ShieldAlert } from 'lucide-react';
 
 const LandingPage = () => {
   const { login, loading, error } = useAuth();
@@ -19,6 +20,30 @@ const LandingPage = () => {
 
   const [step, setStep] = useState(1); // 1: école info, 2: admin info
   const [abrevCheck, setAbrevCheck] = useState(null); // null: not checked, true: available, false: taken
+
+  // Phase 3 (faille #1) : le funnel d'auto-inscription est fermé par
+  // défaut côté serveur (SELF_SERVE_SIGNUP). On interroge l'état réel
+  // pour afficher le bandeau et bloquer le formulaire côté client.
+  const [signupOpen, setSignupOpen] = useState(false);
+  const [statusChecked, setStatusChecked] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/schools/register-status')
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        setSignupOpen(Boolean(data.selfServiceEnabled));
+        setStatusChecked(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        // En cas d'échec réseau : fermé (cohérent avec le serveur)
+        setSignupOpen(false);
+        setStatusChecked(true);
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -116,6 +141,31 @@ const LandingPage = () => {
       alert(err.message || 'Erreur lors de la création de l\'école. Veuillez réessayer.');
     }
   };
+
+  // Funnel fermé (faille #1) : écran d'information à la place du formulaire.
+  if (statusChecked && !signupOpen) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-gold-50/20 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 text-center">
+          <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldAlert className="w-10 h-10 text-amber-500" />
+          </div>
+          <h1 className="text-2xl font-display font-bold text-gray-900 mb-3">
+            Inscriptions fermées
+          </h1>
+          <p className="text-gray-500 mb-6">
+            Les inscriptions en libre-service sont actuellement fermées. Contactez la plateforme pour créer l'espace de votre école — nous vous accompagnons gratuitement.
+          </p>
+          <a
+            href="/login"
+            className="inline-block bg-royal-gradient text-white px-6 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors"
+          >
+            Retour à la connexion
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-gold-50/20">

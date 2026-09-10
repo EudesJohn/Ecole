@@ -2,6 +2,7 @@ const express = require('express');
 const { supabase } = require('../supabase');
 const verifyToken = require('../middleware/verifyToken');
 const safeError = require('../utils/safeError');
+const { sanitizeEmail, isValidEmail, sanitizeObject } = require('../middleware/sanitize');
 const router = express.Router();
 
 // All super-admin routes require auth + super_admin role
@@ -41,6 +42,121 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Super admin list schools error:', error);
     safeError(res, error, 'super-admin/list');
+  }
+});
+
+// POST /schools - Créer une école + son compte admin
+// Phase 3 (faille #1) : remplace l'auto-inscription publique fermée
+// (POST /api/schools/register). Le super-admin crée les écoles depuis
+// son panneau — le compte admin Supabase est créé via service_role,
+// exactement comme le faisait l'ancien endpoint. Même structure de
+// réponse et mêmes écrans frontend derrière.
+router.post('/schools', async (req, res) => {
+  try {
+    let { nom, abreviation, ville, pays, adminEmail, adminPassword, adminPrenom, adminNom } = req.body;
+
+    const sanitized = sanitizeObject({ nom, ville, pays, adminPrenom, adminNom }, ['nom', 'ville', 'pays', 'adminPrenom', 'adminNom']);
+    nom = sanitized.nom;
+    ville = sanitized.ville;
+    pays = sanitized.pays;
+    adminPrenom = sanitized.adminPrenom;
+    adminNom = sanitized.adminNom;
+    adminEmail = sanitizeEmail(adminEmail);
+
+    if (!nom || !abreviation || !adminEmail || !adminPassword) {
+      return res.status(400).json({ error: 'Champs obligatoires manquants (nom, abreviation, adminEmail, adminPassword).' });
+    }
+    if (!isValidEmail(adminEmail)) {
+      return res.status(400).json({ error: "Format d'email administrateur invalide." });
+    }
+    if (String(adminPassword).length < 8) {
+      return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères.' });
+    }
+
+    const cleanAbrev = String(abreviation).toUpperCase().replace(/[^A-Z]/g, '').substring(0, 5);
+    if (cleanAbrev.length < 2) {
+      return res.status(400).json({ error: "L'abréviation doit contenir au moins 2 lettres." });
+    }
+
+    // Abréviation déjà prise ?
+    const { data: existing } = await supabase
+      .from('schools')
+      .select('id')
+      .eq('abreviation', cleanAbrev)
+      .single();
+    if (existing) {
+      return res.status(409).json({ error: `L'abréviation "${cleanAbrev}" est déjà utilisée par une autre école.` });
+    }
+
+    // 1. Créer l'école
+    const { data: school, error: schoolError } = await supabase
+      .from('schools')
+      .insert([{
+        nom: nom.trim(),
+        abreviation: cleanAbrev,
+        ville: (ville || '').trim(),
+        pays: (pays || 'Bénin').trim(),
+        admin_email: adminEmail.trim().toLowerCase(),
+        status: 'active'
+      }])
+      .select()
+      .single();
+
+    if (schoolError) {
+      if (schoolError.code === '23505') {
+        return res.status(409).json({ error: 'Cette adresse email est déjà utilisée.' });
+      }
+      throw schoolError;
+    }
+
+    // 2. Créer le compte admin Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: adminEmail.trim().toLowerCase(),
+      password: adminPassword,
+      email_confirm: true,
+      user_metadata: {
+        role: 'admin',
+        prenom: adminPrenom || 'Admin',
+        nom: adminNom || nom,
+        school_id: school.id
+      }
+    });
+
+    if (authError) {
+      await supabase.from('schools').delete().eq('id', school.id);
+      throw authError;
+    }
+
+    // 3. Profil admin
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert({
+        id: authData.user.id,
+        email: adminEmail.trim().toLowerCase(),
+        prenom: adminPrenom || 'Admin',
+        nom: adminNom || nom,
+        role: 'admin',
+        school_id: school.id
+      }, { onConflict: 'id' });
+    if (profileError) console.error('Profile upsert error:', profileError);
+
+    // 4. Config initiale (identique à l'ancien endpoint public)
+    const now = new Date();
+    const defaultConfig = [
+      { school_id: school.id, key: 'current_trimestre', value: '1' },
+      { school_id: school.id, key: 'current_year', value: now.getFullYear() + '-' + (now.getFullYear() + 1) },
+      { school_id: school.id, key: 'primaire_compo_count', value: '3' },
+      { school_id: school.id, key: 'maternelle_compo_count', value: '3' }
+    ];
+    await supabase.from('school_config').insert(defaultConfig);
+
+    return res.status(201).json({
+      success: true,
+      school: { id: school.id, nom: school.nom, abreviation: school.abreviation },
+      message: `École "${school.nom}" créée. L'admin se connecte avec ${adminEmail}.`
+    });
+  } catch (error) {
+    safeError(res, error, 'super-admin/create-school');
   }
 });
 

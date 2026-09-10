@@ -12,6 +12,15 @@ export const useBulletin = () => {
     try {
       if (!student.classe_id) throw new Error("Cet élève n'est pas assigné à une classe.");
 
+      // Phase 3 (faille #2) : le QR de vérification utilise désormais le
+      // TOKEN aléatoire de l'élève (verify_token) au lieu du matricule
+      // séquentiel. Sans token (migration pas encore exécutée), on bloque
+      // la génération avec un message explicite plutôt que de produire un
+      // QR pointant vers l'ancienne URL supprimée.
+      if (!student.verify_token) {
+        throw new Error("Token de vérification manquant pour cet élève. Exécutez la migration SQL hardening_phase3.sql puis réessayez.");
+      }
+
       // 1. Fetch Detailed Stats via RPC
       const { data: statsData, error: rpcError } = await supabase.rpc('get_detailed_stats', {
         p_student_id: student.id,
@@ -87,7 +96,9 @@ export const useBulletin = () => {
       });
 
       // 4. Generate QR code using generic domain
-      const qrText = `https://erp-ecole.bj/verify/${student.matricule}/${schoolConfig.current_trimestre}/${schoolConfig.current_year}${periodLabel ? `?p=${encodeURIComponent(periodLabel)}` : ''}`;
+      // URL : /verify/<token>/<trimestre>/<année> — le token remplace le matricule.
+      const trimestreParam = String(schoolConfig.current_trimestre || '1').replace(/[^0-9]/g, '') || '1';
+      const qrText = `https://erp-ecole.bj/verify/${student.verify_token}/${trimestreParam}/${schoolConfig.current_year}${periodLabel ? `?p=${encodeURIComponent(periodLabel)}` : ''}`;
       const qrUrl = await generateQRDataUrl(qrText);
 
       // 5. Download Bulletin

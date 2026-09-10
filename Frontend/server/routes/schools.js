@@ -5,11 +5,55 @@ const rateLimit = require('../middleware/rateLimit');
 const { stripTags, sanitizeEmail, isValidEmail, sanitizeObject } = require('../middleware/sanitize');
 const safeError = require('../utils/safeError');
 
-// Rate limiter strict pour l'enregistrement des écoles (prévention de spam)
+// Rate limiter strict pour l'enregistrement des écoles (prévention de spam).
+// Phase 3 (faille #3) : failClosed — en production avec Upstash configuré,
+// si Redis est injoignable on renvoie 503 au lieu de laisser passer.
 const registerRateLimit = rateLimit({
   windowMs: 3600000, // 1 heure
   max: 3,
-  message: 'Trop de tentatives d\'inscription. Limite: 3 par heure.'
+  message: 'Trop de tentatives d\'inscription. Limite: 3 par heure.',
+  failClosed: true
+});
+
+// Phase 3 (faille #4) : anti-énumération sur les oracles publics
+// d'abréviations. 20 req / 5 min / IP — très au-dessus de l'usage réel
+// (un check dans le formulaire d'inscription, une détection sur la
+// page de login), bien en-dessous d'un scan des combinaisons.
+const abbrevLookupRateLimit = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  message: 'Trop de vérifications. Réessayez dans quelques minutes.'
+});
+
+/**
+ * Phase 3 (faille #1) : l'auto-inscription d'écoles est FERMÉE par défaut.
+ *
+ * POURQUOI : ce endpoint créait un compte Supabase Auth via le service_role,
+ * qui ignore la configuration « Signups not allowed » — n'importe qui
+ * pouvait donc devenir « authenticated » avec un email bidon.
+ *
+ * FONCTIONNEMENT PRÉSERVÉ :
+ *  - Les écoles existantes : AUCUN changement (login, élèves, notes, bulletins).
+ *  - Les nouvelles écoles sont créées par le super-admin (panneau existant)
+ *    ou en relançant la migration d'onboarding côté opérations.
+ *  - Le funnel public reste disponible : il suffit de définir
+ *    SELF_SERVE_SIGNUP=true dans l'environnement Vercel et de redéployer.
+ *    Aucune modification de code n'est nécessaire pour le réactiver.
+ */
+const selfServeSignupEnabled = () => {
+  const raw = (process.env.SELF_SERVE_SIGNUP || '').trim().toLowerCase();
+  return raw === 'true' || raw === '1' || raw === 'yes';
+};
+
+// Endpoint public utilisé par la page /register pour afficher l'état
+// du funnel (ouvert/fermé) sans deviner le message d'erreur du POST.
+router.get('/register-status', (req, res) => {
+  res.json({
+    selfServiceEnabled: selfServeSignupEnabled(),
+    message: selfServeSignupEnabled()
+      ? 'Inscription en libre-service disponible.'
+      : 'Les inscriptions en libre-service sont actuellement fermées. Contactez la plateforme pour créer votre école.'
+  });
 });
 
 /**
@@ -18,6 +62,14 @@ const registerRateLimit = rateLimit({
  * Crée l'école + un compte admin Supabase Auth automatiquement.
  */
 router.post('/register', registerRateLimit, async (req, res) => {
+  // Phase 3 (faille #1) : porte fermée par défaut (voir commentaire ci-dessus).
+  if (!selfServeSignupEnabled()) {
+    return res.status(403).json({
+      error: 'Les inscriptions en libre-service sont actuellement fermées. Contactez la plateforme pour créer votre école.',
+      code: 'SIGNUP_CLOSED'
+    });
+  }
+
   let { nom, abreviation, ville, pays, adminEmail, adminPassword, adminPrenom, adminNom } = req.body;
 
   // Sanitize inputs
@@ -144,7 +196,7 @@ safeError(res, err, 'schools/register');
  * GET /api/schools/check-abreviation/:code
  * Vérifie si une abréviation est disponible.
  */
-router.get('/check-abreviation/:code', async (req, res) => {
+router.get('/check-abreviation/:code', abbrevLookupRateLimit, async (req, res) => {
   const code = (req.params.code || '').toUpperCase().replace(/[^A-Z]/g, '');
   if (!code || code.length < 2) {
     return res.json({ available: false, message: 'Code trop court.' });
@@ -171,7 +223,7 @@ router.get('/check-abreviation/:code', async (req, res) => {
  * Retourne les informations publiques d'une école par abréviation.
  * Utilisé par la page de login pour afficher le nom de l'école.
  */
-router.get('/info/:abreviation', async (req, res) => {
+router.get('/info/:abreviation', abbrevLookupRateLimit, async (req, res) => {
   const code = (req.params.abreviation || '').toUpperCase().replace(/[^A-Z]/g, '');
   try {
     const { data, error } = await supabase

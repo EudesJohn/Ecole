@@ -1,5 +1,5 @@
 /**
- * Rate limiter hybride (FIND-007/008).
+ * Rate limiter hybride (FIND-007/008, durci en phase 3 — faille #3).
  *
  * Mode 1 — DURABLE (production) :
  *   Si UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN sont définis,
@@ -10,9 +10,21 @@
  * Mode 2 — IN-MEMORY (fallback automatique) :
  *   Sans variables Upstash, on retombe sur le comportement historique
  *   (Map en mémoire). Suffisant en local ; sur Vercel, le compteur est
- *   par instance. AUCUNE requête n'échoue si Redis est injoignable :
- *   on laisse passer (disponibilité > restriction).
+ *   par instance.
+ *
+ * PHASE 3 (faille #3) — deux changements de comportement :
+ *   1. La clé inclut désormais la route (req.baseUrl + req.path
+ *      partiel), pour que le limiteur GLOBAL 120/min n'épuise jamais
+ *      le quota d'un limiteur de route — et inversement.
+ *   2. FAIL-OPEN → FAIL-CLOSED ciblé : les limiteurs qui protègent des
+ *      données sensibles (inscription école, bulletins, login) sont
+ *      créés avec failClosed: true. En production, si Upstash est
+ *      configuré mais injoignable, ces limiteurs renvoient 503 au lieu
+ *      de laisser passer. En développement, et quand Upstash n'est pas
+ *      configuré du tout, le fallback in-memory reste actif (le site
+ *      fonctionne ; la protection est juste par-instance).
  */
+
 const requests = new Map();
 
 // Nettoyage périodique toutes les 60s pour éviter les fuites mémoire (mode local)
@@ -26,10 +38,12 @@ setInterval(() => {
 const UPSTASH_URL = (process.env.UPSTASH_REDIS_REST_URL || '').replace(/\/$/, '');
 const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 const redisEnabled = Boolean(UPSTASH_URL && UPSTASH_TOKEN);
+const isProduction = process.env.NODE_ENV === 'production';
 
 /**
  * Incrémente le compteur Redis pour la clé donnée et fixe l'expiration.
  * Retourne le nombre de requêtes, ou null si Redis est indisponible.
+ * Utilise un unique script pipeline : INCR puis EXPIRE (2 allers-retours).
  */
 async function redisIncr(key, windowMs) {
   try {
@@ -46,28 +60,53 @@ async function redisIncr(key, windowMs) {
     }
     return count;
   } catch (err) {
-    console.error('RateLimit: Redis indisponible, bascule en mode tolérant:', err.message);
-    return null; // fail-open : on ne bloque jamais le trafic légitime
+    console.error('RateLimit: Redis indisponible:', err.message);
+    return null;
   }
 }
 
-const rateLimit = ({ windowMs = 60000, max = 20, message = 'Trop de requêtes. Veuillez réessayer plus tard.' } = {}) => {
+/**
+ * Clé de comptage : route + IP (via x-forwarded-for posé par Vercel,
+ * req.ip déjà résolu grâce à trust proxy).
+ */
+function buildKey(req, prefix) {
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  const route = (req.baseUrl || 'api').replace(/[^a-zA-Z0-9/_-]/g, '');
+  return `${prefix}:${route}:${ip}`;
+}
+
+const rateLimit = ({
+  windowMs = 60000,
+  max = 20,
+  message = 'Trop de requêtes. Veuillez réessayer plus tard.',
+  failClosed = false,
+  prefix = 'ratelimit'
+} = {}) => {
   return async (req, res, next) => {
-    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
     const now = Date.now();
+    const key = buildKey(req, prefix);
 
     let count;
 
     if (redisEnabled) {
-      count = await redisIncr(`ratelimit:${req.baseUrl || 'api'}:${ip}`, windowMs);
+      count = await redisIncr(key, windowMs);
     }
 
     if (count === undefined || count === null) {
-      // Fallback in-memory (pas de Redis configuré ou Redis injoignable)
-      let entry = requests.get(ip);
+      if (redisEnabled && failClosed && isProduction) {
+        // Redis configuré mais injoignable en production : pour les
+        // limiteurs SENSIBLES (failClosed), on ferme la porte plutôt que
+        // de laisser un attaquant profiter de la panne.
+        console.error('RateLimit: fail-closed déclenché (Redis injoignable, production)');
+        return res.status(503).json({
+          error: 'Service momentanément indisponible. Veuillez réessayer dans quelques instants.'
+        });
+      }
+      // Fallback in-memory (pas de Redis configuré, dev, ou limiteur non sensible)
+      let entry = requests.get(key);
       if (!entry || now > entry.resetAt) {
         entry = { count: 0, resetAt: now + windowMs };
-        requests.set(ip, entry);
+        requests.set(key, entry);
       }
       entry.count++;
       count = entry.count;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Trash2, AlertTriangle, Shield, Ban, CheckCircle, Loader2, Search, X } from 'lucide-react';
+import { Trash2, AlertTriangle, Shield, Ban, CheckCircle, Loader2, Search, X, Plus } from 'lucide-react';
 import { getAccessToken } from '../../../utils/auth';
 
 const getToken = getAccessToken;
@@ -11,6 +11,40 @@ const EcolesTab = () => {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
+
+  // Phase 3 (faille #1) : création d'école réservée au super-admin,
+  // en remplacement de l'auto-inscription publique fermée.
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
+  const [createForm, setCreateForm] = useState({
+    nom: '', abreviation: '', ville: '', pays: 'Bénin',
+    adminEmail: '', adminPassword: '', adminPrenom: '', adminNom: ''
+  });
+
+  const handleCreateSchool = async (e) => {
+    e.preventDefault();
+    setCreating(true);
+    setCreateError('');
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('Non connecté');
+      const res = await fetch('/api/super-admin/schools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(createForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de la création');
+      setCreateOpen(false);
+      setCreateForm({ nom: '', abreviation: '', ville: '', pays: 'Bénin', adminEmail: '', adminPassword: '', adminPrenom: '', adminNom: '' });
+      fetchSchools();
+    } catch (err) {
+      setCreateError(err.message);
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const fetchSchools = async () => {
     setLoading(true);
@@ -90,13 +124,22 @@ const EcolesTab = () => {
             <p className="text-sm text-slate-400 font-medium">{schools.length} école{schools.length > 1 ? 's' : ''} sur la plateforme</p>
           </div>
         </div>
-        <button
-          onClick={fetchSchools}
-          className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2"
-        >
-          <Loader2 size={14} className={loading ? 'animate-spin' : ''} />
-          Actualiser
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="px-4 py-2 bg-royal-gradient text-white rounded-xl text-sm font-bold hover:opacity-90 transition-opacity flex items-center gap-2"
+          >
+            <Plus size={14} />
+            Ajouter une école
+          </button>
+          <button
+            onClick={fetchSchools}
+            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2"
+          >
+            <Loader2 size={14} className={loading ? 'animate-spin' : ''} />
+            Actualiser
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -221,6 +264,122 @@ const EcolesTab = () => {
               </div>
             </motion.div>
           ))}
+        </div>
+      )}
+      {/* Modal création d'école (super-admin) */}
+      {createOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-display font-bold text-slate-900 mb-1">Ajouter une école</h3>
+            <p className="text-sm text-slate-400 mb-6">L'admin se connectera avec l'email ci-dessous et le mot de passe fourni.</p>
+            <form onSubmit={handleCreateSchool} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nom de l'école *</label>
+                  <input
+                    type="text"
+                    required
+                    value={createForm.nom}
+                    onChange={e => setCreateForm(f => ({ ...f, nom: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Ex: École Jean De La Ville"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Abréviation *</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={5}
+                    value={createForm.abreviation}
+                    onChange={e => setCreateForm(f => ({ ...f, abreviation: e.target.value.toUpperCase().replace(/[^A-Z]/g, '') }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono uppercase focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Ex: JDV"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Ville</label>
+                  <input
+                    type="text"
+                    value={createForm.ville}
+                    onChange={e => setCreateForm(f => ({ ...f, ville: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Ex: Cotonou"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Pays</label>
+                  <input
+                    type="text"
+                    value={createForm.pays}
+                    onChange={e => setCreateForm(f => ({ ...f, pays: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="col-span-2 pt-2 border-t border-slate-100">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Email admin *</label>
+                  <input
+                    type="email"
+                    required
+                    value={createForm.adminEmail}
+                    onChange={e => setCreateForm(f => ({ ...f, adminEmail: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="admin@ecolejdlv.bj"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Mot de passe admin * (min. 8 caractères)</label>
+                  <input
+                    type="text"
+                    required
+                    minLength={8}
+                    value={createForm.adminPassword}
+                    onChange={e => setCreateForm(f => ({ ...f, adminPassword: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Mot de passe provisoire"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Prénom admin</label>
+                  <input
+                    type="text"
+                    value={createForm.adminPrenom}
+                    onChange={e => setCreateForm(f => ({ ...f, adminPrenom: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Nom admin</label>
+                  <input
+                    type="text"
+                    value={createForm.adminNom}
+                    onChange={e => setCreateForm(f => ({ ...f, adminNom: e.target.value }))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+              {createError && (
+                <p className="text-red-600 text-sm bg-red-50 border border-red-100 rounded-xl p-3">{createError}</p>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => { setCreateOpen(false); setCreateError(''); }}
+                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="px-5 py-2 bg-royal-gradient text-white rounded-xl text-sm font-bold disabled:opacity-50 flex items-center gap-2"
+                >
+                  {creating && <Loader2 size={14} className="animate-spin" />}
+                  Créer l'école
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </motion.div>

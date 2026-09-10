@@ -235,8 +235,13 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
   const ministere = `Ministère de l'Éducation Nationale`;
 
   // Dynamic portal domain: use school abbreviation for URL slug
+  // Phase 3 (faille #2) : le lien de vérification transporte le token
+  // (student.verify_token), pas le matricule. Fallback : ancienne URL au
+  // matricule pour les rendus legacy (l'URL ne fonctionnera plus, mais le
+  // PDF est généré uniquement via useBulletin qui garantit le token).
   const portalDomain = `erp-ecole.bj`;
-  const verifyBaseUrl = `https://${portalDomain}/verify`;
+  const verifyRef = student.verify_token || encodeURIComponent(student.matricule);
+  const verifyBaseUrl = `https://${portalDomain}/verify/${verifyRef}`;
 
   // Calculate per-subject averages — Absolute type safety
   const safeGradesBySubject = Array.isArray(gradesBySubject) ? gradesBySubject : [];
@@ -504,7 +509,7 @@ const SecureBulletin = ({ student, gradesBySubject, matieres, classStats, qrCode
           <View>
             <Text style={styles.footerText}>Bulletin généré par le Système ERP Scolaire — {schoolName}</Text>
             <Text style={styles.footerText}>Réf: {student.matricule} • {periodTitle} • {schoolYear}</Text>
-            <Text style={[styles.footerText, { color: '#1e3a8a', fontFamily: FONT_BOLD }]}>Vérifier sur : {verifyBaseUrl}/{student.matricule}/{trimestre.replace(/[^0-9]/g, '')}/{schoolYear}</Text>
+            <Text style={[styles.footerText, { color: '#1e3a8a', fontFamily: FONT_BOLD }]}>Vérifier sur : {verifyBaseUrl}/{trimestre.replace(/[^0-9]/g, '')}/{schoolYear}</Text>
           </View>
           <View style={styles.qrContainer}>
             {qrCodeDataUrl && (

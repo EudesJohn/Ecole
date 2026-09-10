@@ -265,7 +265,15 @@ const ParentDashboard = () => {
         rang: statsData.general_stats.rang || null
       };
 
-      const qrCodeDataUrl = await generateQRDataUrl(`https://erp-ecole.bj/verify/${encodeURIComponent(studentData.matricule)}/${selectedTrimestre}/${schoolConfig.current_year}`);
+      // Phase 3 (faille #2) : QR basé sur le token de vérification
+      // (verify_token) au lieu du matricule séquentiel.
+      if (!studentData.verify_token) {
+        toast.error("Token de vérification manquant. Demandez à l'administration de régénérer le bulletin.");
+        setGeneratingPdf(false);
+        return;
+      }
+      const trimestreParam = String(selectedTrimestre || '1').replace(/[^0-9]/g, '') || '1';
+      const qrCodeDataUrl = await generateQRDataUrl(`https://erp-ecole.bj/verify/${studentData.verify_token}/${trimestreParam}/${schoolConfig.current_year}`);
 
       await downloadBulletin({
         student: { ...studentData, classe: studentData.classeNom, dateNaissance: studentData.date_naissance, cycle: studentData.cycle, sexe: studentData.sexe || '—' },

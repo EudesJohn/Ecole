@@ -9,21 +9,25 @@ const VerifyBulletin = () => {
   const [bulletin, setBulletin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [legacyMatricule, setLegacyMatricule] = useState(false);
 
   useEffect(() => {
     const verify = async () => {
       try {
         const decodedMatricule = decodeURIComponent(matricule);
 
-        // Passe par le backend (/api/parent/student) au lieu de l'appel
-        // direct Supabase : la fonction verify_bulletin n'est plus
-        // exécutable par des visiteurs anonymes (durcissement sécurité).
-        // Le backend renvoie exactement la même structure de données.
+        // Phase 3 (faille #2) : l'URL /verify/:matricule/:trimestre/:year
+        // transporte désormais le TOKEN aléatoire de vérification de l'élève
+        // (imprimé dans le QR du bulletin), plus jamais le matricule.
+        // On passe par le backend (/api/parent/verify) qui applique le
+        // rate-limit et appelle la RPC sécurisée par token. Le backend
+        // renvoie exactement la même structure de données qu'avant.
         const response = await fetch(
-          `/api/parent/student/${encodeURIComponent(decodedMatricule)}?trimestre=${encodeURIComponent(trimestre)}&school_year=${encodeURIComponent(year)}`
+          `/api/parent/verify/${encodeURIComponent(decodedMatricule)}?trimestre=${encodeURIComponent(trimestre)}&school_year=${encodeURIComponent(year)}`
         );
 
         if (!response.ok) {
+          setLegacyMatricule(response.status === 410);
           setError(true);
         } else {
           const result = await response.json();
@@ -68,7 +72,9 @@ const VerifyBulletin = () => {
             Document Non Vérifié
           </h1>
           <p className="text-gray-500 mb-4">
-            Ce bulletin n'a pas pu être authentifié. Il est possible qu'il soit falsifié ou que le lien soit invalide.
+            {legacyMatricule
+              ? "Ce bulletin utilise l'ancienne méthode de vérification par matricule, qui n'est plus disponible. Demandez un bulletin récent à l'établissement : son QR code permet la vérification."
+              : "Ce bulletin n'a pas pu être authentifié. Il est possible qu'il soit falsifié ou que le lien soit invalide."}
           </p>
           <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
             <p className="text-sm text-red-600 font-medium">

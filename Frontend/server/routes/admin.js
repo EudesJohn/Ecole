@@ -104,6 +104,12 @@ router.post('/students', async (req, res) => {
 
     const matricule = await generateMatricule(req.schoolId, schoolAbbrev);
     const pin = generateSecurePassword();
+
+    // Phase 3 (faille #2) : le token de vérification publique du bulletin
+    // N'EST PAS généré ici — le trigger SQL students_set_verify_token
+    // (migration hardening_phase3.sql §2b) l'attribue à l'INSERT, quel que
+    // soit le chemin de création (backend ou dashboard admin). Avantage :
+    // le code fonctionne AVANT comme APRÈS l'exécution de la migration.
     // Sécurité (FIND-004) : le PIN est hashé en base (bcrypt). Le PIN en
     // clair reste retourné à l'admin dans la réponse ci-dessous — l'UX
     // est identique. Le login parent passe par Supabase Auth (mot de
