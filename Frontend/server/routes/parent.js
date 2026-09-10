@@ -21,8 +21,31 @@ router.get('/student/:matricule', bulletinRateLimit, async (req, res) => {
   try {
     const { matricule } = req.params;
 
-    // 1. Récupérer la configuration actuelle de l'école
-    const { data: schoolConfig } = await supabase.from('school_config').select('*').limit(1).single();
+    // 1. Récupérer la configuration de l'école de l'élève (FIND-017 :
+    //    multi-tenant — le matricule est unique, on déduit SON école,
+    //    au lieu de lire la première config de la table).
+    let schoolConfig = null;
+    const { data: studentRef } = await supabase
+      .from('students')
+      .select('school_id')
+      .eq('matricule', matricule.trim())
+      .maybeSingle();
+
+    if (studentRef?.school_id) {
+      const { data: configRows } = await supabase
+        .from('school_config')
+        .select('key, value')
+        .eq('school_id', studentRef.school_id);
+      if (configRows && configRows.length > 0) {
+        schoolConfig = Object.fromEntries(configRows.map(r => [r.key, r.value]));
+      }
+    }
+
+    // Fallback compatibilité mono-école (comportement historique)
+    if (!schoolConfig) {
+      const { data: legacyConfig } = await supabase.from('school_config').select('*').limit(1).single();
+      schoolConfig = legacyConfig;
+    }
     if (!schoolConfig) throw new Error('Configuration école introuvable');
 
     const trimestre = req.query.trimestre ? parseInt(req.query.trimestre) : parseInt(schoolConfig.current_trimestre);

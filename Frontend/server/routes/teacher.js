@@ -124,9 +124,11 @@ router.get('/class/:classe_id', async (req, res) => {
       return res.status(403).json({ error: 'Classe introuvable dans votre établissement.' });
     }
 
+    // Sécurité (FIND-015) : liste explicite de colonnes — pin_code n'est
+    // JAMAIS renvoyé aux professeurs (comme pour la liste admin, FIND-004).
     const { data, error } = await supabase
       .from('students')
-      .select('*')
+      .select('id, matricule, nom, prenom, classe_id, sexe, date_naissance, telephone_parent, parent_id, created_at, classes(nom)')
       .eq('classe_id', classe_id)
       .order('nom');
 

@@ -3,6 +3,7 @@ const { supabase, supabaseVerify } = require('../supabase');
 const generateMatricule = require('../utils/generateMatricule');
 const verifyToken = require('../middleware/verifyToken');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const { stripTags, sanitizeEmail, isValidEmail, sanitizeObject } = require('../middleware/sanitize');
 const rateLimit = require('../middleware/rateLimit');
 const safeError = require('../utils/safeError');
@@ -103,6 +104,11 @@ router.post('/students', async (req, res) => {
 
     const matricule = await generateMatricule(req.schoolId, schoolAbbrev);
     const pin = generateSecurePassword();
+    // Sécurité (FIND-004) : le PIN est hashé en base (bcrypt). Le PIN en
+    // clair reste retourné à l'admin dans la réponse ci-dessous — l'UX
+    // est identique. Le login parent passe par Supabase Auth (mot de
+    // passe), la colonne pin_code n'est jamais utilisée pour s'authentifier.
+    const pin_hash = await bcrypt.hash(pin, 12);
     const email = `${matricule.replace(/\s+/g, '').toLowerCase()}@${schoolAbbrev.toLowerCase()}.bj`;
     
     // 0. Vérifier si un orphelin existe déjà (email présent en Auth mais pas en SQL)
@@ -146,7 +152,7 @@ router.post('/students', async (req, res) => {
         sexe,
         telephone_parent,
         parent_id: createdUserId,
-        pin_code: pin,
+        pin_code: pin_hash,
         school_id: req.schoolId
       }]);
 
@@ -287,6 +293,8 @@ router.post('/students/reset-pin', async (req, res) => {
 
     if (!id) return res.status(400).json({ error: 'Student ID required' });
     if (!newPin) newPin = generateSecurePassword();
+    // Sécurité (FIND-004) : hash du PIN avant stockage (voir /students).
+    const newPinHash = await bcrypt.hash(newPin, 12);
 
     // Verify the student belongs to this admin's school
     const { data: student, error: studentError } = await supabase
@@ -314,7 +322,7 @@ router.post('/students/reset-pin', async (req, res) => {
     // 2. Update students table
     const { error: studentUpdateError } = await supabase
       .from('students')
-      .update({ pin_code: newPin })
+      .update({ pin_code: newPinHash })
       .eq('id', id)
       .eq('school_id', req.schoolId);
 

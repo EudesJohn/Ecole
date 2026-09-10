@@ -40,6 +40,16 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Rate limit global doux (FIND-018) : bien au-dessus de l'usage réel d'un
+// utilisateur légitime (navigation admin ≈ 1-2 req/s au pire), il arrête
+// les scripts de scanning et le brute-force à grande échelle.
+const globalRateLimit = require('../server/middleware/rateLimit')({
+  windowMs: 60 * 1000,
+  max: 120,
+  message: 'Trop de requêtes. Veuillez ralentir.'
+});
+app.use(globalRateLimit);
+
 // Main handler for Vercel
 const router = express.Router();
 

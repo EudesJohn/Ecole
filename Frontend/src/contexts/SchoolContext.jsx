@@ -20,11 +20,15 @@ export const SchoolProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   // Fetch all schools (only for super-admin)
+  // Sécurité (FIND-001) : admin_email n'est plus lisible côté client
+  // (grants au niveau colonne) → sélection explicite des colonnes
+  // publiques. L'email reste visible dans l'onglet Écoles via
+  // /api/super-admin (backend, service_role).
   const fetchAllSchools = async () => {
     try {
       const { data, error } = await supabase
         .from('schools')
-        .select('*')
+        .select('id, nom, abreviation, ville, pays, logo_url, status, restricted_until, restricted_at, restriction_reason, created_at')
         .order('nom');
 
       if (!error && data) {
