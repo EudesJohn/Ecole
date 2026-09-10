@@ -128,7 +128,7 @@ router.get('/class/:classe_id', async (req, res) => {
     // JAMAIS renvoyé aux professeurs (comme pour la liste admin, FIND-004).
     const { data, error } = await supabase
       .from('students')
-      .select('id, matricule, nom, prenom, classe_id, sexe, date_naissance, telephone_parent, parent_id, created_at, classes(nom)')
+      .select('id, matricule, nom, prenom, classe_id, sexe, date_naissance, telephone_parent, parent_id, verify_token, created_at, classes(nom)')
       .eq('classe_id', classe_id)
       .order('nom');
 
